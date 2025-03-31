@@ -65,8 +65,10 @@ def user_settings(request):
         if active_tab == "profile":
             context["form"] = UserProfileForm(instance=request.user)
         elif active_tab == "shapes":
-            # Charger les formes sauvegardées de l'utilisateur
-            context["saved_shapes"] = CustomShape.objects.filter(user=request.user)
+            # Charger les formes de l'utilisateur
+            context["saved_shapes"] = BeadShape.objects.filter(
+                creator=request.user
+            ).order_by("-created_at")
 
     return render(request, "beadmodels/user_settings.html", context)
 
