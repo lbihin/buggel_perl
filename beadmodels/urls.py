@@ -16,4 +16,7 @@ urlpatterns = [
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
     path("settings/save-shape/", views.save_shape, name="save_shape"),
+    path(
+        "settings/delete-shape/<int:shape_id>/", views.delete_shape, name="delete_shape"
+    ),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

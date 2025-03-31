@@ -74,8 +74,8 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                       <h5 class="card-title mb-0">{{ shape.name }}</h5>
                       <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editShape({{ shape.id }})"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteShape({{ shape.id }})"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Modifier la forme" onclick="editShape({{ shape.id }})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Supprimer la forme" onclick="deleteShape({{ shape.id }})"><i class="bi bi-trash"></i></button>
                       </div>
                     </div>
                     <div class="shape-preview mb-3">
@@ -105,6 +105,57 @@
           </div>
 
           <script>
+            // Initialiser les tooltips
+            document.addEventListener('DOMContentLoaded', function() {
+              const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+              tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+              })
+            })
+
+            // Fonction pour modifier une forme
+            function editShape(shapeId) {
+              window.location.href = `{% url 'beadmodels:user_settings' %}?tab=shapes_new&edit=${shapeId}`
+            }
+
+            // Fonction pour supprimer une forme
+            function deleteShape(shapeId) {
+              if (confirm('Êtes-vous sûr de vouloir supprimer cette forme ?')) {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value
+                
+                fetch(`{% url 'beadmodels:delete_shape' 0 %}`.replace('0', shapeId), {
+                  method: 'POST',
+                  headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                  },
+                  credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    // Supprimer la carte de la forme
+                    const shapeCard = document.querySelector(`.col-md-6:has(#canvas-${shapeId})`)
+                    if (shapeCard) {
+                      shapeCard.remove()
+                    }
+                    // Afficher un message de succès
+                    const toast = new bootstrap.Toast(document.getElementById('successToast'))
+                    document.getElementById('successToastMessage').textContent = 'Forme supprimée avec succès'
+                    toast.show()
+                  } else {
+                    throw new Error(data.message || 'Une erreur est survenue lors de la suppression.')
+                  }
+                })
+                .catch(error => {
+                  // Afficher un message d'erreur
+                  const toast = new bootstrap.Toast(document.getElementById('errorToast'))
+                  document.getElementById('errorToastMessage').textContent = error.message || 'Une erreur est survenue lors de la suppression.'
+                  toast.show()
+                })
+              }
+            }
+
             // Fonction pour afficher l'aperçu d'une forme
             function displayShapePreview(shape) {
               const canvas = document.getElementById(`canvas-${shape.id}`)
@@ -523,6 +574,15 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body" id="errorToastMessage"></div>
+      </div>
+
+      <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+          <i class="bi bi-check-circle me-2"></i>
+          <strong class="me-auto">Succès</strong>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="successToastMessage"></div>
       </div>
     </div>
   {% endif %}

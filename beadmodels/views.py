@@ -211,3 +211,19 @@ def save_shape(request):
     return JsonResponse(
         {"success": False, "message": "Méthode non autorisée"}, status=405
     )
+
+
+@login_required
+def delete_shape(request, shape_id):
+    if request.method == "POST":
+        try:
+            shape = get_object_or_404(BeadShape, id=shape_id, creator=request.user)
+            shape.delete()
+            return JsonResponse(
+                {"success": True, "message": "Forme supprimée avec succès"}
+            )
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse(
+        {"success": False, "message": "Méthode non autorisée"}, status=405
+    )
