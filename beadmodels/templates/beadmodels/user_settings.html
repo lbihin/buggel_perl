@@ -179,7 +179,8 @@
               const canvas = document.getElementById(`canvas-${shape.id}`)
               const shapeType = shape.type
               const parameters = shape.parameters
-              const spacing = 20
+              const maxSize = 200 // Taille maximale du canvas en pixels
+              const pegSize = 4 // Taille des pics en pixels
 
               // Nettoyer le canvas
               canvas.innerHTML = ''
@@ -188,15 +189,21 @@
                 case 'rectangle': {
                   const width = parameters.width
                   const height = parameters.height
-                  canvas.style.width = `${width * spacing}px`
-                  canvas.style.height = `${height * spacing}px`
+                  const spacing = Math.min(maxSize / width, maxSize / height)
+                  const canvasWidth = width * spacing
+                  const canvasHeight = height * spacing
+
+                  canvas.style.width = `${canvasWidth}px`
+                  canvas.style.height = `${canvasHeight}px`
 
                   for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                       const point = document.createElement('div')
                       point.className = 'peg-point'
-                      point.style.left = `${x * spacing + spacing / 2}px`
-                      point.style.top = `${y * spacing + spacing / 2}px`
+                      point.style.width = `${pegSize}px`
+                      point.style.height = `${pegSize}px`
+                      point.style.left = `${x * spacing + (spacing - pegSize) / 2}px`
+                      point.style.top = `${y * spacing + (spacing - pegSize) / 2}px`
                       canvas.appendChild(point)
                     }
                   }
@@ -204,15 +211,20 @@
                 }
                 case 'square': {
                   const size = parameters.size
-                  canvas.style.width = `${size * spacing}px`
-                  canvas.style.height = `${size * spacing}px`
+                  const spacing = maxSize / size
+                  const canvasSize = size * spacing
+
+                  canvas.style.width = `${canvasSize}px`
+                  canvas.style.height = `${canvasSize}px`
 
                   for (let y = 0; y < size; y++) {
                     for (let x = 0; x < size; x++) {
                       const point = document.createElement('div')
                       point.className = 'peg-point'
-                      point.style.left = `${x * spacing + spacing / 2}px`
-                      point.style.top = `${y * spacing + spacing / 2}px`
+                      point.style.width = `${pegSize}px`
+                      point.style.height = `${pegSize}px`
+                      point.style.left = `${x * spacing + (spacing - pegSize) / 2}px`
+                      point.style.top = `${y * spacing + (spacing - pegSize) / 2}px`
                       canvas.appendChild(point)
                     }
                   }
@@ -220,9 +232,12 @@
                 }
                 case 'circle': {
                   const diameter = parameters.diameter
+                  const spacing = maxSize / diameter
+                  const canvasSize = diameter * spacing
                   const radius = diameter / 2
-                  canvas.style.width = `${diameter * spacing}px`
-                  canvas.style.height = `${diameter * spacing}px`
+
+                  canvas.style.width = `${canvasSize}px`
+                  canvas.style.height = `${canvasSize}px`
 
                   for (let y = 0; y < diameter; y++) {
                     for (let x = 0; x < diameter; x++) {
@@ -233,8 +248,10 @@
                       if (distance <= radius) {
                         const point = document.createElement('div')
                         point.className = 'peg-point'
-                        point.style.left = `${x * spacing + spacing / 2}px`
-                        point.style.top = `${y * spacing + spacing / 2}px`
+                        point.style.width = `${pegSize}px`
+                        point.style.height = `${pegSize}px`
+                        point.style.left = `${x * spacing + (spacing - pegSize) / 2}px`
+                        point.style.top = `${y * spacing + (spacing - pegSize) / 2}px`
                         canvas.appendChild(point)
                       }
                     }
