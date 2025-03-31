@@ -60,8 +60,10 @@
             <h5 class="card-title mb-0">Actions</h5>
           </div>
           <div class="card-body">
-            <a href="#" class="btn btn-primary btn-block mb-2">Modifier</a>
-            <a href="#" class="btn btn-danger btn-block">Supprimer</a>
+            <div class="d-grid gap-2">
+              <a href="{% url 'beadmodels:edit_model' model.pk %}" class="btn btn-primary">Modifier</a>
+              <a href="{% url 'beadmodels:delete_model' model.pk %}" class="btn btn-danger">Supprimer</a>
+            </div>
           </div>
         </div>
       {% endif %}

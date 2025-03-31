@@ -54,6 +54,39 @@ def model_detail(request, pk):
 
 
 @login_required
+def edit_model(request, pk):
+    model = get_object_or_404(BeadModel, pk=pk)
+    if model.creator != request.user:
+        messages.error(request, "Vous n'avez pas le droit de modifier ce modèle.")
+        return redirect("beadmodels:model_detail", pk=pk)
+
+    if request.method == "POST":
+        form = BeadModelForm(request.POST, request.FILES, instance=model)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Votre modèle a été modifié avec succès!")
+            return redirect("beadmodels:model_detail", pk=model.pk)
+    else:
+        form = BeadModelForm(instance=model)
+    return render(request, "beadmodels/edit_model.html", {"form": form, "model": model})
+
+
+@login_required
+def delete_model(request, pk):
+    model = get_object_or_404(BeadModel, pk=pk)
+    if model.creator != request.user:
+        messages.error(request, "Vous n'avez pas le droit de supprimer ce modèle.")
+        return redirect("beadmodels:model_detail", pk=pk)
+
+    if request.method == "POST":
+        model.delete()
+        messages.success(request, "Votre modèle a été supprimé avec succès!")
+        return redirect("beadmodels:my_models")
+
+    return render(request, "beadmodels/delete_model.html", {"model": model})
+
+
+@login_required
 def my_models(request):
     user_models = BeadModel.objects.filter(creator=request.user).order_by("-created_at")
     return render(request, "beadmodels/my_models.html", {"models": user_models})
