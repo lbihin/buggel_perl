@@ -225,6 +225,40 @@ def create_shape(request):
             shape_type = data.get("type")
             parameters = data.get("parameters", {})
 
+            # Vérifier si une forme similaire existe déjà
+            existing_shapes = BeadShape.objects.filter(creator=request.user)
+            for existing_shape in existing_shapes:
+                if existing_shape.shape_type == shape_type:
+                    if shape_type == "rectangle":
+                        if existing_shape.width == parameters.get(
+                            "width"
+                        ) and existing_shape.height == parameters.get("height"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Une forme rectangulaire avec ces dimensions existe déjà",
+                                },
+                                status=400,
+                            )
+                    elif shape_type == "square":
+                        if existing_shape.size == parameters.get("size"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Un carré avec cette taille existe déjà",
+                                },
+                                status=400,
+                            )
+                    elif shape_type == "circle":
+                        if existing_shape.diameter == parameters.get("diameter"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Un cercle avec ce diamètre existe déjà",
+                                },
+                                status=400,
+                            )
+
             shape = BeadShape.objects.create(
                 name=name,
                 shape_type=shape_type,
@@ -241,15 +275,16 @@ def create_shape(request):
                 shape.diameter = parameters.get("diameter")
             shape.save()
 
-            messages.success(request, "La forme a été créée avec succès.")
-            return redirect("beadmodels:user_settings", tab="shapes")
+            return JsonResponse(
+                {"success": True, "message": "La forme a été créée avec succès"}
+            )
 
         except json.JSONDecodeError:
-            messages.error(request, "Données JSON invalides")
-            return redirect("beadmodels:user_settings", tab="shapes")
+            return JsonResponse(
+                {"success": False, "message": "Données JSON invalides"}, status=400
+            )
         except Exception as e:
-            messages.error(request, f"Une erreur est survenue : {str(e)}")
-            return redirect("beadmodels:user_settings", tab="shapes")
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
 
     return render(request, "beadmodels/create_shape.html")
 
@@ -264,6 +299,42 @@ def edit_shape(request, shape_id):
             name = data.get("name")
             shape_type = data.get("type")
             parameters = data.get("parameters", {})
+
+            # Vérifier si une autre forme similaire existe déjà (exclure la forme actuelle)
+            existing_shapes = BeadShape.objects.filter(creator=request.user).exclude(
+                id=shape.id
+            )
+            for existing_shape in existing_shapes:
+                if existing_shape.shape_type == shape_type:
+                    if shape_type == "rectangle":
+                        if existing_shape.width == parameters.get(
+                            "width"
+                        ) and existing_shape.height == parameters.get("height"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Une forme rectangulaire avec ces dimensions existe déjà",
+                                },
+                                status=400,
+                            )
+                    elif shape_type == "square":
+                        if existing_shape.size == parameters.get("size"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Un carré avec cette taille existe déjà",
+                                },
+                                status=400,
+                            )
+                    elif shape_type == "circle":
+                        if existing_shape.diameter == parameters.get("diameter"):
+                            return JsonResponse(
+                                {
+                                    "success": False,
+                                    "message": "Un cercle avec ce diamètre existe déjà",
+                                },
+                                status=400,
+                            )
 
             shape.name = name
             shape.shape_type = shape_type

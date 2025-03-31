@@ -2,32 +2,34 @@
 
 {% block content %}
 <div class="container mt-4">
-  {% csrf_token %}
   <h2>Modifier la forme</h2>
   <div class="card">
     <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label">Type de forme</label>
-        <select class="form-select" id="shapeType" onchange="updateShapeControls(this)">
-          <option value="rectangle" {% if shape.shape_type == 'rectangle' %}selected{% endif %}>Rectangle</option>
-          <option value="square" {% if shape.shape_type == 'square' %}selected{% endif %}>Carré</option>
-          <option value="circle" {% if shape.shape_type == 'circle' %}selected{% endif %}>Rond</option>
-        </select>
-      </div>
+      <form id="shapeForm" onsubmit="return false;">
+        {% csrf_token %}
+        <div id="errorMessage" class="alert alert-danger d-none" role="alert"></div>
+        <div class="mb-3">
+          <label class="form-label">Type de forme</label>
+          <select class="form-select" id="shapeType" onchange="updateShapeControls()">
+            <option value="rectangle" {% if shape.shape_type == 'rectangle' %}selected{% endif %}>Rectangle</option>
+            <option value="square" {% if shape.shape_type == 'square' %}selected{% endif %}>Carré</option>
+            <option value="circle" {% if shape.shape_type == 'circle' %}selected{% endif %}>Rond</option>
+          </select>
+        </div>
 
-      <div id="shapeControls">
-        <!-- Les contrôles seront ajoutés dynamiquement -->
-      </div>
+        <div id="shapeControls">
+          <!-- Les contrôles seront ajoutés dynamiquement -->
+        </div>
 
-      <div class="shape-preview mt-4">
-        <h4>Aperçu</h4>
-        <div class="shape-canvas" id="previewCanvas"></div>
-      </div>
+        <div class="shape-preview mb-3">
+          <div class="shape-canvas" id="shapeCanvas"></div>
+        </div>
 
-      <div class="mt-4">
-        <button type="button" class="btn btn-primary" onclick="saveShape()">Enregistrer les modifications</button>
-        <a href="{% url 'beadmodels:user_settings' %}?tab=shapes" class="btn btn-secondary">Annuler</a>
-      </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary" onclick="saveShape()">Enregistrer les modifications</button>
+          <a href="{% url 'beadmodels:user_settings' %}?tab=shapes" class="btn btn-secondary">Annuler</a>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -35,9 +37,9 @@
 <script>
 const shapeData = {{ shape.get_parameters|safe }};
 
-function updateShapeControls(select) {
+function updateShapeControls() {
   const controlsDiv = document.getElementById('shapeControls')
-  const shapeType = select.value
+  const shapeType = document.getElementById('shapeType').value
   let controls = ''
 
   switch (shapeType) {
@@ -76,7 +78,7 @@ function updateShapeControls(select) {
 }
 
 function updatePreview() {
-  const canvas = document.getElementById('previewCanvas')
+  const canvas = document.getElementById('shapeCanvas')
   const shapeType = document.getElementById('shapeType').value
   const spacing = 20
 
@@ -144,23 +146,26 @@ function updatePreview() {
 }
 
 function saveShape() {
-  const shapeType = document.getElementById('shapeType').value
+  const errorMessage = document.getElementById('errorMessage')
+  errorMessage.classList.add('d-none')
+  
   const shapeData = {
     name: generateShapeName(),
-    type: shapeType,
+    type: document.getElementById('shapeType').value,
     parameters: {}
   }
 
-  switch (shapeType) {
+  const inputs = document.querySelectorAll('input[type="number"]')
+  switch (shapeData.type) {
     case 'rectangle':
-      shapeData.parameters.width = parseInt(document.getElementById('width').value)
-      shapeData.parameters.height = parseInt(document.getElementById('height').value)
+      shapeData.parameters.width = parseInt(inputs[0].value)
+      shapeData.parameters.height = parseInt(inputs[1].value)
       break
     case 'square':
-      shapeData.parameters.size = parseInt(document.getElementById('size').value)
+      shapeData.parameters.size = parseInt(inputs[0].value)
       break
     case 'circle':
-      shapeData.parameters.diameter = parseInt(document.getElementById('diameter').value)
+      shapeData.parameters.diameter = parseInt(inputs[0].value)
       break
   }
 
@@ -181,12 +186,14 @@ function saveShape() {
     if (data.success) {
       window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
     } else {
-      throw new Error(data.message || 'Une erreur est survenue lors de la sauvegarde.')
+      errorMessage.textContent = data.message
+      errorMessage.classList.remove('d-none')
     }
   })
   .catch(error => {
     console.error('Erreur:', error)
-    alert('Une erreur est survenue lors de la sauvegarde.')
+    errorMessage.textContent = 'Une erreur est survenue lors de la sauvegarde.'
+    errorMessage.classList.remove('d-none')
   })
 }
 
@@ -206,7 +213,7 @@ function generateShapeName() {
 
 // Initialiser les contrôles au chargement
 document.addEventListener('DOMContentLoaded', function() {
-  updateShapeControls(document.getElementById('shapeType'))
+  updateShapeControls()
 })
 </script>
 {% endblock %} 

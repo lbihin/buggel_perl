@@ -7,6 +7,7 @@
       <div class="card-body">
         <form id="shapeForm" onsubmit="return false;">
           {% csrf_token %}
+          <div id="errorMessage" class="alert alert-danger d-none" role="alert"></div>
           <div class="mb-3">
             <label class="form-label">Type de forme</label>
             <select class="form-select" id="shapeType" onchange="updateShapeControls()">
@@ -42,31 +43,31 @@
       switch (shapeType) {
         case 'rectangle':
           controls = `
-                            <div class="mb-3">
-                              <label class="form-label">Largeur (pics)</label>
-                              <input type="number" class="form-control" id="width" min="1" value="10" onchange="updatePreview()">
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label">Hauteur (pics)</label>
-                              <input type="number" class="form-control" id="height" min="1" value="8" onchange="updatePreview()">
-                            </div>
-                          `
+                                        <div class="mb-3">
+                                          <label class="form-label">Largeur (pics)</label>
+                                          <input type="number" class="form-control" id="width" min="1" value="10" onchange="updatePreview()">
+                                        </div>
+                                        <div class="mb-3">
+                                          <label class="form-label">Hauteur (pics)</label>
+                                          <input type="number" class="form-control" id="height" min="1" value="8" onchange="updatePreview()">
+                                        </div>
+                                      `
           break
         case 'square':
           controls = `
-                            <div class="mb-3">
-                              <label class="form-label">Taille (pics)</label>
-                              <input type="number" class="form-control" id="size" min="1" value="10" onchange="updatePreview()">
-                            </div>
-                          `
+                                        <div class="mb-3">
+                                          <label class="form-label">Taille (pics)</label>
+                                          <input type="number" class="form-control" id="size" min="1" value="10" onchange="updatePreview()">
+                                        </div>
+                                      `
           break
         case 'circle':
           controls = `
-                            <div class="mb-3">
-                              <label class="form-label">Diamètre (pics)</label>
-                              <input type="number" class="form-control" id="diameter" min="1" value="10" onchange="updatePreview()">
-                            </div>
-                          `
+                                        <div class="mb-3">
+                                          <label class="form-label">Diamètre (pics)</label>
+                                          <input type="number" class="form-control" id="diameter" min="1" value="10" onchange="updatePreview()">
+                                        </div>
+                                      `
           break
       }
     
@@ -143,23 +144,26 @@
     }
     
     function saveShape() {
-      const shapeType = document.getElementById('shapeType').value
+      const errorMessage = document.getElementById('errorMessage')
+      errorMessage.classList.add('d-none')
+    
       const shapeData = {
         name: generateShapeName(),
-        type: shapeType,
+        type: document.getElementById('shapeType').value,
         parameters: {}
       }
     
-      switch (shapeType) {
+      const inputs = document.querySelectorAll('input[type="number"]')
+      switch (shapeData.type) {
         case 'rectangle':
-          shapeData.parameters.width = parseInt(document.getElementById('width').value)
-          shapeData.parameters.height = parseInt(document.getElementById('height').value)
+          shapeData.parameters.width = parseInt(inputs[0].value)
+          shapeData.parameters.height = parseInt(inputs[1].value)
           break
         case 'square':
-          shapeData.parameters.size = parseInt(document.getElementById('size').value)
+          shapeData.parameters.size = parseInt(inputs[0].value)
           break
         case 'circle':
-          shapeData.parameters.diameter = parseInt(document.getElementById('diameter').value)
+          shapeData.parameters.diameter = parseInt(inputs[0].value)
           break
       }
     
@@ -175,15 +179,19 @@
         credentials: 'same-origin',
         body: JSON.stringify(shapeData)
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
+          } else {
+            errorMessage.textContent = data.message
+            errorMessage.classList.remove('d-none')
           }
-          window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
         })
         .catch((error) => {
           console.error('Erreur:', error)
-          alert('Une erreur est survenue lors de la sauvegarde.')
+          errorMessage.textContent = 'Une erreur est survenue lors de la sauvegarde.'
+          errorMessage.classList.remove('d-none')
         })
     }
     
