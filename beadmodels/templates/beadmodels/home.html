@@ -1,0 +1,40 @@
+{% extends 'beadmodels/base.html' %}
+
+{% block content %}
+  <div class="jumbotron">
+    <h1 class="display-4">Bienvenue sur Buggel</h1>
+    <p class="lead">Créez facilement des modèles de perles à repasser à partir de vos images préférées.</p>
+    {% if not user.is_authenticated %}
+      <hr class="my-4" />
+      <p>Inscrivez-vous pour commencer à créer vos propres modèles !</p>
+      <a class="btn btn-primary btn-lg" href="{% url 'register' %}" role="button">S'inscrire</a>
+    {% else %}
+      <a class="btn btn-primary btn-lg" href="{% url 'beadmodels:create_model' %}" role="button">Créer un modèle</a>
+    {% endif %}
+  </div>
+
+  <h2 class="mt-5 mb-4">Derniers modèles publics</h2>
+  <div class="row">
+    {% for model in models %}
+      <div class="col-md-4 mb-4">
+        <div class="card">
+          {% if model.bead_pattern %}
+            <img src="{{ model.bead_pattern.url }}" class="card-img-top" alt="{{ model.title }}" />
+          {% else %}
+            <img src="{{ model.original_image.url }}" class="card-img-top" alt="{{ model.title }}" />
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ model.title }}</h5>
+            <p class="card-text">{{ model.description|truncatewords:20 }}</p>
+            <a href="{% url 'beadmodels:model_detail' model.pk %}" class="btn btn-primary">Voir le modèle</a>
+          </div>
+          <div class="card-footer text-muted">Par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}</div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <p>Aucun modèle public n'a encore été créé.</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

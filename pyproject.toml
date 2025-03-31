@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "buggel-perl"
+version = "0.1.0"
+description = "Creation of ironing perl model based on a picture"
+authors = ["Laurent Bihin <lolofanf1@hotmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+django = "^5.0.2"
+pillow = "^10.2.0"
+django-crispy-forms = "^2.1"
+crispy-bootstrap5 = "^2024.2"
+numpy = "^1.26.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
