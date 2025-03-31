@@ -1,0 +1,209 @@
+{% extends 'beadmodels/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h2>Nouvelle forme</h2>
+    <div class="card">
+      <div class="card-body">
+        <form id="shapeForm" onsubmit="return false;">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Type de forme</label>
+            <select class="form-select" id="shapeType" onchange="updateShapeControls()">
+              <option value="rectangle">Rectangle</option>
+              <option value="square">Carré</option>
+              <option value="circle">Rond</option>
+            </select>
+          </div>
+
+          <div id="shapeControls">
+            <!-- Les contrôles seront ajoutés dynamiquement -->
+          </div>
+
+          <div class="shape-preview mb-3">
+            <div class="shape-canvas" id="shapeCanvas"></div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" onclick="saveShape()">Enregistrer la forme</button>
+            <a href="{% url 'beadmodels:user_settings' %}?tab=shapes" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateShapeControls() {
+      const controlsDiv = document.getElementById('shapeControls')
+      const shapeType = document.getElementById('shapeType').value
+      let controls = ''
+    
+      switch (shapeType) {
+        case 'rectangle':
+          controls = `
+                            <div class="mb-3">
+                              <label class="form-label">Largeur (pics)</label>
+                              <input type="number" class="form-control" id="width" min="1" value="10" onchange="updatePreview()">
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label">Hauteur (pics)</label>
+                              <input type="number" class="form-control" id="height" min="1" value="8" onchange="updatePreview()">
+                            </div>
+                          `
+          break
+        case 'square':
+          controls = `
+                            <div class="mb-3">
+                              <label class="form-label">Taille (pics)</label>
+                              <input type="number" class="form-control" id="size" min="1" value="10" onchange="updatePreview()">
+                            </div>
+                          `
+          break
+        case 'circle':
+          controls = `
+                            <div class="mb-3">
+                              <label class="form-label">Diamètre (pics)</label>
+                              <input type="number" class="form-control" id="diameter" min="1" value="10" onchange="updatePreview()">
+                            </div>
+                          `
+          break
+      }
+    
+      controlsDiv.innerHTML = controls
+      updatePreview()
+    }
+    
+    function updatePreview() {
+      const canvas = document.getElementById('shapeCanvas')
+      const shapeType = document.getElementById('shapeType').value
+      const spacing = 20
+    
+      // Nettoyer le canvas
+      canvas.innerHTML = ''
+    
+      switch (shapeType) {
+        case 'rectangle': {
+          const width = parseInt(document.getElementById('width').value)
+          const height = parseInt(document.getElementById('height').value)
+          canvas.style.width = `${width * spacing}px`
+          canvas.style.height = `${height * spacing}px`
+    
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const point = document.createElement('div')
+              point.className = 'peg-point'
+              point.style.left = `${x * spacing + spacing / 2}px`
+              point.style.top = `${y * spacing + spacing / 2}px`
+              canvas.appendChild(point)
+            }
+          }
+          break
+        }
+        case 'square': {
+          const size = parseInt(document.getElementById('size').value)
+          canvas.style.width = `${size * spacing}px`
+          canvas.style.height = `${size * spacing}px`
+    
+          for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+              const point = document.createElement('div')
+              point.className = 'peg-point'
+              point.style.left = `${x * spacing + spacing / 2}px`
+              point.style.top = `${y * spacing + spacing / 2}px`
+              canvas.appendChild(point)
+            }
+          }
+          break
+        }
+        case 'circle': {
+          const diameter = parseInt(document.getElementById('diameter').value)
+          const radius = diameter / 2
+          canvas.style.width = `${diameter * spacing}px`
+          canvas.style.height = `${diameter * spacing}px`
+    
+          for (let y = 0; y < diameter; y++) {
+            for (let x = 0; x < diameter; x++) {
+              const dx = x - radius + 0.5
+              const dy = y - radius + 0.5
+              const distance = Math.sqrt(dx * dx + dy * dy)
+    
+              if (distance <= radius) {
+                const point = document.createElement('div')
+                point.className = 'peg-point'
+                point.style.left = `${x * spacing + spacing / 2}px`
+                point.style.top = `${y * spacing + spacing / 2}px`
+                canvas.appendChild(point)
+              }
+            }
+          }
+          break
+        }
+      }
+    }
+    
+    function saveShape() {
+      const shapeType = document.getElementById('shapeType').value
+      const shapeData = {
+        name: generateShapeName(),
+        type: shapeType,
+        parameters: {}
+      }
+    
+      switch (shapeType) {
+        case 'rectangle':
+          shapeData.parameters.width = parseInt(document.getElementById('width').value)
+          shapeData.parameters.height = parseInt(document.getElementById('height').value)
+          break
+        case 'square':
+          shapeData.parameters.size = parseInt(document.getElementById('size').value)
+          break
+        case 'circle':
+          shapeData.parameters.diameter = parseInt(document.getElementById('diameter').value)
+          break
+      }
+    
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value
+    
+      fetch('{% url "beadmodels:create_shape" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(shapeData)
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
+        })
+        .catch((error) => {
+          console.error('Erreur:', error)
+          alert('Une erreur est survenue lors de la sauvegarde.')
+        })
+    }
+    
+    function generateShapeName() {
+      const shapeType = document.getElementById('shapeType').value
+      switch (shapeType) {
+        case 'rectangle':
+          return `Rectangle ${document.getElementById('width').value}×${document.getElementById('height').value}`
+        case 'square':
+          return `Carré ${document.getElementById('size').value}×${document.getElementById('size').value}`
+        case 'circle':
+          return `Rond ∅${document.getElementById('diameter').value}`
+        default:
+          return 'Nouvelle forme'
+      }
+    }
+    
+    // Initialiser les contrôles au chargement
+    document.addEventListener('DOMContentLoaded', function () {
+      updateShapeControls()
+    })
+  </script>
+{% endblock %}

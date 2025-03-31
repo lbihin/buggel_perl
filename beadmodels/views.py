@@ -144,47 +144,36 @@ def save_shape(request):
             name = data.get("name")
             shape_type = data.get("type")
             parameters = data.get("parameters", {})
+            original_shape_id = data.get(
+                "original_shape_id"
+            )  # ID de la forme originale à supprimer
 
-            # Vérifier si une forme similaire existe déjà
-            existing_shape = BeadShape.objects.filter(
+            # Si nous avons un ID de forme originale, la supprimer
+            if original_shape_id:
+                try:
+                    original_shape = BeadShape.objects.get(
+                        id=original_shape_id, creator=request.user
+                    )
+                    original_shape.delete()
+                except BeadShape.DoesNotExist:
+                    pass  # Ignorer si la forme n'existe pas
+
+            # Créer une nouvelle forme
+            shape = BeadShape.objects.create(
                 name=name,
                 shape_type=shape_type,
                 creator=request.user,
-            ).first()
+                is_shared=True,  # Par défaut, la forme est partagée
+            )
 
-            if existing_shape:
-                print(
-                    "Forme existante trouvée:", existing_shape
-                )  # Log de la forme existante
-                # Mettre à jour la forme existante
-                if shape_type == "rectangle":
-                    existing_shape.width = parameters.get("width")
-                    existing_shape.height = parameters.get("height")
-                elif shape_type == "square":
-                    existing_shape.size = parameters.get("size")
-                elif shape_type == "circle":
-                    existing_shape.diameter = parameters.get("diameter")
-                existing_shape.save()
-                shape = existing_shape
-            else:
-                print("Création d'une nouvelle forme")  # Log de création
-                # Créer une nouvelle forme
-                shape = BeadShape.objects.create(
-                    name=name,
-                    shape_type=shape_type,
-                    creator=request.user,
-                    is_shared=True,  # Par défaut, la forme est partagée
-                )
-
-                if shape_type == "rectangle":
-                    shape.width = parameters.get("width")
-                    shape.height = parameters.get("height")
-                elif shape_type == "square":
-                    shape.size = parameters.get("size")
-                elif shape_type == "circle":
-                    shape.diameter = parameters.get("diameter")
-                shape.save()
-                print("Nouvelle forme créée:", shape)  # Log de la nouvelle forme
+            if shape_type == "rectangle":
+                shape.width = parameters.get("width")
+                shape.height = parameters.get("height")
+            elif shape_type == "square":
+                shape.size = parameters.get("size")
+            elif shape_type == "circle":
+                shape.diameter = parameters.get("diameter")
+            shape.save()
 
             return JsonResponse(
                 {
@@ -219,11 +208,84 @@ def delete_shape(request, shape_id):
         try:
             shape = get_object_or_404(BeadShape, id=shape_id, creator=request.user)
             shape.delete()
+            messages.success(request, "La forme a été supprimée avec succès.")
+        except Exception as e:
+            messages.error(
+                request, f"Une erreur est survenue lors de la suppression : {str(e)}"
+            )
+    return redirect("beadmodels:user_settings", tab="shapes")
+
+
+@login_required
+def create_shape(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("name")
+            shape_type = data.get("type")
+            parameters = data.get("parameters", {})
+
+            shape = BeadShape.objects.create(
+                name=name,
+                shape_type=shape_type,
+                creator=request.user,
+                is_shared=True,
+            )
+
+            if shape_type == "rectangle":
+                shape.width = parameters.get("width")
+                shape.height = parameters.get("height")
+            elif shape_type == "square":
+                shape.size = parameters.get("size")
+            elif shape_type == "circle":
+                shape.diameter = parameters.get("diameter")
+            shape.save()
+
+            messages.success(request, "La forme a été créée avec succès.")
+            return redirect("beadmodels:user_settings", tab="shapes")
+
+        except json.JSONDecodeError:
+            messages.error(request, "Données JSON invalides")
+            return redirect("beadmodels:user_settings", tab="shapes")
+        except Exception as e:
+            messages.error(request, f"Une erreur est survenue : {str(e)}")
+            return redirect("beadmodels:user_settings", tab="shapes")
+
+    return render(request, "beadmodels/create_shape.html")
+
+
+@login_required
+def edit_shape(request, shape_id):
+    shape = get_object_or_404(BeadShape, id=shape_id, creator=request.user)
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            name = data.get("name")
+            shape_type = data.get("type")
+            parameters = data.get("parameters", {})
+
+            shape.name = name
+            shape.shape_type = shape_type
+
+            if shape_type == "rectangle":
+                shape.width = parameters.get("width")
+                shape.height = parameters.get("height")
+            elif shape_type == "square":
+                shape.size = parameters.get("size")
+            elif shape_type == "circle":
+                shape.diameter = parameters.get("diameter")
+            shape.save()
+
             return JsonResponse(
-                {"success": True, "message": "Forme supprimée avec succès"}
+                {"success": True, "message": "La forme a été modifiée avec succès"}
+            )
+
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"success": False, "message": "Données JSON invalides"}, status=400
             )
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=500)
-    return JsonResponse(
-        {"success": False, "message": "Méthode non autorisée"}, status=405
-    )
+
+    return render(request, "beadmodels/edit_shape.html", {"shape": shape})

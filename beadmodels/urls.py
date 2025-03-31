@@ -19,4 +19,7 @@ urlpatterns = [
     path(
         "settings/delete-shape/<int:shape_id>/", views.delete_shape, name="delete_shape"
     ),
+    path("shapes/create/", views.create_shape, name="create_shape"),
+    path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
+    path("shapes/<int:shape_id>/delete/", views.delete_shape, name="delete_shape"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

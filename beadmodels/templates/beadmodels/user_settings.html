@@ -19,7 +19,6 @@
           <div class="nav-section">
             <small class="text-muted px-3 mb-2 d-block">Formes</small>
             <a class="nav-link {% if active_tab == 'shapes' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes"><i class="bi bi-grid"></i> Mes formes</a>
-            <a class="nav-link {% if active_tab == 'shapes_new' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes_new"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
           </div>
 
           <div class="settings-divider"></div>
@@ -35,6 +34,30 @@
     <!-- Contenu principal -->
     <div class="settings-content">
       <div class="settings-section">
+        {% if messages %}
+          <div class="messages">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-auto-dismiss="{{ message.tags }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <script>
+          // Faire disparaître automatiquement les messages de succès après 5 secondes
+          document.addEventListener('DOMContentLoaded', function () {
+            const successAlerts = document.querySelectorAll('.alert-success[data-auto-dismiss="success"]')
+            successAlerts.forEach(function (alert) {
+              setTimeout(function () {
+                const bsAlert = new bootstrap.Alert(alert)
+                bsAlert.close()
+              }, 5000)
+            })
+          })
+        </script>
+
         {% if active_tab == 'profile' %}
           <h2>Profil</h2>
           <form method="post" action="?tab=profile">
@@ -63,7 +86,7 @@
         {% elif active_tab == 'shapes' %}
           <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Mes formes</h2>
-            <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
+            <a href="{% url 'beadmodels:create_shape' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
           </div>
 
           <div class="row g-4" id="savedShapesList">
@@ -74,7 +97,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                       <h5 class="card-title mb-0">{{ shape.name }}</h5>
                       <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Modifier la forme" onclick="editShape({{ shape.id }})"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Modifier la forme" onclick="window.location.href='{% url 'beadmodels:edit_shape' 0 %}'.replace('0', {{ shape.id }})"><i class="bi bi-pencil"></i></button>
                         <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Supprimer la forme" onclick="deleteShape({{ shape.id }})"><i class="bi bi-trash"></i></button>
                       </div>
                     </div>
@@ -98,7 +121,6 @@
                 <div class="text-center text-muted py-5">
                   <i class="bi bi-grid" style="font-size: 2rem;"></i>
                   <p class="mt-3">Vous n'avez pas encore de formes enregistrées.</p>
-                  <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="btn btn-primary">Créer une nouvelle forme</a>
                 </div>
               </div>
             {% endfor %}
@@ -139,19 +161,15 @@
                     if (shapeCard) {
                       shapeCard.remove()
                     }
-                    // Afficher un message de succès
-                    const toast = new bootstrap.Toast(document.getElementById('successToast'))
-                    document.getElementById('successToastMessage').textContent = 'Forme supprimée avec succès'
-                    toast.show()
+                    // Rediriger vers la page des formes pour afficher le message
+                    window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
                   } else {
                     throw new Error(data.message || 'Une erreur est survenue lors de la suppression.')
                   }
                 })
                 .catch(error => {
-                  // Afficher un message d'erreur
-                  const toast = new bootstrap.Toast(document.getElementById('errorToast'))
-                  document.getElementById('errorToastMessage').textContent = error.message || 'Une erreur est survenue lors de la suppression.'
-                  toast.show()
+                  // Rediriger vers la page des formes pour afficher l'erreur
+                  window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
                 })
               }
             }
@@ -374,7 +392,13 @@
             break
         }
       
-        console.log('Données à envoyer:', shapeData) // Log des données
+        // Récupérer l'ID de la forme originale si elle existe
+        const shapeId = shapeCard.dataset.shapeId
+        if (shapeId && !shapeId.startsWith('shape-')) {
+          shapeData.original_shape_id = shapeId
+        }
+      
+        console.log('Données à envoyer:', shapeData)
       
         // Désactiver le bouton pendant la sauvegarde
         button.disabled = true
@@ -382,7 +406,6 @@
       
         // Récupérer le token CSRF
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value
-        console.log('Token CSRF:', csrfToken) // Log du token CSRF
       
         // Envoyer les données au serveur
         fetch('{% url "beadmodels:save_shape" %}', {
@@ -395,31 +418,20 @@
           credentials: 'same-origin',
           body: JSON.stringify(shapeData)
         })
-          .then((response) => {
-            console.log('Réponse reçue:', response) // Log de la réponse
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`)
-            }
-            return response.json()
-          })
-          .then((data) => {
-            console.log('Données reçues:', data) // Log des données
+          .then(response => response.json())
+          .then(data => {
             if (data.success) {
-              // Rediriger vers la page "Mes formes"
               window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
             } else {
               throw new Error(data.message || 'Une erreur est survenue lors de la sauvegarde.')
             }
           })
-          .catch((error) => {
-            console.error('Erreur:', error) // Log de l'erreur
+          .catch(error => {
+            console.error('Erreur:', error)
             // Réactiver le bouton en cas d'erreur
             button.disabled = false
             button.innerHTML = 'Enregistrer la forme'
-            // Afficher un message d'erreur
-            const toast = new bootstrap.Toast(document.getElementById('errorToast'))
-            document.getElementById('errorToastMessage').textContent = error.message || 'Une erreur est survenue lors de la sauvegarde.'
-            toast.show()
+            alert(error.message || 'Une erreur est survenue lors de la sauvegarde.')
           })
       }
       
@@ -486,6 +498,9 @@
         const shapeCard = input.closest('.shape-card')
         const canvas = shapeCard.querySelector('.shape-canvas')
         const shapeType = shapeCard.querySelector('.shape-type').value
+        const titleElement = shapeCard.querySelector('.shape-title')
+        const shapeNameInput = shapeCard.querySelector('.shape-name')
+        let baseName
       
         // Nettoyer le canvas
         canvas.innerHTML = ''
@@ -508,6 +523,7 @@
                 canvas.appendChild(point)
               }
             }
+            baseName = `Rectangle ${width}×${height}`
             break
           }
           case 'square': {
@@ -526,6 +542,7 @@
                 canvas.appendChild(point)
               }
             }
+            baseName = `Carré ${size}×${size}`
             break
           }
           case 'circle': {
@@ -551,12 +568,15 @@
                 }
               }
             }
+            baseName = `Rond ∅${diameter}`
             break
           }
         }
       
         // Mettre à jour le nom de la forme
-        updateShapeName(shapeCard)
+        const uniqueName = generateUniqueName(baseName)
+        titleElement.textContent = uniqueName
+        shapeNameInput.value = uniqueName
       }
       
       // Ajouter une forme par défaut au chargement
@@ -565,25 +585,6 @@
       })
     </script>
 
-    <!-- Toast pour les messages d'erreur -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-danger text-white">
-          <i class="bi bi-exclamation-circle me-2"></i>
-          <strong class="me-auto">Erreur</strong>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="errorToastMessage"></div>
-      </div>
-
-      <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-success text-white">
-          <i class="bi bi-check-circle me-2"></i>
-          <strong class="me-auto">Succès</strong>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="successToastMessage"></div>
-      </div>
-    </div>
+    <!-- Suppression des toasts -->
   {% endif %}
 {% endblock %}
