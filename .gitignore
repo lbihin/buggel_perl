@@ -1,5 +1,7 @@
 # project specific
 media/
+db.sqlite3
+db.sqlite3-journal
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
