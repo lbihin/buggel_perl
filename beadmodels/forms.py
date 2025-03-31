@@ -8,10 +8,10 @@ from .models import BeadModel
 class BeadModelForm(forms.ModelForm):
     class Meta:
         model = BeadModel
-        fields = ['title', 'description', 'original_image', 'grid_size', 'is_public']
+        fields = ["title", "description", "original_image", "grid_size", "is_public"]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4}),
-            'grid_size': forms.NumberInput(attrs={'min': 16, 'max': 64}),
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "grid_size": forms.NumberInput(attrs={"min": 16, "max": 64}),
         }
 
 
@@ -20,4 +20,10 @@ class UserRegistrationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password1', 'password2') 
+        fields = ("username", "email", "password1", "password2")
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("username", "email", "first_name", "last_name")

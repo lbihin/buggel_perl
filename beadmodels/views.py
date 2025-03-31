@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from PIL import Image
 
-from .forms import BeadModelForm, UserRegistrationForm
+from .forms import BeadModelForm, UserProfileForm, UserRegistrationForm
 from .models import BeadModel
 
 
@@ -28,6 +28,33 @@ def register(request):
     else:
         form = UserRegistrationForm()
     return render(request, "registration/register.html", {"form": form})
+
+
+@login_required
+def user_settings(request):
+    active_tab = request.GET.get("tab", "profile")
+
+    if request.method == "POST":
+        if active_tab == "profile":
+            form = UserProfileForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Votre profil a été mis à jour avec succès!")
+                return redirect("beadmodels:user_settings")
+        elif active_tab == "password":
+            # TODO: Implémenter le changement de mot de passe
+            pass
+        elif active_tab == "preferences":
+            # TODO: Implémenter les préférences utilisateur
+            pass
+    else:
+        form = UserProfileForm(instance=request.user)
+
+    context = {
+        "form": form,
+        "active_tab": active_tab,
+    }
+    return render(request, "beadmodels/user_settings.html", context)
 
 
 @login_required

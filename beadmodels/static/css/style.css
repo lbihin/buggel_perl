@@ -1,0 +1,123 @@
+/* Styles généraux */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Styles de la barre de navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+}
+
+/* Styles des cartes */
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+    border: none;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, .125);
+}
+
+/* Styles des onglets */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}
+
+/* Styles des formulaires */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25);
+}
+
+/* Styles des boutons */
+.btn-primary {
+    padding: 0.5rem 1.5rem;
+}
+
+/* Styles des messages */
+.messages {
+    margin-bottom: 2rem;
+}
+
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+/* Styles de la grille */
+.grid-container {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+}
+
+/* Styles du menu latéral des paramètres */
+.settings-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.settings-sidebar {
+    flex: 0 0 250px;
+}
+
+.settings-content {
+    flex: 1;
+}
+
+.settings-nav {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+}
+
+.settings-nav .nav-link {
+    color: #24292f;
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+    border-left: 3px solid transparent;
+}
+
+.settings-nav .nav-link:hover {
+    background-color: #f6f8fa;
+}
+
+.settings-nav .nav-link.active {
+    color: #0d6efd;
+    background-color: #f6f8fa;
+    border-left-color: #0d6efd;
+}
+
+.settings-section {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+}
+
+.settings-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #24292f;
+}
+
+.settings-section .form-group:not(:last-child) {
+    margin-bottom: 1.5rem;
+}
+
+.settings-divider {
+    height: 1px;
+    background-color: #d0d7de;
+    margin: 0.5rem 0;
+}

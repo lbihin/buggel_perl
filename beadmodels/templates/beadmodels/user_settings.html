@@ -1,0 +1,72 @@
+{% extends 'beadmodels/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+  <div class="settings-container">
+    <!-- Menu latéral -->
+    <div class="settings-sidebar">
+      <nav class="settings-nav">
+        <div class="nav flex-column nav-pills">
+          <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=profile"><i class="bi bi-person"></i> Profil</a>
+          <a class="nav-link {% if active_tab == 'password' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=password"><i class="bi bi-key"></i> Mot de passe</a>
+          <div class="settings-divider"></div>
+          <a class="nav-link {% if active_tab == 'preferences' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=preferences"><i class="bi bi-gear"></i> Préférences</a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="settings-content">
+      <div class="settings-section">
+        {% if active_tab == 'profile' %}
+          <h2>Profil</h2>
+          <form method="post" action="?tab=profile">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+          </form>
+        {% elif active_tab == 'password' %}
+          <h2>Changer le mot de passe</h2>
+          <form method="post" action="?tab=password">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="current_password" class="form-label">Mot de passe actuel</label>
+              <input type="password" class="form-control" id="current_password" name="current_password" required />
+            </div>
+            <div class="mb-3">
+              <label for="new_password" class="form-label">Nouveau mot de passe</label>
+              <input type="password" class="form-control" id="new_password" name="new_password" required />
+            </div>
+            <div class="mb-3">
+              <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
+              <input type="password" class="form-control" id="confirm_password" name="confirm_password" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+          </form>
+        {% elif active_tab == 'preferences' %}
+          <h2>Préférences</h2>
+          <form method="post" action="?tab=preferences">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Taille de grille par défaut</label>
+              <select class="form-select" name="default_grid_size">
+                <option value="16">16x16</option>
+                <option value="24">24x24</option>
+                <option value="32" selected>32x32</option>
+                <option value="48">48x48</option>
+                <option value="64">64x64</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="public_by_default" id="public_by_default" />
+                <label class="form-check-label" for="public_by_default">Rendre les modèles publics par défaut</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Enregistrer les préférences</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

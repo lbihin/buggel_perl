@@ -14,4 +14,5 @@ urlpatterns = [
     path("model/<int:pk>/delete/", views.delete_model, name="delete_model"),
     path("my-models/", views.my_models, name="my_models"),
     path("register/", views.register, name="register"),
+    path("settings/", views.user_settings, name="user_settings"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
