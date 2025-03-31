@@ -2,15 +2,32 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
+  {% csrf_token %}
   <div class="settings-container">
     <!-- Menu latéral -->
     <div class="settings-sidebar">
       <nav class="settings-nav">
         <div class="nav flex-column nav-pills">
-          <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=profile"><i class="bi bi-person"></i> Profil</a>
-          <a class="nav-link {% if active_tab == 'password' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=password"><i class="bi bi-key"></i> Mot de passe</a>
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Compte</small>
+            <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=profile"><i class="bi bi-person"></i> Profil</a>
+            <a class="nav-link {% if active_tab == 'password' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=password"><i class="bi bi-key"></i> Mot de passe</a>
+          </div>
+
           <div class="settings-divider"></div>
-          <a class="nav-link {% if active_tab == 'preferences' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=preferences"><i class="bi bi-gear"></i> Préférences</a>
+
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Formes</small>
+            <a class="nav-link {% if active_tab == 'shapes' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes"><i class="bi bi-grid"></i> Mes formes</a>
+            <a class="nav-link {% if active_tab == 'shapes_new' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes_new"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Application</small>
+            <a class="nav-link {% if active_tab == 'preferences' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=preferences"><i class="bi bi-gear"></i> Préférences</a>
+          </div>
         </div>
       </nav>
     </div>
@@ -43,6 +60,39 @@
             </div>
             <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
           </form>
+        {% elif active_tab == 'shapes' %}
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Mes formes</h2>
+            <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
+          </div>
+
+          <div id="savedShapesList">
+            {% for shape in saved_shapes %}
+              <div class="shape-card saved" data-shape-id="{{ shape.id }}">
+                <div class="shape-header">
+                  <h4 class="shape-title">{{ shape.name }}</h4>
+                  <div class="shape-actions">
+                    <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="editShape({{ shape.id }})"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteShape({{ shape.id }})"><i class="bi bi-trash"></i></button>
+                  </div>
+                </div>
+                <div class="shape-preview">
+                  <div class="shape-canvas" id="canvas-{{ shape.id }}"></div>
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-center text-muted py-5">
+                <i class="bi bi-grid" style="font-size: 2rem;"></i>
+                <p class="mt-3">Vous n'avez pas encore de formes enregistrées.</p>
+                <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="btn btn-primary">Créer une nouvelle forme</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% elif active_tab == 'shapes_new' %}
+          <h2>Nouvelle forme</h2>
+          <div id="shapeList" class="shape-list">
+            <!-- Le template de forme sera ajouté ici -->
+          </div>
         {% elif active_tab == 'preferences' %}
           <h2>Préférences</h2>
           <form method="post" action="?tab=preferences">
@@ -69,4 +119,313 @@
       </div>
     </div>
   </div>
+
+  {% if active_tab == 'shapes_new' or active_tab == 'shapes' %}
+    <template id="shapeTemplate">
+      <div class="shape-card" data-shape-id="">
+        <div class="shape-header">
+          <h4 class="shape-title"></h4>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Type de forme</label>
+          <select class="form-select shape-type" onchange="updateShapeControls(this)">
+            <option value="rectangle">Rectangle</option>
+            <option value="square">Carré</option>
+            <option value="circle">Rond</option>
+          </select>
+        </div>
+        <div class="shape-controls">
+          <!-- Les contrôles seront ajoutés dynamiquement en fonction du type -->
+        </div>
+        <div class="shape-preview">
+          <div class="shape-canvas">
+            <!-- Les points seront ajoutés dynamiquement -->
+          </div>
+        </div>
+        <div class="mt-4">
+          <button type="button" class="btn btn-primary w-100" onclick="saveShape(this)">Enregistrer la forme</button>
+        </div>
+        <input type="hidden" class="shape-name" name="shape_name" />
+      </div>
+    </template>
+
+    <script>
+      let shapeCounter = 0
+      let existingShapes = new Set()
+      
+      function generateUniqueName(baseName) {
+        if (!existingShapes.has(baseName)) {
+          existingShapes.add(baseName)
+          return baseName
+        }
+      
+        let counter = 1
+        let newName
+        do {
+          counter++
+          newName = `${baseName} (${counter})`
+        } while (existingShapes.has(newName))
+      
+        existingShapes.add(newName)
+        return newName
+      }
+      
+      function updateShapeName(shapeCard) {
+        const shapeType = shapeCard.querySelector('.shape-type').value
+        const titleElement = shapeCard.querySelector('.shape-title')
+        const shapeNameInput = shapeCard.querySelector('.shape-name')
+        let baseName
+      
+        switch (shapeType) {
+          case 'rectangle': {
+            const width = parseInt(shapeCard.querySelectorAll('input[type="number"]')[0].value)
+            const height = parseInt(shapeCard.querySelectorAll('input[type="number"]')[1].value)
+            baseName = `Rectangle ${width}×${height}`
+            break
+          }
+          case 'square': {
+            const size = parseInt(shapeCard.querySelector('input[type="number"]').value)
+            baseName = `Carré ${size}×${size}`
+            break
+          }
+          case 'circle': {
+            const diameter = parseInt(shapeCard.querySelector('input[type="number"]').value)
+            baseName = `Rond ∅${diameter}`
+            break
+          }
+        }
+      
+        // Si la forme a déjà un nom, on le garde, sinon on en génère un nouveau
+        if (!shapeNameInput.value) {
+          const uniqueName = generateUniqueName(baseName)
+          titleElement.textContent = uniqueName
+          shapeNameInput.value = uniqueName
+        }
+      }
+      
+      function saveShape(button) {
+        const shapeCard = button.closest('.shape-card')
+        const shapeData = {
+          name: shapeCard.querySelector('.shape-name').value,
+          type: shapeCard.querySelector('.shape-type').value,
+          parameters: {}
+        }
+      
+        const inputs = shapeCard.querySelectorAll('input[type="number"]')
+        switch (shapeData.type) {
+          case 'rectangle':
+            shapeData.parameters.width = parseInt(inputs[0].value)
+            shapeData.parameters.height = parseInt(inputs[1].value)
+            break
+          case 'square':
+            shapeData.parameters.size = parseInt(inputs[0].value)
+            break
+          case 'circle':
+            shapeData.parameters.diameter = parseInt(inputs[0].value)
+            break
+        }
+      
+        console.log('Données à envoyer:', shapeData) // Log des données
+      
+        // Désactiver le bouton pendant la sauvegarde
+        button.disabled = true
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement...'
+      
+        // Récupérer le token CSRF
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value
+        console.log('Token CSRF:', csrfToken) // Log du token CSRF
+      
+        // Envoyer les données au serveur
+        fetch('{% url "beadmodels:save_shape" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify(shapeData)
+        })
+          .then((response) => {
+            console.log('Réponse reçue:', response) // Log de la réponse
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            return response.json()
+          })
+          .then((data) => {
+            console.log('Données reçues:', data) // Log des données
+            if (data.success) {
+              // Rediriger vers la page "Mes formes"
+              window.location.href = '{% url "beadmodels:user_settings" %}?tab=shapes'
+            } else {
+              throw new Error(data.message || 'Une erreur est survenue lors de la sauvegarde.')
+            }
+          })
+          .catch((error) => {
+            console.error('Erreur:', error) // Log de l'erreur
+            // Réactiver le bouton en cas d'erreur
+            button.disabled = false
+            button.innerHTML = 'Enregistrer la forme'
+            // Afficher un message d'erreur
+            const toast = new bootstrap.Toast(document.getElementById('errorToast'))
+            document.getElementById('errorToastMessage').textContent = error.message || 'Une erreur est survenue lors de la sauvegarde.'
+            toast.show()
+          })
+      }
+      
+      function addNewShape() {
+        const template = document.getElementById('shapeTemplate')
+        const shapeList = document.getElementById('shapeList')
+        const clone = template.content.cloneNode(true)
+      
+        shapeCounter++
+        const shapeCard = clone.querySelector('.shape-card')
+        shapeCard.dataset.shapeId = `shape-${shapeCounter}`
+      
+        shapeList.appendChild(clone)
+        updateShapeControls(shapeCard.querySelector('.shape-type'))
+      }
+      
+      function removeShape(button) {
+        button.closest('.shape-card').remove()
+      }
+      
+      function updateShapeControls(select) {
+        const shapeCard = select.closest('.shape-card')
+        const controlsDiv = shapeCard.querySelector('.shape-controls')
+        const shapeType = select.value
+      
+        let controls = ''
+      
+        switch (shapeType) {
+          case 'rectangle':
+            controls = `
+                                                                                  <div class="mb-3">
+                                                                                    <label class="form-label">Largeur (pics)</label>
+                                                                                    <input type="number" class="form-control" min="1" value="10" onchange="updatePreview(this)">
+                                                                                  </div>
+                                                                                  <div class="mb-3">
+                                                                                    <label class="form-label">Hauteur (pics)</label>
+                                                                                    <input type="number" class="form-control" min="1" value="8" onchange="updatePreview(this)">
+                                                                                  </div>
+                                                                                `
+            break
+          case 'square':
+            controls = `
+                                                                                  <div class="mb-3">
+                                                                                    <label class="form-label">Taille (pics)</label>
+                                                                                    <input type="number" class="form-control" min="1" value="10" onchange="updatePreview(this)">
+                                                                                  </div>
+                                                                                `
+            break
+          case 'circle':
+            controls = `
+                                                                                  <div class="mb-3">
+                                                                                    <label class="form-label">Diamètre (pics)</label>
+                                                                                    <input type="number" class="form-control" min="1" value="10" onchange="updatePreview(this)">
+                                                                                  </div>
+                                                                                `
+            break
+        }
+      
+        controlsDiv.innerHTML = controls
+        updatePreview(select)
+      }
+      
+      function updatePreview(input) {
+        const shapeCard = input.closest('.shape-card')
+        const canvas = shapeCard.querySelector('.shape-canvas')
+        const shapeType = shapeCard.querySelector('.shape-type').value
+      
+        // Nettoyer le canvas
+        canvas.innerHTML = ''
+      
+        switch (shapeType) {
+          case 'rectangle': {
+            const width = parseInt(shapeCard.querySelectorAll('input')[0].value)
+            const height = parseInt(shapeCard.querySelectorAll('input')[1].value)
+            const spacing = 20
+      
+            canvas.style.width = `${width * spacing}px`
+            canvas.style.height = `${height * spacing}px`
+      
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                const point = document.createElement('div')
+                point.className = 'peg-point'
+                point.style.left = `${x * spacing + spacing / 2}px`
+                point.style.top = `${y * spacing + spacing / 2}px`
+                canvas.appendChild(point)
+              }
+            }
+            break
+          }
+          case 'square': {
+            const size = parseInt(shapeCard.querySelector('input').value)
+            const spacing = 20
+      
+            canvas.style.width = `${size * spacing}px`
+            canvas.style.height = `${size * spacing}px`
+      
+            for (let y = 0; y < size; y++) {
+              for (let x = 0; x < size; x++) {
+                const point = document.createElement('div')
+                point.className = 'peg-point'
+                point.style.left = `${x * spacing + spacing / 2}px`
+                point.style.top = `${y * spacing + spacing / 2}px`
+                canvas.appendChild(point)
+              }
+            }
+            break
+          }
+          case 'circle': {
+            const diameter = parseInt(shapeCard.querySelector('input').value)
+            const spacing = 20
+            const radius = diameter / 2
+      
+            canvas.style.width = `${diameter * spacing}px`
+            canvas.style.height = `${diameter * spacing}px`
+      
+            for (let y = 0; y < diameter; y++) {
+              for (let x = 0; x < diameter; x++) {
+                const dx = x - radius + 0.5
+                const dy = y - radius + 0.5
+                const distance = Math.sqrt(dx * dx + dy * dy)
+      
+                if (distance <= radius) {
+                  const point = document.createElement('div')
+                  point.className = 'peg-point'
+                  point.style.left = `${x * spacing + spacing / 2}px`
+                  point.style.top = `${y * spacing + spacing / 2}px`
+                  canvas.appendChild(point)
+                }
+              }
+            }
+            break
+          }
+        }
+      
+        // Mettre à jour le nom de la forme
+        updateShapeName(shapeCard)
+      }
+      
+      // Ajouter une forme par défaut au chargement
+      document.addEventListener('DOMContentLoaded', function () {
+        addNewShape()
+      })
+    </script>
+
+    <!-- Toast pour les messages d'erreur -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          <strong class="me-auto">Erreur</strong>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="errorToastMessage"></div>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}

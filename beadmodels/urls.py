@@ -15,4 +15,5 @@ urlpatterns = [
     path("my-models/", views.my_models, name="my_models"),
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
+    path("settings/save-shape/", views.save_shape, name="save_shape"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -82,6 +82,16 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
 }
 
+.nav-section {
+    padding: 1rem 0;
+}
+
+.nav-section small {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .settings-nav .nav-link {
     color: #24292f;
     padding: 0.75rem 1rem;
@@ -99,25 +109,108 @@ body {
     border-left-color: #0d6efd;
 }
 
-.settings-section {
-    background-color: #fff;
-    border-radius: 0.5rem;
-    padding: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
-}
-
-.settings-section h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: #24292f;
-}
-
-.settings-section .form-group:not(:last-child) {
-    margin-bottom: 1.5rem;
-}
-
 .settings-divider {
     height: 1px;
     background-color: #d0d7de;
-    margin: 0.5rem 0;
+    margin: 0;
+}
+
+/* Styles des formes */
+.shape-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.shape-card {
+    border: 1px solid #d0d7de;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    transition: all 0.2s ease-in-out;
+}
+
+.shape-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+}
+
+.shape-card.saved {
+    border-color: #0d6efd;
+}
+
+.shape-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.shape-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.shape-preview {
+    border: 1px solid #d0d7de;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    background-color: #f8f9fa;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+}
+
+.shape-canvas {
+    position: relative;
+}
+
+.peg-point {
+    width: 6px;
+    height: 6px;
+    background-color: #0d6efd;
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.shape-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Animation pour les points */
+@keyframes pegPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.peg-point.pulse {
+    animation: pegPulse 1s infinite;
+}
+
+/* Styles des messages toast */
+.toast-container {
+    z-index: 1050;
+}
+
+.toast {
+    background-color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
 }
