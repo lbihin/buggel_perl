@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 from PIL import Image
 
 from .forms import BeadModelForm, UserProfileForm, UserRegistrationForm
-from .models import BeadModel, BeadShape, CustomShape
+from .models import Bead, BeadModel, BeadShape, CustomShape
 
 
 def home(request):
@@ -61,14 +61,56 @@ def user_settings(request):
                 request, "Vos préférences ont été mises à jour avec succès!"
             )
             return redirect("beadmodels:user_settings")
+        elif active_tab == "beads":
+            try:
+                data = json.loads(request.body)
+                action = data.get("action")
+                bead_id = data.get("bead_id")
+                name = data.get("name")
+                red = data.get("red")
+                green = data.get("green")
+                blue = data.get("blue")
+                quantity = data.get("quantity")
+                notes = data.get("notes")
+
+                if action == "add":
+                    Bead.objects.create(
+                        creator=request.user,
+                        name=name,
+                        red=red,
+                        green=green,
+                        blue=blue,
+                        quantity=quantity,
+                        notes=notes,
+                    )
+                    messages.success(request, "Perle ajoutée avec succès!")
+                elif action == "update" and bead_id:
+                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+                    bead.name = name
+                    bead.red = red
+                    bead.green = green
+                    bead.blue = blue
+                    bead.quantity = quantity
+                    bead.notes = notes
+                    bead.save()
+                    messages.success(request, "Perle mise à jour avec succès!")
+                elif action == "delete" and bead_id:
+                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+                    bead.delete()
+                    messages.success(request, "Perle supprimée avec succès!")
+
+                return JsonResponse({"success": True})
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)})
     else:
         if active_tab == "profile":
             context["form"] = UserProfileForm(instance=request.user)
         elif active_tab == "shapes":
-            # Charger les formes de l'utilisateur
             context["saved_shapes"] = BeadShape.objects.filter(
                 creator=request.user
             ).order_by("-created_at")
+        elif active_tab == "beads":
+            context["beads"] = Bead.objects.filter(creator=request.user)
 
     return render(request, "beadmodels/user_settings.html", context)
 

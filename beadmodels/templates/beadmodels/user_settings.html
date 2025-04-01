@@ -1,5 +1,11 @@
 {% extends 'beadmodels/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+{% endblock %}
 
 {% block content %}
   {% csrf_token %}
@@ -19,6 +25,13 @@
           <div class="nav-section">
             <small class="text-muted px-3 mb-2 d-block">Formes</small>
             <a class="nav-link {% if active_tab == 'shapes' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes"><i class="bi bi-grid"></i> Mes formes</a>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Perles</small>
+            <a class="nav-link {% if active_tab == 'beads' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=beads"><i class="bi bi-palette"></i> Mes perles</a>
           </div>
 
           <div class="settings-divider"></div>
@@ -299,6 +312,265 @@
             </div>
             <button type="submit" class="btn btn-primary">Enregistrer les préférences</button>
           </form>
+        {% elif active_tab == 'beads' %}
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Mes perles</h5>
+              <button type="button" class="btn btn-primary" onclick="showBeadModal('Nouvelle perle')"><i class="bi bi-plus-circle"></i> Nouvelle perle</button>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                {% regroup beads by color_category as color_sections %}
+                {% for section in color_sections %}
+                  <div class="col-12 mb-4">
+                    <h6 class="text-muted mb-3">{{ section.grouper }}</h6>
+                    <div class="row g-3">
+                      {% for bead in section.list %}
+                        <div class="col-md-4" data-bead-id="{{ bead.id }}" data-red="{{ bead.red }}" data-green="{{ bead.green }}" data-blue="{{ bead.blue }}" data-quantity="{{ bead.quantity }}" data-notes="{{ bead.notes|default:'' }}">
+                          <div class="card h-100 bead-card">
+                            <div class="card-body">
+                              <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="color-preview" style="width: 100%; height: 30px; background-color: {{ bead.get_rgb_color }}; border-radius: 4px;"></div>
+                                <span class="badge bg-primary ms-2">{{ bead.quantity }}</span>
+                              </div>
+                              {% if bead.notes %}
+                                <p class="card-text text-muted small">{{ bead.notes }}</p>
+                              {% endif %}
+                              <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editBead({{ bead.id }})"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBead({{ bead.id }})"><i class="bi bi-trash"></i></button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="col-12">
+                    <p class="text-center text-muted">Vous n'avez pas encore de perles.</p>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal pour ajouter/modifier une perle -->
+          <div class="modal fade" id="beadModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="beadModalTitle">Nouvelle perle</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <form id="beadForm">
+                    <input type="hidden" id="beadId" />
+
+                    <!-- Section Couleur -->
+                    <div class="card mb-3">
+                      <div class="card-header bg-light">
+                        <h6 class="mb-0">Couleur de la perle</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="mb-3">
+                          <label for="colorPicker" class="form-label">Choisir une couleur</label>
+                          <input type="color" id="colorPicker" class="form-control form-control-color" value="#000000" title="Choisir une couleur" style="width: 100%; height: 40px; padding: 0;" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section Quantité -->
+                    <div class="card mb-3">
+                      <div class="card-header bg-light">
+                        <h6 class="mb-0">Quantité (optionnel)</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="mb-3">
+                          <label for="beadQuantity" class="form-label">Nombre de perles</label>
+                          <input type="number" class="form-control" id="beadQuantity" min="0" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section Notes -->
+                    <div class="card">
+                      <div class="card-header bg-light">
+                        <h6 class="mb-0">Notes (optionnel)</h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="mb-3">
+                          <textarea class="form-control" id="beadNotes" rows="3" placeholder="Ajouter des notes sur cette perle..."></textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                  <button type="button" class="btn btn-primary" onclick="saveBead()">Enregistrer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            function showBeadModal(title, beadId = null) {
+              const modal = new bootstrap.Modal(document.getElementById('beadModal'));
+              document.getElementById('beadModalTitle').textContent = title;
+              document.getElementById('beadId').value = beadId || '';
+              
+              if (beadId) {
+                // Charger les données de la perle
+                const bead = document.querySelector(`[data-bead-id="${beadId}"]`);
+                document.getElementById('beadQuantity').value = bead.dataset.quantity;
+                document.getElementById('beadNotes').value = bead.dataset.notes || '';
+                
+                // Mettre à jour la couleur
+                const colorPicker = document.getElementById('colorPicker');
+                colorPicker.value = rgbToHex(parseInt(bead.dataset.red), parseInt(bead.dataset.green), parseInt(bead.dataset.blue));
+              } else {
+                // Réinitialiser le formulaire
+                document.getElementById('beadForm').reset();
+                const colorPicker = document.getElementById('colorPicker');
+                colorPicker.value = '#000000';
+              }
+              
+              modal.show();
+            }
+
+            // Fonction pour convertir RGB en HEX
+            function rgbToHex(r, g, b) {
+              return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+              }).join('');
+            }
+
+            // Fonction pour convertir HEX en RGB
+            function hexToRgb(hex) {
+              const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+              return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+              } : null;
+            }
+
+            function getColorName(red, green, blue) {
+              // Couleurs de base
+              if (red === 255 && green === 0 && blue === 0) return "Rouge";
+              if (red === 0 && green === 255 && blue === 0) return "Vert";
+              if (red === 0 && green === 0 && blue === 255) return "Bleu";
+              if (red === 255 && green === 255 && blue === 0) return "Jaune";
+              if (red === 255 && green === 0 && blue === 255) return "Magenta";
+              if (red === 0 && green === 255 && blue === 255) return "Cyan";
+              if (red === 255 && green === 255 && blue === 255) return "Blanc";
+              if (red === 0 && green === 0 && blue === 0) return "Noir";
+              if (red === 128 && green === 128 && blue === 128) return "Gris";
+              if (red === 255 && green === 165 && blue === 0) return "Orange";
+              if (red === 165 && green === 42 && blue === 42) return "Marron";
+              if (red === 255 && green === 192 && blue === 203) return "Rose";
+              if (red === 128 && green === 0 && blue === 128) return "Violet";
+              
+              // Pour les autres couleurs, on utilise une description basée sur les composantes
+              let name = "";
+              if (red > 200) name += "Rouge ";
+              if (green > 200) name += "Vert ";
+              if (blue > 200) name += "Bleu ";
+              
+              if (name === "") {
+                  if (red > 100) name += "Rouge ";
+                  if (green > 100) name += "Vert ";
+                  if (blue > 100) name += "Bleu ";
+              }
+              
+              if (name === "") {
+                  if (red > 50) name += "Rouge ";
+                  if (green > 50) name += "Vert ";
+                  if (blue > 50) name += "Bleu ";
+              }
+              
+              if (name === "") return "Gris foncé";
+              
+              name = name.trim() + (red + green + blue > 500 ? " clair" : " foncé");
+              return name;
+            }
+
+            function saveBead() {
+              const beadId = document.getElementById('beadId').value;
+              const colorPicker = document.getElementById('colorPicker');
+              const rgb = hexToRgb(colorPicker.value);
+              
+              const data = {
+                action: beadId ? 'update' : 'add',
+                bead_id: beadId,
+                name: getColorName(rgb.r, rgb.g, rgb.b),
+                red: rgb.r,
+                green: rgb.g,
+                blue: rgb.b,
+                quantity: document.getElementById('beadQuantity').value || 0,
+                notes: document.getElementById('beadNotes').value
+              };
+
+              fetch('{% url "beadmodels:user_settings" %}?tab=beads', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': CSRF_TOKEN,
+                  'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  location.reload();
+                } else {
+                  alert('Erreur: ' + data.message);
+                }
+              })
+              .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors de la sauvegarde.');
+              });
+            }
+
+            function editBead(beadId) {
+              showBeadModal('Modifier la perle', beadId);
+            }
+
+            function deleteBead(beadId) {
+              if (confirm('Êtes-vous sûr de vouloir supprimer cette perle ?')) {
+                const data = {
+                  action: 'delete',
+                  bead_id: beadId
+                };
+
+                fetch('{% url "beadmodels:user_settings" %}?tab=beads', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'X-Requested-With': 'XMLHttpRequest'
+                  },
+                  body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    location.reload();
+                  } else {
+                    alert('Erreur: ' + data.message);
+                  }
+                })
+                .catch(error => {
+                  console.error('Erreur:', error);
+                  alert('Une erreur est survenue lors de la suppression.');
+                });
+              }
+            }
+          </script>
         {% endif %}
       </div>
     </div>
@@ -604,4 +876,159 @@
 
     <!-- Suppression des toasts -->
   {% endif %}
+
+  <style>
+    .color-btn {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.2s;
+    }
+
+    .color-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .color-palette {
+      margin-top: 1rem;
+    }
+
+    .bead-3d {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      transform-style: preserve-3d;
+      transform: rotateX(20deg) rotateY(45deg);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .bead-3d:hover {
+      transform: rotateX(20deg) rotateY(45deg) scale(1.1);
+    }
+
+    .bead-body {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), transparent 60%);
+      border-radius: 50%;
+      box-shadow: 
+        inset -5px -5px 15px rgba(0,0,0,0.3),
+        inset 5px 5px 15px rgba(255,255,255,0.3),
+        0 0 20px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+      /* Créer l'effet de cylindre */
+      background-image: 
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), transparent 60%),
+        linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0.2));
+      /* Ajouter le trou central */
+      mask-image: radial-gradient(circle at center, transparent 40%, black 40%);
+      -webkit-mask-image: radial-gradient(circle at center, transparent 40%, black 40%);
+      pointer-events: none;
+    }
+
+    .bead-highlight {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      /* Ajouter le trou central */
+      mask-image: radial-gradient(circle at center, transparent 40%, black 40%);
+      -webkit-mask-image: radial-gradient(circle at center, transparent 40%, black 40%);
+    }
+
+    /* Ajouter un effet de profondeur pour le trou */
+    .bead-body::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40%;
+      height: 40%;
+      background: rgba(0,0,0,0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .bead-card {
+      position: relative;
+      transition: all 0.3s ease;
+      min-height: 100px;
+      transform: scale(1);
+      cursor: pointer;
+    }
+    
+    .bead-card:hover {
+      transform: scale(1.05);
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .bead-card .btn-group {
+      opacity: 0;
+      transition: all 0.3s ease;
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      z-index: 1;
+      display: flex;
+      gap: 4px;
+    }
+    
+    .bead-card:hover .btn-group {
+      opacity: 1;
+    }
+    
+    .bead-card .color-preview {
+      transition: all 0.3s ease;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .bead-card:hover .color-preview {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .bead-card .card-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .bead-card .badge {
+      font-size: 0.8rem;
+      padding: 0.4em 0.6em;
+      background-color: rgba(13, 110, 253, 0.9);
+    }
+
+    .bead-card .card-text {
+      margin-bottom: 0;
+      font-size: 0.85rem;
+      flex-grow: 1;
+    }
+
+    .bead-card .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .bead-card .btn-sm:hover {
+      background-color: rgba(255, 255, 255, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 {% endblock %}
