@@ -1,6 +1,9 @@
 import json
+import os
+import time
 
 import numpy as np
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -402,3 +405,199 @@ def edit_shape(request, shape_id):
             return JsonResponse({"success": False, "message": str(e)}, status=500)
 
     return render(request, "beadmodels/edit_shape.html", {"shape": shape})
+
+
+@login_required
+@require_http_methods(["POST"])
+def transform_image(request, pk):
+    try:
+        model = get_object_or_404(BeadModel, pk=pk)
+        grid_size = int(request.POST.get("grid_size", 32))
+        color_reduction = int(request.POST.get("color_reduction", 32))
+        dithering = request.POST.get("dithering", "none")
+
+        # Vérifier les permissions
+        if model.creator != request.user:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "Vous n'avez pas le droit de modifier ce modèle.",
+                },
+                status=403,
+            )
+
+        # Ouvrir l'image originale
+        original_image = Image.open(model.original_image.path)
+
+        # Convertir en RGB si nécessaire
+        if original_image.mode != "RGB":
+            original_image = original_image.convert("RGB")
+
+        # Redimensionner l'image selon la taille de la grille
+        new_size = (grid_size, grid_size)
+        resized_image = original_image.resize(new_size, Image.Resampling.LANCZOS)
+
+        # Créer une nouvelle image avec espacement
+        spacing = 2  # Espacement en pixels entre chaque pixel
+        final_size = (grid_size * (1 + spacing), grid_size * (1 + spacing))
+        final_image = Image.new("RGB", final_size, (255, 255, 255))  # Fond blanc
+
+        # Copier les pixels avec espacement
+        pixels = resized_image.load()
+        final_pixels = final_image.load()
+        for y in range(grid_size):
+            for x in range(grid_size):
+                final_pixels[x * (1 + spacing), y * (1 + spacing)] = pixels[x, y]
+
+        # Réduire les couleurs
+        if color_reduction < 256:
+            # Convertir l'image en palette
+            final_image = final_image.quantize(colors=color_reduction, method=2)
+
+        # Appliquer le tramage si demandé
+        if dithering == "floyd-steinberg":
+            final_image = final_image.convert("RGB")
+            # Implémenter l'algorithme Floyd-Steinberg
+            pixels = final_image.load()
+            width, height = final_image.size
+            for y in range(height):
+                for x in range(width):
+                    if (
+                        x % (1 + spacing) == 0 and y % (1 + spacing) == 0
+                    ):  # Ne modifier que les pixels d'origine
+                        old_pixel = pixels[x, y]
+                        # Convertir en noir ou blanc
+                        new_pixel = (
+                            (0, 0, 0) if sum(old_pixel) < 384 else (255, 255, 255)
+                        )
+                        pixels[x, y] = new_pixel
+
+                        # Calculer l'erreur
+                        error = tuple(
+                            old - new for old, new in zip(old_pixel, new_pixel)
+                        )
+
+                        # Distribuer l'erreur aux pixels voisins
+                        if x + (1 + spacing) < width:
+                            pixels[x + (1 + spacing), y] = tuple(
+                                p + int(e * 7 / 16)
+                                for p, e in zip(pixels[x + (1 + spacing), y], error)
+                            )
+                        if y + (1 + spacing) < height:
+                            if x - (1 + spacing) >= 0:
+                                pixels[x - (1 + spacing), y + (1 + spacing)] = tuple(
+                                    p + int(e * 3 / 16)
+                                    for p, e in zip(
+                                        pixels[x - (1 + spacing), y + (1 + spacing)],
+                                        error,
+                                    )
+                                )
+                            pixels[x, y + (1 + spacing)] = tuple(
+                                p + int(e * 5 / 16)
+                                for p, e in zip(pixels[x, y + (1 + spacing)], error)
+                            )
+                            if x + (1 + spacing) < width:
+                                pixels[x + (1 + spacing), y + (1 + spacing)] = tuple(
+                                    p + int(e * 1 / 16)
+                                    for p, e in zip(
+                                        pixels[x + (1 + spacing), y + (1 + spacing)],
+                                        error,
+                                    )
+                                )
+
+        elif dithering == "ordered":
+            # Implémenter le tramage ordonné
+            dither_matrix = [
+                [0, 8, 2, 10],
+                [12, 4, 14, 6],
+                [3, 11, 1, 9],
+                [15, 7, 13, 5],
+            ]
+            final_image = final_image.convert("RGB")
+            pixels = final_image.load()
+            width, height = final_image.size
+            for y in range(height):
+                for x in range(width):
+                    if (
+                        x % (1 + spacing) == 0 and y % (1 + spacing) == 0
+                    ):  # Ne modifier que les pixels d'origine
+                        old_pixel = pixels[x, y]
+                        threshold = dither_matrix[y % 4][x % 4] * 16
+                        new_pixel = (
+                            (0, 0, 0) if sum(old_pixel) < threshold else (255, 255, 255)
+                        )
+                        pixels[x, y] = new_pixel
+
+        # Redimensionner l'image finale à la taille de l'image originale
+        original_width, original_height = original_image.size
+        final_image = final_image.resize(
+            (original_width, original_height), Image.Resampling.NEAREST
+        )
+
+        # Sauvegarder le résultat temporairement
+        temp_filename = f"temp_pattern_{pk}_{int(time.time())}.png"
+        temp_path = os.path.join(settings.MEDIA_ROOT, "patterns", temp_filename)
+        os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+        final_image.save(temp_path)
+
+        # Retourner l'URL de l'image transformée
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Image transformée avec succès",
+                "image_url": os.path.join(
+                    settings.MEDIA_URL, "patterns", temp_filename
+                ),
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": f"Erreur lors de la transformation : {str(e)}",
+            },
+            status=500,
+        )
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_transformation(request):
+    try:
+        data = json.loads(request.body)
+        model_id = data.get("model_id")
+        image_url = data.get("image_url")
+
+        model = get_object_or_404(BeadModel, pk=model_id)
+
+        # Vérifier les permissions
+        if model.creator != request.user:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "Vous n'avez pas le droit de modifier ce modèle.",
+                },
+                status=403,
+            )
+
+        # Supprimer l'ancien motif s'il existe
+        if model.bead_pattern:
+            try:
+                os.remove(model.bead_pattern.path)
+            except:
+                pass
+
+        # Mettre à jour le modèle avec le nouveau motif
+        model.bead_pattern = image_url
+        model.save()
+
+        return JsonResponse(
+            {"success": True, "message": "Transformation sauvegardée avec succès"}
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": f"Erreur lors de la sauvegarde : {str(e)}"},
+            status=500,
+        )

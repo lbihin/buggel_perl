@@ -12,6 +12,12 @@ urlpatterns = [
     path("model/<int:pk>/", views.model_detail, name="model_detail"),
     path("model/<int:pk>/edit/", views.edit_model, name="edit_model"),
     path("model/<int:pk>/delete/", views.delete_model, name="delete_model"),
+    path("model/<int:pk>/transform/", views.transform_image, name="transform_image"),
+    path(
+        "model/<int:pk>/save-transformation/",
+        views.save_transformation,
+        name="save_transformation",
+    ),
     path("my-models/", views.my_models, name="my_models"),
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),

@@ -1,6 +1,7 @@
 {% extends 'beadmodels/base.html' %}
 
 {% block content %}
+  {% csrf_token %}
   <div class="row">
     <div class="col-md-8">
       <h2>{{ model.title }}</h2>
@@ -28,6 +29,9 @@
           </div>
           <div class="card-body">
             <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" />
+            <div class="mt-3">
+              <button class="btn btn-secondary" onclick="startWizard()">Modifier la transformation</button>
+            </div>
           </div>
         </div>
       {% endif %}
@@ -61,6 +65,7 @@
           </div>
           <div class="card-body">
             <div class="d-grid gap-2">
+              <button class="btn btn-primary" onclick="startWizard()">Créer un modèle de perles</button>
               <a href="{% url 'beadmodels:edit_model' model.pk %}" class="btn btn-primary">Modifier</a>
               <a href="{% url 'beadmodels:delete_model' model.pk %}" class="btn btn-danger">Supprimer</a>
             </div>
@@ -69,4 +74,201 @@
       {% endif %}
     </div>
   </div>
+
+  <!-- Wizard Modal -->
+  <div class="modal fade" id="wizardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assistant de création de modèle de perles</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Progress bar -->
+          <div class="progress mb-4">
+            <div class="progress-bar" role="progressbar" style="width: 0%" id="wizardProgress"></div>
+          </div>
+
+          <!-- Step 1: Configuration -->
+          <div id="step1" class="wizard-step">
+            <h6>Étape 1 : Configuration de base</h6>
+            <form id="transformForm">
+              <div class="mb-3">
+                <label for="gridSize" class="form-label">Nombre de pixels</label>
+                <input type="number" class="form-control" id="gridSize" name="grid_size" value="{{ model.grid_size }}" min="8" max="128" step="8" />
+                <div class="form-text">Choisissez le nombre de pixels pour votre modèle. Plus il y a de pixels, plus le modèle sera détaillé.</div>
+              </div>
+              <div class="mb-3">
+                <label for="colorReduction" class="form-label">Nombre de couleurs</label>
+                <select class="form-select" id="colorReduction" name="color_reduction">
+                  <option value="8">8 couleurs (simple)</option>
+                  <option value="16">16 couleurs (moyen)</option>
+                  <option value="32">32 couleurs (détaillé)</option>
+                  <option value="64">64 couleurs (très détaillé)</option>
+                </select>
+                <div class="form-text">Le nombre de couleurs détermine la complexité de votre modèle. Plus il y a de couleurs, plus le modèle sera fidèle à l'original.</div>
+              </div>
+              <div class="mb-3">
+                <label for="dithering" class="form-label">Effet de tramage</label>
+                <select class="form-select" id="dithering" name="dithering">
+                  <option value="none">Aucun (couleurs plates)</option>
+                  <option value="floyd-steinberg">Floyd-Steinberg (meilleure qualité)</option>
+                  <option value="ordered">Tramage ordonné (motif régulier)</option>
+                </select>
+                <div class="form-text">Le tramage permet de créer des effets de dégradé avec un nombre limité de couleurs.</div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Step 2: Preview -->
+          <div id="step2" class="wizard-step d-none">
+            <h6>Étape 2 : Prévisualisation</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Image originale</h6>
+                <img src="{{ model.original_image.url }}" class="img-fluid" alt="Image originale" />
+              </div>
+              <div class="col-md-6">
+                <h6>Modèle en perles</h6>
+                <img id="previewImage" class="img-fluid" alt="Prévisualisation" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Final -->
+          <div id="step3" class="wizard-step d-none">
+            <h6>Étape 3 : Finalisation</h6>
+            <div class="alert alert-success">
+              <h5>Votre modèle est prêt !</h5>
+              <p>Vous pouvez maintenant sauvegarder le modèle et commencer à créer votre perler bead.</p>
+            </div>
+            <div class="text-center">
+              <img id="finalPreview" class="img-fluid mb-3" alt="Modèle final" />
+              <p class="text-muted">Cliquez sur "Sauvegarder" pour enregistrer ce modèle.</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="previousStep()" id="prevButton" style="display: none;">Précédent</button>
+          <button type="button" class="btn btn-primary" onclick="nextStep()" id="nextButton">Suivant</button>
+          <button type="button" class="btn btn-success" onclick="saveTransformation()" id="saveButton" style="display: none;">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let transformedImageUrl = null
+      let currentStep = 1
+      const totalSteps = 3
+    
+      function getCookie(name) {
+        let cookieValue = null
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';')
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim()
+            if (cookie.substring(0, name.length + 1) === name + '=') {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+              break
+            }
+          }
+        }
+        return cookieValue
+      }
+    
+      window.startWizard = function () {
+        currentStep = 1
+        updateWizardUI()
+        const wizardModal = new bootstrap.Modal(document.getElementById('wizardModal'))
+        wizardModal.show()
+      }
+    
+      function updateWizardUI() {
+        // Update progress bar
+        const progress = (currentStep / totalSteps) * 100
+        document.getElementById('wizardProgress').style.width = `${progress}%`
+        document.getElementById('wizardProgress').textContent = `Étape ${currentStep} sur ${totalSteps}`
+    
+        // Show/hide steps
+        document.querySelectorAll('.wizard-step').forEach((step, index) => {
+          step.classList.toggle('d-none', index + 1 !== currentStep)
+        })
+    
+        // Update buttons
+        document.getElementById('prevButton').style.display = currentStep === 1 ? 'none' : 'block'
+        document.getElementById('nextButton').style.display = currentStep === totalSteps ? 'none' : 'block'
+        document.getElementById('saveButton').style.display = currentStep === totalSteps ? 'block' : 'none'
+      }
+    
+      window.nextStep = async function () {
+        if (currentStep === 1) {
+          // Transform image
+          const formData = new FormData(document.getElementById('transformForm'))
+          formData.append('csrfmiddlewaretoken', getCookie('csrftoken'))
+    
+          try {
+            const response = await fetch('{% url "beadmodels:transform_image" model.pk %}', {
+              method: 'POST',
+              body: formData,
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+              }
+            })
+    
+            const data = await response.json()
+            if (data.success) {
+              transformedImageUrl = data.image_url
+              document.getElementById('previewImage').src = transformedImageUrl
+              document.getElementById('finalPreview').src = transformedImageUrl
+              currentStep++
+              updateWizardUI()
+            } else {
+              alert('Erreur lors de la transformation : ' + data.message)
+            }
+          } catch (error) {
+            alert('Erreur lors de la transformation : ' + error.message)
+          }
+        } else {
+          currentStep++
+          updateWizardUI()
+        }
+      }
+    
+      window.previousStep = function () {
+        if (currentStep > 1) {
+          currentStep--
+          updateWizardUI()
+        }
+      }
+    
+      window.saveTransformation = async function () {
+        if (!transformedImageUrl) return
+    
+        try {
+          const response = await fetch('{% url "beadmodels:save_transformation" model.pk %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+              model_id: '{{ model.pk }}',
+              image_url: transformedImageUrl
+            })
+          })
+    
+          const data = await response.json()
+          if (data.success) {
+            window.location.reload()
+          } else {
+            alert('Erreur lors de la sauvegarde : ' + data.message)
+          }
+        } catch (error) {
+          alert('Erreur lors de la sauvegarde : ' + error.message)
+        }
+      }
+    })
+  </script>
 {% endblock %}
