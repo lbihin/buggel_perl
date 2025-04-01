@@ -4,27 +4,37 @@ from django.db import models
 
 
 class BeadModel(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Titre")
+    name = models.CharField(max_length=200, verbose_name="Nom")
     description = models.TextField(blank=True, verbose_name="Description")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Créateur")
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Date de création"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True, verbose_name="Date de modification"
+    )
+    is_public = models.BooleanField(default=False, verbose_name="Public")
     original_image = models.ImageField(
         upload_to="originals/", verbose_name="Image originale"
     )
     bead_pattern = models.ImageField(
-        upload_to="patterns/", verbose_name="Motif en perles", blank=True
+        upload_to="patterns/", null=True, blank=True, verbose_name="Motif en perles"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Modifié le")
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Créateur")
-    grid_size = models.IntegerField(default=32, verbose_name="Taille de la grille")
-    is_public = models.BooleanField(default=True, verbose_name="Public")
+    board = models.ForeignKey(
+        "BeadBoard",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Support de perles",
+    )
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         verbose_name = "Modèle de perles"
         verbose_name_plural = "Modèles de perles"
         ordering = ["-created_at"]
-
-    def __str__(self):
-        return self.title
 
 
 class BeadShape(models.Model):
@@ -233,3 +243,17 @@ class Bead(models.Model):
             return "Violet"
 
         return "Autres"
+
+
+class BeadBoard(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    width_pegs = models.IntegerField(verbose_name="Nombre de picots en largeur")
+    height_pegs = models.IntegerField(verbose_name="Nombre de picots en hauteur")
+    description = models.TextField(verbose_name="Description", blank=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.width_pegs}x{self.height_pegs})"
+
+    class Meta:
+        verbose_name = "Support de perles"
+        verbose_name_plural = "Supports de perles"

@@ -11,7 +11,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 from PIL import Image
 
-from .forms import BeadModelForm, UserProfileForm, UserRegistrationForm
+from .forms import (
+    BeadModelForm,
+    TransformModelForm,
+    UserProfileForm,
+    UserRegistrationForm,
+)
 from .models import Bead, BeadModel, BeadShape, CustomShape
 
 
@@ -138,7 +143,13 @@ def model_detail(request, pk):
     if not model.is_public and model.creator != request.user:
         messages.error(request, "Vous n'avez pas accès à ce modèle.")
         return redirect("beadmodels:home")
-    return render(request, "beadmodels/model_detail.html", {"model": model})
+
+    transform_form = TransformModelForm()
+    return render(
+        request,
+        "beadmodels/model_detail.html",
+        {"model": model, "transform_form": transform_form},
+    )
 
 
 @login_required
@@ -412,11 +423,17 @@ def edit_shape(request, shape_id):
 def transform_image(request, pk):
     try:
         model = get_object_or_404(BeadModel, pk=pk)
-        grid_size = int(request.POST.get("grid_size", 32))
-        color_reduction = int(request.POST.get("color_reduction", 32))
-        dithering = request.POST.get("dithering", "none")
+        form = TransformModelForm(request.POST)
 
-        # Vérifier les permissions
+        if not form.is_valid():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "Formulaire invalide. Veuillez vérifier les champs.",
+                },
+                status=400,
+            )
+
         if model.creator != request.user:
             return JsonResponse(
                 {
@@ -426,6 +443,15 @@ def transform_image(request, pk):
                 status=403,
             )
 
+        # Récupérer les paramètres du formulaire
+        board = form.cleaned_data["board"]
+        color_reduction = form.cleaned_data["color_reduction"]
+        edge_detection = form.cleaned_data["edge_detection"]
+
+        # Utiliser les dimensions du support
+        grid_width = board.width_pegs
+        grid_height = board.height_pegs
+
         # Ouvrir l'image originale
         original_image = Image.open(model.original_image.path)
 
@@ -433,128 +459,91 @@ def transform_image(request, pk):
         if original_image.mode != "RGB":
             original_image = original_image.convert("RGB")
 
-        # 1. Redimensionner l'image avec une meilleure qualité pour préserver les détails
-        new_size = (grid_size, grid_size)
-        resized_image = original_image.resize(new_size, Image.Resampling.LANCZOS)
-
-        # 2. Créer une nouvelle image à la taille de l'originale
-        original_width, original_height = original_image.size
-        final_image = Image.new(
-            "RGB", (original_width, original_height), (255, 255, 255)
+        # Redimensionner l'image pour correspondre aux dimensions du support
+        resized_image = original_image.resize(
+            (grid_width, grid_height), Image.Resampling.LANCZOS
         )
 
-        # Calculer la taille de chaque pixel et de la grille
-        pixel_width = original_width // grid_size
-        pixel_height = original_height // grid_size
-        grid_width = 1  # Largeur de la grille en pixels
+        # Convertir en array numpy pour le traitement
+        img_array = np.array(resized_image)
 
-        # Copier et redimensionner chaque pixel
-        pixels = resized_image.load()
-        final_pixels = final_image.load()
+        if edge_detection:
+            # Détection des contours avec Sobel
+            from scipy import ndimage
 
-        for y in range(grid_size):
-            for x in range(grid_size):
-                # Copier le pixel en le redimensionnant
-                pixel_color = pixels[x, y]
-                for py in range(pixel_height):
-                    for px in range(pixel_width):
-                        final_pixels[x * pixel_width + px, y * pixel_height + py] = (
-                            pixel_color
-                        )
+            # Convertir en niveaux de gris pour la détection des contours
+            gray = np.dot(img_array[..., :3], [0.2989, 0.5870, 0.1140])
 
-                # Ajouter la grille horizontale
-                if y < grid_size - 1:
-                    for px in range(pixel_width):
-                        for g in range(grid_width):
-                            final_pixels[
-                                x * pixel_width + px,
-                                (y + 1) * pixel_height - grid_width + g,
-                            ] = (240, 240, 240)
+            # Appliquer les filtres Sobel
+            sobel_h = ndimage.sobel(gray, axis=0)
+            sobel_v = ndimage.sobel(gray, axis=1)
 
-                # Ajouter la grille verticale
-                if x < grid_size - 1:
-                    for py in range(pixel_height):
-                        for g in range(grid_width):
-                            final_pixels[
-                                (x + 1) * pixel_width - grid_width + g,
-                                y * pixel_height + py,
-                            ] = (240, 240, 240)
+            # Combiner les gradients
+            edge_magnitude = np.sqrt(sobel_h**2 + sobel_v**2)
+
+            # Normaliser et seuiller
+            edge_magnitude = (edge_magnitude / edge_magnitude.max() * 255).astype(
+                np.uint8
+            )
+            edge_threshold = 50
+            edges = edge_magnitude > edge_threshold
+
+            # Superposer les contours sur l'image
+            img_array[edges] = [0, 0, 0]  # Mettre les contours en noir
+
+        # Reconvertir en image PIL
+        processed_image = Image.fromarray(img_array)
 
         # Réduire les couleurs
         if color_reduction < 256:
-            # Convertir l'image en palette
-            final_image = final_image.quantize(colors=color_reduction, method=2)
+            processed_image = processed_image.quantize(
+                colors=color_reduction, method=2
+            ).convert("RGB")
 
-        # Appliquer le tramage si demandé
-        if dithering == "floyd-steinberg":
-            final_image = final_image.convert("RGB")
-            pixels = final_image.load()
-            width, height = final_image.size
-            for y in range(height):
-                for x in range(width):
-                    # Ne modifier que les pixels d'origine, pas la grille
-                    if (
-                        x % pixel_width != pixel_width - 1
-                        and y % pixel_height != pixel_height - 1
-                    ):
-                        old_pixel = pixels[x, y]
-                        # Convertir en noir ou blanc
-                        new_pixel = (
-                            (0, 0, 0) if sum(old_pixel) < 384 else (255, 255, 255)
+        # Créer l'image finale avec la grille
+        width, height = original_image.size
+        final_image = Image.new("RGB", (width, height), (255, 255, 255))
+
+        # Calculer la taille de chaque cellule
+        cell_width = width // grid_width
+        cell_height = height // grid_height
+        grid_width_px = max(
+            1, min(cell_width, cell_height) // 10
+        )  # Grille proportionnelle
+
+        # Dessiner les perles et la grille
+        processed_pixels = processed_image.load()
+        final_pixels = final_image.load()
+
+        for y in range(grid_height):
+            for x in range(grid_width):
+                # Couleur de la perle
+                bead_color = processed_pixels[x, y]
+
+                # Dessiner la perle
+                for py in range(cell_height):
+                    for px in range(cell_width):
+                        final_pixels[x * cell_width + px, y * cell_height + py] = (
+                            bead_color
                         )
-                        pixels[x, y] = new_pixel
 
-                        # Calculer l'erreur
-                        error = tuple(
-                            old - new for old, new in zip(old_pixel, new_pixel)
-                        )
+                # Dessiner la grille horizontale
+                if y < grid_height - 1:
+                    for px in range(cell_width):
+                        for g in range(grid_width_px):
+                            final_pixels[
+                                x * cell_width + px,
+                                (y + 1) * cell_height - grid_width_px + g,
+                            ] = (240, 240, 240)
 
-                        # Distribuer l'erreur aux pixels voisins
-                        if x + 1 < width:
-                            pixels[x + 1, y] = tuple(
-                                p + int(e * 7 / 16)
-                                for p, e in zip(pixels[x + 1, y], error)
-                            )
-                        if y + 1 < height:
-                            if x > 0:
-                                pixels[x - 1, y + 1] = tuple(
-                                    p + int(e * 3 / 16)
-                                    for p, e in zip(pixels[x - 1, y + 1], error)
-                                )
-                            pixels[x, y + 1] = tuple(
-                                p + int(e * 5 / 16)
-                                for p, e in zip(pixels[x, y + 1], error)
-                            )
-                            if x + 1 < width:
-                                pixels[x + 1, y + 1] = tuple(
-                                    p + int(e * 1 / 16)
-                                    for p, e in zip(pixels[x + 1, y + 1], error)
-                                )
-
-        elif dithering == "ordered":
-            # Implémenter le tramage ordonné
-            dither_matrix = [
-                [0, 8, 2, 10],
-                [12, 4, 14, 6],
-                [3, 11, 1, 9],
-                [15, 7, 13, 5],
-            ]
-            final_image = final_image.convert("RGB")
-            pixels = final_image.load()
-            width, height = final_image.size
-            for y in range(height):
-                for x in range(width):
-                    # Ne modifier que les pixels d'origine, pas la grille
-                    if (
-                        x % pixel_width != pixel_width - 1
-                        and y % pixel_height != pixel_height - 1
-                    ):
-                        old_pixel = pixels[x, y]
-                        threshold = dither_matrix[y % 4][x % 4] * 16
-                        new_pixel = (
-                            (0, 0, 0) if sum(old_pixel) < threshold else (255, 255, 255)
-                        )
-                        pixels[x, y] = new_pixel
+                # Dessiner la grille verticale
+                if x < grid_width - 1:
+                    for py in range(cell_height):
+                        for g in range(grid_width_px):
+                            final_pixels[
+                                (x + 1) * cell_width - grid_width_px + g,
+                                y * cell_height + py,
+                            ] = (240, 240, 240)
 
         # Sauvegarder le résultat temporairement
         temp_filename = f"temp_pattern_{pk}_{int(time.time())}.png"
@@ -562,7 +551,10 @@ def transform_image(request, pk):
         os.makedirs(os.path.dirname(temp_path), exist_ok=True)
         final_image.save(temp_path)
 
-        # Retourner l'URL de l'image transformée
+        # Sauvegarder les informations du support utilisé
+        model.board = board
+        model.save()
+
         return JsonResponse(
             {
                 "success": True,

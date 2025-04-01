@@ -4,7 +4,7 @@
   {% csrf_token %}
   <div class="row">
     <div class="col-md-8">
-      <h2>{{ model.title }}</h2>
+      <h2>{{ model.name }}</h2>
       <p class="text-muted">
         Créé par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}
         {% if model.updated_at != model.created_at %}
@@ -44,9 +44,11 @@
         </div>
         <div class="card-body">
           <ul class="list-unstyled">
-            <li>
-              <strong>Taille de la grille:</strong> {{ model.grid_size }}x{{ model.grid_size }}
-            </li>
+            {% if model.board %}
+              <li>
+                <strong>Support utilisé:</strong> {{ model.board.name }} ({{ model.board.width_pegs }}x{{ model.board.height_pegs }})
+              </li>
+            {% endif %}
             <li>
               <strong>Visibilité:</strong> {% if model.is_public %}
                 Public
@@ -92,32 +94,7 @@
           <!-- Step 1: Configuration -->
           <div id="step1" class="wizard-step">
             <h6>Étape 1 : Configuration de base</h6>
-            <form id="transformForm">
-              <div class="mb-3">
-                <label for="gridSize" class="form-label">Nombre de pixels</label>
-                <input type="number" class="form-control" id="gridSize" name="grid_size" value="{{ model.grid_size }}" min="8" max="128" step="8" />
-                <div class="form-text">Choisissez le nombre de pixels pour votre modèle. Plus il y a de pixels, plus le modèle sera détaillé.</div>
-              </div>
-              <div class="mb-3">
-                <label for="colorReduction" class="form-label">Nombre de couleurs</label>
-                <select class="form-select" id="colorReduction" name="color_reduction">
-                  <option value="8">8 couleurs (simple)</option>
-                  <option value="16">16 couleurs (moyen)</option>
-                  <option value="32">32 couleurs (détaillé)</option>
-                  <option value="64">64 couleurs (très détaillé)</option>
-                </select>
-                <div class="form-text">Le nombre de couleurs détermine la complexité de votre modèle. Plus il y a de couleurs, plus le modèle sera fidèle à l'original.</div>
-              </div>
-              <div class="mb-3">
-                <label for="dithering" class="form-label">Effet de tramage</label>
-                <select class="form-select" id="dithering" name="dithering">
-                  <option value="none">Aucun (couleurs plates)</option>
-                  <option value="floyd-steinberg">Floyd-Steinberg (meilleure qualité)</option>
-                  <option value="ordered">Tramage ordonné (motif régulier)</option>
-                </select>
-                <div class="form-text">Le tramage permet de créer des effets de dégradé avec un nombre limité de couleurs.</div>
-              </div>
-            </form>
+            <form id="transformForm">{{ transform_form.as_div }}</form>
           </div>
 
           <!-- Step 2: Preview -->
@@ -202,40 +179,6 @@
         document.getElementById('saveButton').style.display = currentStep === totalSteps ? 'block' : 'none'
       }
     
-      window.nextStep = async function () {
-        if (currentStep === 1) {
-          // Transform image
-          const formData = new FormData(document.getElementById('transformForm'))
-          formData.append('csrfmiddlewaretoken', getCookie('csrftoken'))
-    
-          try {
-            const response = await fetch('{% url "beadmodels:transform_image" model.pk %}', {
-              method: 'POST',
-              body: formData,
-              headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-              }
-            })
-    
-            const data = await response.json()
-            if (data.success) {
-              transformedImageUrl = data.image_url
-              document.getElementById('previewImage').src = transformedImageUrl
-              document.getElementById('finalPreview').src = transformedImageUrl
-              currentStep++
-              updateWizardUI()
-            } else {
-              alert('Erreur lors de la transformation : ' + data.message)
-            }
-          } catch (error) {
-            alert('Erreur lors de la transformation : ' + error.message)
-          }
-        } else {
-          currentStep++
-          updateWizardUI()
-        }
-      }
-    
       window.previousStep = function () {
         if (currentStep > 1) {
           currentStep--
@@ -243,31 +186,68 @@
         }
       }
     
-      window.saveTransformation = async function () {
-        if (!transformedImageUrl) return
+      window.nextStep = function () {
+        if (currentStep === 1) {
+          // Get form data
+          const form = document.getElementById('transformForm')
+          const formData = new FormData(form)
+          formData.append('csrfmiddlewaretoken', getCookie('csrftoken'))
     
-        try {
-          const response = await fetch('{% url "beadmodels:save_transformation" model.pk %}', {
+          // Send transformation request
+          fetch('{% url "beadmodels:transform_image" model.pk %}', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-              model_id: '{{ model.pk }}',
-              image_url: transformedImageUrl
-            })
+            body: formData
           })
-    
-          const data = await response.json()
-          if (data.success) {
-            window.location.reload()
-          } else {
-            alert('Erreur lors de la sauvegarde : ' + data.message)
-          }
-        } catch (error) {
-          alert('Erreur lors de la sauvegarde : ' + error.message)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                transformedImageUrl = data.image_url
+                document.getElementById('previewImage').src = transformedImageUrl
+                document.getElementById('finalPreview').src = transformedImageUrl
+                currentStep++
+                updateWizardUI()
+              } else {
+                alert(data.message)
+              }
+            })
+            .catch((error) => {
+              console.error('Error:', error)
+              alert('Une erreur est survenue lors de la transformation.')
+            })
+        } else if (currentStep < totalSteps) {
+          currentStep++
+          updateWizardUI()
         }
+      }
+    
+      window.saveTransformation = function () {
+        if (!transformedImageUrl) {
+          alert('Aucune transformation à sauvegarder.')
+          return
+        }
+    
+        fetch('{% url "beadmodels:save_transformation" model.pk %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            image_url: transformedImageUrl
+          })
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              location.reload()
+            } else {
+              alert(data.message)
+            }
+          })
+          .catch((error) => {
+            console.error('Error:', error)
+            alert('Une erreur est survenue lors de la sauvegarde.')
+          })
       }
     })
   </script>

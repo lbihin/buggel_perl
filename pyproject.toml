@@ -12,6 +12,7 @@ pillow = "^10.2.0"
 django-crispy-forms = "^2.1"
 crispy-bootstrap5 = "^2024.2"
 numpy = "^1.26.4"
+scipy = "^1.12.0"
 
 [build-system]
 requires = ["poetry-core"]
