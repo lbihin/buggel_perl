@@ -433,21 +433,52 @@ def transform_image(request, pk):
         if original_image.mode != "RGB":
             original_image = original_image.convert("RGB")
 
-        # Redimensionner l'image selon la taille de la grille
+        # 1. Redimensionner l'image avec une meilleure qualité pour préserver les détails
         new_size = (grid_size, grid_size)
         resized_image = original_image.resize(new_size, Image.Resampling.LANCZOS)
 
-        # Créer une nouvelle image avec espacement
-        spacing = 2  # Espacement en pixels entre chaque pixel
-        final_size = (grid_size * (1 + spacing), grid_size * (1 + spacing))
-        final_image = Image.new("RGB", final_size, (255, 255, 255))  # Fond blanc
+        # 2. Créer une nouvelle image à la taille de l'originale
+        original_width, original_height = original_image.size
+        final_image = Image.new(
+            "RGB", (original_width, original_height), (255, 255, 255)
+        )
 
-        # Copier les pixels avec espacement
+        # Calculer la taille de chaque pixel et de la grille
+        pixel_width = original_width // grid_size
+        pixel_height = original_height // grid_size
+        grid_width = 1  # Largeur de la grille en pixels
+
+        # Copier et redimensionner chaque pixel
         pixels = resized_image.load()
         final_pixels = final_image.load()
+
         for y in range(grid_size):
             for x in range(grid_size):
-                final_pixels[x * (1 + spacing), y * (1 + spacing)] = pixels[x, y]
+                # Copier le pixel en le redimensionnant
+                pixel_color = pixels[x, y]
+                for py in range(pixel_height):
+                    for px in range(pixel_width):
+                        final_pixels[x * pixel_width + px, y * pixel_height + py] = (
+                            pixel_color
+                        )
+
+                # Ajouter la grille horizontale
+                if y < grid_size - 1:
+                    for px in range(pixel_width):
+                        for g in range(grid_width):
+                            final_pixels[
+                                x * pixel_width + px,
+                                (y + 1) * pixel_height - grid_width + g,
+                            ] = (240, 240, 240)
+
+                # Ajouter la grille verticale
+                if x < grid_size - 1:
+                    for py in range(pixel_height):
+                        for g in range(grid_width):
+                            final_pixels[
+                                (x + 1) * pixel_width - grid_width + g,
+                                y * pixel_height + py,
+                            ] = (240, 240, 240)
 
         # Réduire les couleurs
         if color_reduction < 256:
@@ -457,14 +488,15 @@ def transform_image(request, pk):
         # Appliquer le tramage si demandé
         if dithering == "floyd-steinberg":
             final_image = final_image.convert("RGB")
-            # Implémenter l'algorithme Floyd-Steinberg
             pixels = final_image.load()
             width, height = final_image.size
             for y in range(height):
                 for x in range(width):
+                    # Ne modifier que les pixels d'origine, pas la grille
                     if (
-                        x % (1 + spacing) == 0 and y % (1 + spacing) == 0
-                    ):  # Ne modifier que les pixels d'origine
+                        x % pixel_width != pixel_width - 1
+                        and y % pixel_height != pixel_height - 1
+                    ):
                         old_pixel = pixels[x, y]
                         # Convertir en noir ou blanc
                         new_pixel = (
@@ -478,31 +510,25 @@ def transform_image(request, pk):
                         )
 
                         # Distribuer l'erreur aux pixels voisins
-                        if x + (1 + spacing) < width:
-                            pixels[x + (1 + spacing), y] = tuple(
+                        if x + 1 < width:
+                            pixels[x + 1, y] = tuple(
                                 p + int(e * 7 / 16)
-                                for p, e in zip(pixels[x + (1 + spacing), y], error)
+                                for p, e in zip(pixels[x + 1, y], error)
                             )
-                        if y + (1 + spacing) < height:
-                            if x - (1 + spacing) >= 0:
-                                pixels[x - (1 + spacing), y + (1 + spacing)] = tuple(
+                        if y + 1 < height:
+                            if x > 0:
+                                pixels[x - 1, y + 1] = tuple(
                                     p + int(e * 3 / 16)
-                                    for p, e in zip(
-                                        pixels[x - (1 + spacing), y + (1 + spacing)],
-                                        error,
-                                    )
+                                    for p, e in zip(pixels[x - 1, y + 1], error)
                                 )
-                            pixels[x, y + (1 + spacing)] = tuple(
+                            pixels[x, y + 1] = tuple(
                                 p + int(e * 5 / 16)
-                                for p, e in zip(pixels[x, y + (1 + spacing)], error)
+                                for p, e in zip(pixels[x, y + 1], error)
                             )
-                            if x + (1 + spacing) < width:
-                                pixels[x + (1 + spacing), y + (1 + spacing)] = tuple(
+                            if x + 1 < width:
+                                pixels[x + 1, y + 1] = tuple(
                                     p + int(e * 1 / 16)
-                                    for p, e in zip(
-                                        pixels[x + (1 + spacing), y + (1 + spacing)],
-                                        error,
-                                    )
+                                    for p, e in zip(pixels[x + 1, y + 1], error)
                                 )
 
         elif dithering == "ordered":
@@ -518,21 +544,17 @@ def transform_image(request, pk):
             width, height = final_image.size
             for y in range(height):
                 for x in range(width):
+                    # Ne modifier que les pixels d'origine, pas la grille
                     if (
-                        x % (1 + spacing) == 0 and y % (1 + spacing) == 0
-                    ):  # Ne modifier que les pixels d'origine
+                        x % pixel_width != pixel_width - 1
+                        and y % pixel_height != pixel_height - 1
+                    ):
                         old_pixel = pixels[x, y]
                         threshold = dither_matrix[y % 4][x % 4] * 16
                         new_pixel = (
                             (0, 0, 0) if sum(old_pixel) < threshold else (255, 255, 255)
                         )
                         pixels[x, y] = new_pixel
-
-        # Redimensionner l'image finale à la taille de l'image originale
-        original_width, original_height = original_image.size
-        final_image = final_image.resize(
-            (original_width, original_height), Image.Resampling.NEAREST
-        )
 
         # Sauvegarder le résultat temporairement
         temp_filename = f"temp_pattern_{pk}_{int(time.time())}.png"
