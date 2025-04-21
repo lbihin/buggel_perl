@@ -26,6 +26,7 @@
           <div class="nav-section">
             <small class="text-muted px-3 mb-2 d-block">Formes</small>
             <a class="nav-link {% if active_tab == 'shapes' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes"><i class="bi bi-grid"></i> Mes formes</a>
+            <a class="nav-link {% if active_tab == 'shapes_new' %}active{% endif %}" href="{% url 'beadmodels:user_settings' %}?tab=shapes_new"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
           </div>
 
           <div class="settings-divider"></div>
@@ -87,7 +88,7 @@
         {% elif active_tab == 'shapes' %}
           <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Mes formes</h2>
-            <a href="{% url 'beadmodels:create_shape' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
+            <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle forme</a>
           </div>
 
           <div class="row g-4" id="savedShapesList">
@@ -98,8 +99,11 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                       <h5 class="card-title mb-0">{{ shape.name }}</h5>
                       <div class="btn-group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Modifier la forme" onclick="window.location.href='{% url 'beadmodels:edit_shape' 0 %}'.replace('0', {{ shape.id }})"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Supprimer la forme" onclick="deleteShape({{ shape.id }})"><i class="bi bi-trash"></i></button>
+                        <a href="{% url 'beadmodels:edit_shape' shape.id %}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Modifier la forme"><i class="bi bi-pencil"></i></a>
+                        <form method="post" action="{% url 'beadmodels:delete_shape' shape.id %}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette forme ?');">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Supprimer la forme"><i class="bi bi-trash"></i></button>
+                        </form>
                       </div>
                     </div>
                     <div class="shape-preview mb-3">
@@ -128,8 +132,36 @@
           </div>
         {% elif active_tab == 'shapes_new' %}
           <h2>Nouvelle forme</h2>
-          <div id="shapeList" class="shape-list">
-            <!-- Le template de forme sera ajouté ici -->
+          <div class="card">
+            <div class="card-body">
+              <form method="post" action="?tab=shapes_new" id="shapeForm">
+                {% csrf_token %}
+
+                <div class="mb-3">{{ form.name|as_crispy_field }}</div>
+
+                <div class="mb-3">{{ form.shape_type|as_crispy_field }}</div>
+
+                <div id="shape-rectangle" class="shape-specific-fields{% if form.shape_type.value != 'rectangle' %} d-none{% endif %}">
+                  <div class="row">
+                    <div class="col-md-6">{{ form.width|as_crispy_field }}</div>
+                    <div class="col-md-6">{{ form.height|as_crispy_field }}</div>
+                  </div>
+                </div>
+
+                <div id="shape-square" class="shape-specific-fields{% if form.shape_type.value != 'square' %} d-none{% endif %}">{{ form.size|as_crispy_field }}</div>
+
+                <div id="shape-circle" class="shape-specific-fields{% if form.shape_type.value != 'circle' %} d-none{% endif %}">{{ form.diameter|as_crispy_field }}</div>
+
+                <div class="shape-preview mt-4 mb-3">
+                  <h5>Aperçu de la forme</h5>
+                  <div id="shape-preview-container" class="border rounded p-3 text-center">
+                    <canvas id="previewCanvas" width="200" height="200"></canvas>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Enregistrer la forme</button>
+              </form>
+            </div>
           </div>
         {% elif active_tab == 'preferences' %}
           <h2>Préférences</h2>
@@ -294,4 +326,101 @@
 
 {% block extra_js %}
   <script src="{% static 'js/user_settings.js' %}"></script>
+
+  {% if active_tab == 'shapes_new' %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Récupérer les éléments pertinents
+        const shapeTypeSelect = document.getElementById('id_shape_type')
+        const rectangleFields = document.getElementById('shape-rectangle')
+        const squareFields = document.getElementById('shape-square')
+        const circleFields = document.getElementById('shape-circle')
+        const previewCanvas = document.getElementById('previewCanvas')
+        const ctx = previewCanvas.getContext('2d')
+      
+        // Fonction pour mettre à jour l'aperçu de la forme
+        function updateShapePreview() {
+          const shapeType = shapeTypeSelect.value
+      
+          // Effacer le canvas
+          ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height)
+      
+          // Dessiner la forme en fonction du type
+          ctx.fillStyle = '#0d6efd'
+          ctx.strokeStyle = '#0d6efd'
+      
+          const canvasWidth = previewCanvas.width
+          const canvasHeight = previewCanvas.height
+          const padding = 20
+      
+          if (shapeType === 'rectangle') {
+            const width = parseInt(document.getElementById('id_width').value) || 10
+            const height = parseInt(document.getElementById('id_height').value) || 10
+      
+            // Calculer les dimensions proportionnelles
+            const maxWidth = canvasWidth - 2 * padding
+            const maxHeight = canvasHeight - 2 * padding
+            const scale = Math.min(maxWidth / width, maxHeight / height)
+      
+            const scaledWidth = width * scale
+            const scaledHeight = height * scale
+      
+            const x = (canvasWidth - scaledWidth) / 2
+            const y = (canvasHeight - scaledHeight) / 2
+      
+            ctx.fillRect(x, y, scaledWidth, scaledHeight)
+          } else if (shapeType === 'square') {
+            const size = parseInt(document.getElementById('id_size').value) || 10
+      
+            const maxSize = Math.min(canvasWidth, canvasHeight) - 2 * padding
+            const scale = maxSize / size
+      
+            const scaledSize = size * scale
+      
+            const x = (canvasWidth - scaledSize) / 2
+            const y = (canvasHeight - scaledSize) / 2
+      
+            ctx.fillRect(x, y, scaledSize, scaledSize)
+          } else if (shapeType === 'circle') {
+            const diameter = parseInt(document.getElementById('id_diameter').value) || 10
+      
+            const maxDiameter = Math.min(canvasWidth, canvasHeight) - 2 * padding
+            const scale = maxDiameter / diameter
+      
+            const scaledRadius = (diameter * scale) / 2
+      
+            const centerX = canvasWidth / 2
+            const centerY = canvasHeight / 2
+      
+            ctx.beginPath()
+            ctx.arc(centerX, centerY, scaledRadius, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        }
+      
+        // Fonction pour afficher/masquer les champs pertinents
+        function toggleShapeFields() {
+          const shapeType = shapeTypeSelect.value
+      
+          rectangleFields.classList.toggle('d-none', shapeType !== 'rectangle')
+          squareFields.classList.toggle('d-none', shapeType !== 'square')
+          circleFields.classList.toggle('d-none', shapeType !== 'circle')
+      
+          updateShapePreview()
+        }
+      
+        // Écouter les changements de type de forme
+        shapeTypeSelect.addEventListener('change', toggleShapeFields)
+      
+        // Ajouter des écouteurs d'événements pour les modifications des dimensions
+        document.getElementById('id_width').addEventListener('input', updateShapePreview)
+        document.getElementById('id_height').addEventListener('input', updateShapePreview)
+        document.getElementById('id_size').addEventListener('input', updateShapePreview)
+        document.getElementById('id_diameter').addEventListener('input', updateShapePreview)
+      
+        // Initialiser l'aperçu
+        toggleShapeFields()
+      })
+    </script>
+  {% endif %}
 {% endblock %}

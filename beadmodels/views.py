@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_http_methods
 from django.views.generic import (
     CreateView,
@@ -30,6 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from .forms import (
     BeadForm,
     BeadModelForm,
+    BeadShapeForm,
     PixelizationWizardForm,
     ShapeForm,
     TransformModelForm,
@@ -76,6 +77,8 @@ def user_settings(request):
             return gerer_mise_a_jour_preferences(request)
         elif active_tab == "beads":
             return gerer_actions_perles(request)
+        elif active_tab == "shapes_new":
+            return gerer_creation_forme(request)
 
     remplir_contexte_pour_requete_get(active_tab, context, request)
     return render(request, "beadmodels/user/user_settings.html", context)
@@ -151,8 +154,41 @@ def remplir_contexte_pour_requete_get(active_tab, context, request):
         context["saved_shapes"] = BeadShape.objects.filter(
             creator=request.user
         ).order_by("-created_at")
+    elif active_tab == "shapes_new":
+        context["form"] = BeadShapeForm()
     elif active_tab == "beads":
         context["beads"] = Bead.objects.filter(creator=request.user)
+
+
+def gerer_creation_forme(request):
+    form = BeadShapeForm(request.POST)
+    if form.is_valid():
+        # Vérifier si une forme avec le même nom existe déjà pour cet utilisateur
+        shape_name = form.cleaned_data.get("name")
+        existing_shape = BeadShape.objects.filter(
+            name=shape_name, creator=request.user
+        ).first()
+
+        if existing_shape:
+            # Si une forme avec ce nom existe déjà, ajouter une erreur au formulaire
+            form.add_error(
+                "name",
+                f"Une forme avec le nom '{shape_name}' existe déjà. Veuillez choisir un autre nom.",
+            )
+            context = {"active_tab": "shapes_new", "form": form}
+            return render(request, "beadmodels/user/user_settings.html", context)
+
+        # Si aucune forme existante, créer une nouvelle forme
+        shape = form.save(commit=False)
+        shape.creator = request.user
+        shape.is_shared = True
+        shape.save()
+        messages.success(request, "Votre forme a été créée avec succès!")
+        return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
+
+    # En cas d'erreur, rester sur la page de création avec le formulaire
+    context = {"active_tab": "shapes_new", "form": form}
+    return render(request, "beadmodels/user/user_settings.html", context)
 
 
 # Vues basées sur des classes pour la gestion des modèles
@@ -474,7 +510,7 @@ def delete_shape(request, shape_id):
             messages.error(
                 request, f"Une erreur est survenue lors de la suppression : {str(e)}"
             )
-    return redirect("beadmodels:user_settings", tab="shapes")
+    return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
 
 
 @login_required
@@ -497,72 +533,80 @@ def edit_shape(request, shape_id):
     shape = get_object_or_404(BeadShape, id=shape_id, creator=request.user)
 
     if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            name = data.get("name")
-            shape_type = data.get("type")
-            parameters = data.get("parameters", {})
-
+        form = BeadShapeForm(request.POST, instance=shape)
+        if form.is_valid():
             # Vérifier si une autre forme similaire existe déjà (exclure la forme actuelle)
-            existing_shapes = BeadShape.objects.filter(creator=request.user).exclude(
-                id=shape.id
-            )
-            for existing_shape in existing_shapes:
-                if existing_shape.shape_type == shape_type:
-                    if shape_type == "rectangle":
-                        if existing_shape.width == parameters.get(
-                            "width"
-                        ) and existing_shape.height == parameters.get("height"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Une forme rectangulaire avec ces dimensions existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "square":
-                        if existing_shape.size == parameters.get("size"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un carré avec cette taille existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "circle":
-                        if existing_shape.diameter == parameters.get("diameter"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un cercle avec ce diamètre existe déjà",
-                                },
-                                status=400,
-                            )
+            shape_name = form.cleaned_data.get("name")
+            shape_type = form.cleaned_data.get("shape_type")
 
-            shape.name = name
-            shape.shape_type = shape_type
+            # Vérifier si le nom a changé et s'il existe déjà
+            if shape.name != shape_name:
+                existing_shape = BeadShape.objects.filter(
+                    name=shape_name, creator=request.user
+                ).first()
+                if existing_shape:
+                    form.add_error(
+                        "name",
+                        f"Une forme avec le nom '{shape_name}' existe déjà. Veuillez choisir un autre nom.",
+                    )
+                    return render(
+                        request,
+                        "beadmodels/shapes/edit_shape.html",
+                        {"form": form, "shape": shape},
+                    )
+
+            # Vérifier les dimensions pour les formes similaires
+            duplicate_params = False
+            existing_shapes = BeadShape.objects.filter(
+                creator=request.user, shape_type=shape_type
+            ).exclude(id=shape.id)
 
             if shape_type == "rectangle":
-                shape.width = parameters.get("width")
-                shape.height = parameters.get("height")
+                width = form.cleaned_data.get("width")
+                height = form.cleaned_data.get("height")
+                for existing_shape in existing_shapes:
+                    if (
+                        existing_shape.width == width
+                        and existing_shape.height == height
+                    ):
+                        duplicate_params = True
+                        message = (
+                            "Une forme rectangulaire avec ces dimensions existe déjà"
+                        )
+                        break
             elif shape_type == "square":
-                shape.size = parameters.get("size")
+                size = form.cleaned_data.get("size")
+                for existing_shape in existing_shapes:
+                    if existing_shape.size == size:
+                        duplicate_params = True
+                        message = "Un carré avec cette taille existe déjà"
+                        break
             elif shape_type == "circle":
-                shape.diameter = parameters.get("diameter")
-            shape.save()
+                diameter = form.cleaned_data.get("diameter")
+                for existing_shape in existing_shapes:
+                    if existing_shape.diameter == diameter:
+                        duplicate_params = True
+                        message = "Un cercle avec ce diamètre existe déjà"
+                        break
 
-            return JsonResponse(
-                {"success": True, "message": "La forme a été modifiée avec succès"}
-            )
+            if duplicate_params:
+                messages.error(request, message)
+                return render(
+                    request,
+                    "beadmodels/shapes/edit_shape.html",
+                    {"form": form, "shape": shape},
+                )
 
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {"success": False, "message": "Données JSON invalides"}, status=400
-            )
-        except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=500)
+            # Tout est bon, enregistrer la forme
+            form.save()
+            messages.success(request, "La forme a été modifiée avec succès.")
+            return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
+    else:
+        form = BeadShapeForm(instance=shape)
 
-    return render(request, "beadmodels/edit_shape.html", {"shape": shape})
+    return render(
+        request, "beadmodels/shapes/edit_shape.html", {"form": form, "shape": shape}
+    )
 
 
 @login_required
