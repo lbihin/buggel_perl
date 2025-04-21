@@ -6,12 +6,22 @@ import numpy as np
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 from PIL import Image
 
 from .forms import (
+    BeadForm,
     BeadModelForm,
     TransformModelForm,
     UserProfileForm,
@@ -123,6 +133,142 @@ def user_settings(request):
     return render(request, "beadmodels/user_settings.html", context)
 
 
+# Vues basées sur des classes pour la gestion des modèles
+class BeadModelListView(ListView):
+    model = BeadModel
+    template_name = "beadmodels/my_models.html"
+    context_object_name = "models"
+
+    def get_queryset(self):
+        return BeadModel.objects.filter(creator=self.request.user).order_by(
+            "-created_at"
+        )
+
+
+class BeadModelDetailView(DetailView):
+    model = BeadModel
+    template_name = "beadmodels/model_detail.html"
+    context_object_name = "model"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["transform_form"] = TransformModelForm()
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        model = self.get_object()
+        if not model.is_public and model.creator != request.user:
+            messages.error(request, "Vous n'avez pas accès à ce modèle.")
+            return redirect("beadmodels:home")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class BeadModelCreateView(LoginRequiredMixin, CreateView):
+    model = BeadModel
+    form_class = BeadModelForm
+    template_name = "beadmodels/create_model.html"
+
+    def form_valid(self, form):
+        form.instance.creator = self.request.user
+        messages.success(self.request, "Votre modèle a été créé avec succès!")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("beadmodels:model_detail", kwargs={"pk": self.object.pk})
+
+
+class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
+    model = BeadModel
+    form_class = BeadModelForm
+    template_name = "beadmodels/edit_model.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        model = self.get_object()
+        if model.creator != request.user:
+            messages.error(request, "Vous n'avez pas le droit de modifier ce modèle.")
+            return redirect("beadmodels:model_detail", pk=model.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Votre modèle a été modifié avec succès!")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("beadmodels:model_detail", kwargs={"pk": self.object.pk})
+
+
+class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
+    model = BeadModel
+    template_name = "beadmodels/delete_model.html"
+    success_url = reverse_lazy("beadmodels:my_models")
+
+    def dispatch(self, request, *args, **kwargs):
+        model = self.get_object()
+        if model.creator != request.user:
+            messages.error(request, "Vous n'avez pas le droit de supprimer ce modèle.")
+            return redirect("beadmodels:model_detail", pk=model.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Votre modèle a été supprimé avec succès!")
+        return super().delete(request, *args, **kwargs)
+
+
+# Vues basées sur des classes pour la gestion des perles
+class BeadListView(LoginRequiredMixin, ListView):
+    model = Bead
+    template_name = "beadmodels/bead_list.html"
+    context_object_name = "beads"
+
+    def get_queryset(self):
+        return Bead.objects.filter(creator=self.request.user).order_by("name")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = BeadForm()
+        return context
+
+
+class BeadCreateView(LoginRequiredMixin, CreateView):
+    model = Bead
+    form_class = BeadForm
+    template_name = "beadmodels/bead_form.html"
+    success_url = reverse_lazy("beadmodels:bead_list")
+
+    def form_valid(self, form):
+        form.instance.creator = self.request.user
+        messages.success(self.request, "Perle ajoutée avec succès!")
+        return super().form_valid(form)
+
+
+class BeadUpdateView(LoginRequiredMixin, UpdateView):
+    model = Bead
+    form_class = BeadForm
+    template_name = "beadmodels/bead_form.html"
+    success_url = reverse_lazy("beadmodels:bead_list")
+
+    def get_queryset(self):
+        return Bead.objects.filter(creator=self.request.user)
+
+    def form_valid(self, form):
+        messages.success(self.request, "Perle mise à jour avec succès!")
+        return super().form_valid(form)
+
+
+class BeadDeleteView(LoginRequiredMixin, DeleteView):
+    model = Bead
+    template_name = "beadmodels/bead_confirm_delete.html"
+    success_url = reverse_lazy("beadmodels:bead_list")
+
+    def get_queryset(self):
+        return Bead.objects.filter(creator=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Perle supprimée avec succès!")
+        return super().delete(request, *args, **kwargs)
+
+
+# Garder les vues fonctionnelles existantes temporairement
 @login_required
 def create_model(request):
     if request.method == "POST":

@@ -8,17 +8,31 @@ app_name = "beadmodels"
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("create/", views.create_model, name="create_model"),
-    path("model/<int:pk>/", views.model_detail, name="model_detail"),
-    path("model/<int:pk>/edit/", views.edit_model, name="edit_model"),
-    path("model/<int:pk>/delete/", views.delete_model, name="delete_model"),
+    # Utilisation des vues basées sur des classes pour les modèles
+    path("create/", views.BeadModelCreateView.as_view(), name="create_model"),
+    path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="model_detail"),
+    path(
+        "model/<int:pk>/edit/", views.BeadModelUpdateView.as_view(), name="edit_model"
+    ),
+    path(
+        "model/<int:pk>/delete/",
+        views.BeadModelDeleteView.as_view(),
+        name="delete_model",
+    ),
+    path("my-models/", views.BeadModelListView.as_view(), name="my_models"),
+    # Gestion des perles avec des vues basées sur des classes
+    path("beads/", views.BeadListView.as_view(), name="bead_list"),
+    path("beads/add/", views.BeadCreateView.as_view(), name="bead_create"),
+    path("beads/<int:pk>/edit/", views.BeadUpdateView.as_view(), name="bead_update"),
+    path("beads/<int:pk>/delete/", views.BeadDeleteView.as_view(), name="bead_delete"),
+    # Routes AJAX et traitement d'image
     path("model/<int:pk>/transform/", views.transform_image, name="transform_image"),
     path(
         "model/<int:pk>/save-transformation/",
         views.save_transformation,
         name="save_transformation",
     ),
-    path("my-models/", views.my_models, name="my_models"),
+    # Routes utilisateur
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
     path("settings/save-shape/", views.save_shape, name="save_shape"),

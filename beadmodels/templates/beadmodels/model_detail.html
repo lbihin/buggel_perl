@@ -94,7 +94,12 @@
           <!-- Step 1: Configuration -->
           <div id="step1" class="wizard-step">
             <h6>Étape 1 : Configuration de base</h6>
-            <form id="transformForm">{{ transform_form.as_div }}</form>
+            <form id="transformForm">
+              {{ transform_form.as_div }}
+              
+              <!-- Intégration du sélecteur de perles -->
+              {% include "beadmodels/includes/bead_selector.html" %}
+            </form>
           </div>
 
           <!-- Step 2: Preview -->
@@ -115,12 +120,28 @@
           <!-- Step 3: Final -->
           <div id="step3" class="wizard-step d-none">
             <h6>Étape 3 : Finalisation</h6>
-            <div class="alert alert-success">
-              <h5>Votre modèle est prêt !</h5>
-              <p>Vous pouvez maintenant sauvegarder le modèle et commencer à créer votre perler bead.</p>
+            
+            <div class="card mb-4">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Votre modèle est prêt !</h5>
+              </div>
+              <div class="card-body">
+                <p>Vous pouvez maintenant sauvegarder le modèle et commencer à créer votre projet en perles à repasser.</p>
+                
+                {% if user_beads %}
+                <div id="beadRequirements" class="mt-4">
+                  <h6>Perles nécessaires :</h6>
+                  <div id="beadRequirementsList">
+                    <!-- Liste des perles nécessaires générée dynamiquement -->
+                    <div class="placeholder-text text-muted">Les quantités de perles seront affichées ici après le traitement.</div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
             </div>
+            
             <div class="text-center">
-              <img id="finalPreview" class="img-fluid mb-3" alt="Modèle final" />
+              <img id="finalPreview" class="img-fluid mb-3 border" alt="Modèle final" />
               <p class="text-muted">Cliquez sur "Sauvegarder" pour enregistrer ce modèle.</p>
             </div>
           </div>
@@ -139,6 +160,7 @@
       let transformedImageUrl = null
       let currentStep = 1
       const totalSteps = 3
+      let beadRequirements = {}
     
       function getCookie(name) {
         let cookieValue = null
@@ -186,12 +208,53 @@
         }
       }
     
+      function updateBeadRequirements() {
+        const beadRequirementsContainer = document.getElementById('beadRequirementsList');
+        if (!beadRequirementsContainer || Object.keys(beadRequirements).length === 0) return;
+        
+        beadRequirementsContainer.innerHTML = '';
+        
+        // Créer une liste de perles nécessaires
+        const beadList = document.createElement('div');
+        beadList.className = 'row row-cols-1 row-cols-md-2 g-3 mt-2';
+        
+        Object.entries(beadRequirements).forEach(([beadId, info]) => {
+          const beadCard = document.createElement('div');
+          beadCard.className = 'col';
+          beadCard.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body d-flex align-items-center">
+                <div class="me-3" style="width: 30px; height: 30px; border-radius: 50%; background-color: ${info.color}"></div>
+                <div>
+                  <h6 class="mb-0">${info.name}</h6>
+                  <p class="card-text mb-0">Quantité requise: <strong>${info.count}</strong></p>
+                </div>
+              </div>
+            </div>
+          `;
+          beadList.appendChild(beadCard);
+        });
+        
+        beadRequirementsContainer.appendChild(beadList);
+      }
+    
       window.nextStep = function () {
         if (currentStep === 1) {
           // Get form data
           const form = document.getElementById('transformForm')
           const formData = new FormData(form)
           formData.append('csrfmiddlewaretoken', getCookie('csrftoken'))
+          
+          // Ajout des perles sélectionnées au formData
+          const useCustomBeads = document.getElementById('useCustomBeads');
+          if (useCustomBeads && useCustomBeads.checked) {
+            formData.append('use_custom_beads', 'true');
+            
+            // Ajouter les IDs des perles sélectionnées
+            const selectedBeadCheckboxes = document.querySelectorAll('.bead-checkbox:checked');
+            const selectedBeadIds = Array.from(selectedBeadCheckboxes).map(cb => cb.value);
+            formData.append('selected_beads', JSON.stringify(selectedBeadIds));
+          }
     
           // Send transformation request
           fetch('{% url "beadmodels:transform_image" model.pk %}', {
@@ -204,6 +267,13 @@
                 transformedImageUrl = data.image_url
                 document.getElementById('previewImage').src = transformedImageUrl
                 document.getElementById('finalPreview').src = transformedImageUrl
+                
+                // Stocker les besoins en perles s'ils sont disponibles
+                if (data.bead_requirements) {
+                  beadRequirements = data.bead_requirements;
+                  updateBeadRequirements();
+                }
+                
                 currentStep++
                 updateWizardUI()
               } else {
@@ -233,7 +303,8 @@
             'X-CSRFToken': getCookie('csrftoken')
           },
           body: JSON.stringify({
-            image_url: transformedImageUrl
+            image_url: transformedImageUrl,
+            bead_requirements: beadRequirements
           })
         })
           .then((response) => response.json())

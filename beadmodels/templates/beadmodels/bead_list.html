@@ -1,0 +1,89 @@
+{% extends 'beadmodels/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>Ma collection de perles</h2>
+      <a href="{% url 'beadmodels:bead_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nouvelle perle</a>
+    </div>
+
+    {% if messages %}
+      <div class="messages mb-4">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if beads %}
+      {% regroup beads by color_category as color_sections %}
+
+      <div class="accordion mb-4">
+        {% for section in color_sections %}
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse-{{ section.grouper|slugify }}"
+                aria-expanded="{% if forloop.first %}
+                  true
+                {% else %}
+                  false
+                {% endif %}"
+                aria-controls="collapse-{{ section.grouper|slugify }}">
+                {{ section.grouper }} ({{ section.list|length }})
+              </button>
+            </h2>
+            <div id="collapse-{{ section.grouper|slugify }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}">
+              <div class="accordion-body">
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                  {% for bead in section.list %}
+                    <div class="col">
+                      <div class="card h-100">
+                        <div class="card-header" style="background-color: {{ bead.get_rgb_color }}; height: 60px;"></div>
+                        <div class="card-body">
+                          <h5 class="card-title">{{ bead.name }}</h5>
+                          <p class="card-text">
+                            RGB: {{ bead.red }}, {{ bead.green }}, {{ bead.blue }}<br />
+                            Hex: {{ bead.get_hex_color }}<br />
+                            {% if bead.quantity %}
+                              Quantité: {{ bead.quantity }}
+                            {% endif %}
+                          </p>
+                          {% if bead.notes %}
+                            <p class="card-text">
+                              <small class="text-muted">{{ bead.notes }}</small>
+                            </p>
+                          {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                          <div class="d-flex justify-content-between">
+                            <a href="{% url 'beadmodels:bead_update' bead.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i> Modifier</a>
+                            <form method="post" action="{% url 'beadmodels:bead_delete' bead.pk %}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette perle?');" style="display:inline;">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        <p>Vous n'avez pas encore ajouté de perles à votre collection.</p>
+        <p>Cliquez sur le bouton "Nouvelle perle" pour commencer.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
