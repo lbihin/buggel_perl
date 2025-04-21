@@ -1,4 +1,4 @@
-{% extends 'beadmodels/base.html' %}
+{% extends 'beadmodels/base/base.html' %}
 {% load crispy_forms_tags %}
 
 {% block content %}
@@ -31,9 +31,13 @@
                 data-bs-toggle="collapse"
                 data-bs-target="#collapse-{{ section.grouper|slugify }}"
                 aria-expanded="{% if forloop.first %}
+                  
                   true
+
                 {% else %}
+                  
                   false
+
                 {% endif %}"
                 aria-controls="collapse-{{ section.grouper|slugify }}">
                 {{ section.grouper }} ({{ section.list|length }})

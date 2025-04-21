@@ -1,4 +1,4 @@
-{% extends 'beadmodels/base.html' %}
+{% extends 'beadmodels/base/base.html' %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -126,10 +126,6 @@
               </div>
             {% endfor %}
           </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> a53cb2c (refactor the style, javascript and html)
         {% elif active_tab == 'shapes_new' %}
           <h2>Nouvelle forme</h2>
           <div id="shapeList" class="shape-list">
@@ -258,10 +254,6 @@
               </div>
             </div>
           </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> a53cb2c (refactor the style, javascript and html)
         {% endif %}
       </div>
     </div>
@@ -296,15 +288,8 @@
       </div>
     </template>
 
-<<<<<<< HEAD
-
     <!-- Suppression des toasts -->
   {% endif %}
-
-=======
-    <!-- Suppression des toasts -->
-  {% endif %}
->>>>>>> a53cb2c (refactor the style, javascript and html)
 {% endblock %}
 
 {% block extra_js %}

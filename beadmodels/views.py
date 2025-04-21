@@ -78,7 +78,7 @@ def user_settings(request):
             return gerer_actions_perles(request)
 
     remplir_contexte_pour_requete_get(active_tab, context, request)
-    return render(request, "beadmodels/user_settings.html", context)
+    return render(request, "beadmodels/user/user_settings.html", context)
 
 
 def gerer_mise_a_jour_profil(request, context):
@@ -158,7 +158,7 @@ def remplir_contexte_pour_requete_get(active_tab, context, request):
 # Vues basées sur des classes pour la gestion des modèles
 class BeadModelListView(ListView):
     model = BeadModel
-    template_name = "beadmodels/my_models.html"
+    template_name = "beadmodels/models/my_models.html"
     context_object_name = "models"
 
     def get_queryset(self):
@@ -169,7 +169,7 @@ class BeadModelListView(ListView):
 
 class BeadModelDetailView(DetailView):
     model = BeadModel
-    template_name = "beadmodels/model_detail.html"
+    template_name = "beadmodels/models/model_detail.html"
     context_object_name = "model"
 
     def get_context_data(self, **kwargs):
@@ -188,7 +188,7 @@ class BeadModelDetailView(DetailView):
 class BeadModelCreateView(LoginRequiredMixin, CreateView):
     model = BeadModel
     form_class = BeadModelForm
-    template_name = "beadmodels/create_model.html"
+    template_name = "beadmodels/models/create_model.html"
 
     def form_valid(self, form):
         form.instance.creator = self.request.user
@@ -202,7 +202,7 @@ class BeadModelCreateView(LoginRequiredMixin, CreateView):
 class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
     model = BeadModel
     form_class = BeadModelForm
-    template_name = "beadmodels/edit_model.html"
+    template_name = "beadmodels/models/edit_model.html"
 
     def dispatch(self, request, *args, **kwargs):
         model = self.get_object()
@@ -258,7 +258,7 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     model = BeadModel
-    template_name = "beadmodels/delete_model.html"
+    template_name = "beadmodels/models/delete_model.html"
     success_url = reverse_lazy("beadmodels:my_models")
 
     def dispatch(self, request, *args, **kwargs):
@@ -276,7 +276,7 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
 # Vues basées sur des classes pour la gestion des perles
 class BeadListView(LoginRequiredMixin, ListView):
     model = Bead
-    template_name = "beadmodels/bead_list.html"
+    template_name = "beadmodels/beads/bead_list.html"
     context_object_name = "beads"
 
     def get_queryset(self):
@@ -291,7 +291,7 @@ class BeadListView(LoginRequiredMixin, ListView):
 class BeadCreateView(LoginRequiredMixin, CreateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/bead_form.html"
+    template_name = "beadmodels/beads/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def form_valid(self, form):
@@ -303,7 +303,7 @@ class BeadCreateView(LoginRequiredMixin, CreateView):
 class BeadUpdateView(LoginRequiredMixin, UpdateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/bead_form.html"
+    template_name = "beadmodels/beads/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def get_queryset(self):
@@ -316,7 +316,7 @@ class BeadUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadDeleteView(LoginRequiredMixin, DeleteView):
     model = Bead
-    template_name = "beadmodels/bead_confirm_delete.html"
+    template_name = "beadmodels/beads/bead_confirm_delete.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def get_queryset(self):
@@ -489,7 +489,7 @@ def create_shape(request):
     else:
         form = ShapeForm()
 
-    return render(request, "beadmodels/create_shape.html", {"form": form})
+    return render(request, "beadmodels/shapes/create_shape.html", {"form": form})
 
 
 @login_required
@@ -914,7 +914,7 @@ def pixelization_wizard(request):
             # Formulaire invalide, rester à l'étape 1
             return render(
                 request,
-                "beadmodels/pixelization_wizard.html",
+                "beadmodels/pixelization/pixelization_wizard.html",
                 {"form": form, "wizard_step": wizard_step, "model": model},
             )
 
@@ -939,7 +939,7 @@ def pixelization_wizard(request):
         form = PixelizationWizardForm(initial=initial_data)
         return render(
             request,
-            "beadmodels/pixelization_wizard.html",
+            "beadmodels/pixelization/pixelization_wizard.html",
             {
                 "form": form,
                 "wizard_step": wizard_step,
@@ -965,7 +965,7 @@ def pixelization_wizard(request):
 
         return render(
             request,
-            "beadmodels/pixelization_wizard.html",
+            "beadmodels/pixelization/pixelization_wizard.html",
             {
                 "form": form,
                 "wizard_step": wizard_step,
