@@ -23,6 +23,7 @@ from PIL import Image
 from .forms import (
     BeadForm,
     BeadModelForm,
+    ShapeForm,
     TransformModelForm,
     UserProfileForm,
     UserRegistrationForm,
@@ -458,74 +459,16 @@ def delete_shape(request, shape_id):
 @login_required
 def create_shape(request):
     if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            name = data.get("name")
-            shape_type = data.get("type")
-            parameters = data.get("parameters", {})
+        form = ShapeForm(request.POST)
+        if form.is_valid():
+            # Process the shape data (e.g., save to the database)
+            shape_data = form.cleaned_data
+            # Redirect to the user settings page with the shapes tab
+            return redirect("beadmodels:user_settings", tab="shapes")
+    else:
+        form = ShapeForm()
 
-            # Vérifier si une forme similaire existe déjà
-            existing_shapes = BeadShape.objects.filter(creator=request.user)
-            for existing_shape in existing_shapes:
-                if existing_shape.shape_type == shape_type:
-                    if shape_type == "rectangle":
-                        if existing_shape.width == parameters.get(
-                            "width"
-                        ) and existing_shape.height == parameters.get("height"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Une forme rectangulaire avec ces dimensions existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "square":
-                        if existing_shape.size == parameters.get("size"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un carré avec cette taille existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "circle":
-                        if existing_shape.diameter == parameters.get("diameter"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un cercle avec ce diamètre existe déjà",
-                                },
-                                status=400,
-                            )
-
-            shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                creator=request.user,
-                is_shared=True,
-            )
-
-            if shape_type == "rectangle":
-                shape.width = parameters.get("width")
-                shape.height = parameters.get("height")
-            elif shape_type == "square":
-                shape.size = parameters.get("size")
-            elif shape_type == "circle":
-                shape.diameter = parameters.get("diameter")
-            shape.save()
-
-            return JsonResponse(
-                {"success": True, "message": "La forme a été créée avec succès"}
-            )
-
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {"success": False, "message": "Données JSON invalides"}, status=400
-            )
-        except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=500)
-
-    return render(request, "beadmodels/create_shape.html")
+    return render(request, "beadmodels/create_shape.html", {"form": form})
 
 
 @login_required

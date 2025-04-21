@@ -182,3 +182,38 @@ class UserPreferencesForm(forms.Form):
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
+
+
+SHAPE_CHOICES = [
+    ("rectangle", "Rectangle"),
+    ("square", "Carré"),
+    ("circle", "Rond"),
+]
+
+
+class ShapeForm(forms.Form):
+    shape_type = forms.ChoiceField(
+        choices=SHAPE_CHOICES,
+        label="Type de forme",
+        widget=forms.Select(attrs={"class": "form-select", "id": "shapeType"}),
+    )
+    width = forms.IntegerField(
+        required=False,
+        label="Largeur (pics)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
+    height = forms.IntegerField(
+        required=False,
+        label="Hauteur (pics)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
+    size = forms.IntegerField(
+        required=False,
+        label="Taille (pics)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
+    diameter = forms.IntegerField(
+        required=False,
+        label="Diamètre (pics)",
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+    )
