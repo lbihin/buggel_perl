@@ -190,6 +190,43 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
+        # Vérifier si une nouvelle image est fournie
+        if "original_image" in form.changed_data:
+            # Récupérer l'instance de modèle avant modification
+            old_instance = self.model.objects.get(pk=self.object.pk)
+
+            # Stocker le chemin de l'ancienne image si elle existe
+            if old_instance.original_image:
+                old_image_path = old_instance.original_image.path
+
+                # Supprimer également le motif en perles associé s'il existe
+                if old_instance.bead_pattern:
+                    try:
+                        os.remove(old_instance.bead_pattern.path)
+                        # Réinitialiser le champ bead_pattern car l'image originale a changé
+                        self.object.bead_pattern = None
+                    except (FileNotFoundError, ValueError):
+                        # Ne rien faire si le fichier n'existe pas ou si le chemin est invalide
+                        pass
+
+                # Sauvegarder d'abord pour que la nouvelle image soit enregistrée
+                response = super().form_valid(form)
+
+                # Supprimer l'ancienne image après avoir sauvegardé la nouvelle
+                try:
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+                except (FileNotFoundError, ValueError):
+                    # Ne rien faire si le fichier n'existe pas ou si le chemin est invalide
+                    pass
+
+                messages.success(
+                    self.request,
+                    "Votre modèle a été modifié avec succès! L'ancienne image a été supprimée.",
+                )
+                return response
+
+        # Si aucune nouvelle image n'est fournie, procéder normalement
         messages.success(self.request, "Votre modèle a été modifié avec succès!")
         return super().form_valid(form)
 
