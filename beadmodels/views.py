@@ -448,31 +448,107 @@ def transform_image(request, pk):
         color_reduction = form.cleaned_data["color_reduction"]
         edge_detection = form.cleaned_data["edge_detection"]
 
-        # Utiliser les dimensions du support
-        grid_width = board.width_pegs
-        grid_height = board.height_pegs
-
         # Ouvrir l'image originale
         original_image = Image.open(model.original_image.path)
-
-        # Convertir en RGB si nécessaire
         if original_image.mode != "RGB":
             original_image = original_image.convert("RGB")
 
-        # Redimensionner l'image pour correspondre aux dimensions du support
-        resized_image = original_image.resize(
-            (grid_width, grid_height), Image.Resampling.LANCZOS
+        # Calculer les dimensions optimales
+        target_width = board.width_pegs
+        target_height = board.height_pegs
+
+        # Ajouter une marge de 2 pixels
+        margin = 2
+        target_width_with_margin = target_width + 2 * margin
+        target_height_with_margin = target_height + 2 * margin
+
+        # Redimensionner l'image si nécessaire
+        current_width, current_height = original_image.size
+        scale = min(
+            target_width_with_margin / current_width,
+            target_height_with_margin / current_height,
         )
+
+        if scale < 1:  # Image trop grande
+            new_width = int(current_width * scale)
+            new_height = int(current_height * scale)
+            resized_image = original_image.resize(
+                (new_width, new_height), Image.Resampling.LANCZOS
+            )
+        elif scale > 1.5:  # Image trop petite
+            new_width = int(current_width * scale)
+            new_height = int(current_height * scale)
+            resized_image = original_image.resize(
+                (new_width, new_height), Image.Resampling.LANCZOS
+            )
+        else:
+            resized_image = original_image
 
         # Convertir en array numpy pour le traitement
         img_array = np.array(resized_image)
 
+        # 1. Créer la grille
+        grid_width = target_width
+        grid_height = target_height
+        cell_width = img_array.shape[1] // grid_width
+        cell_height = img_array.shape[0] // grid_height
+
+        # 2. Préparer les données pour le clustering
+        from sklearn.cluster import KMeans
+        from sklearn.preprocessing import StandardScaler
+
+        # Créer un tableau pour stocker les couleurs moyennes de chaque cellule
+        cell_colors = np.zeros((grid_height * grid_width, 3))
+
+        # Calculer la couleur moyenne de chaque cellule
+        for y in range(grid_height):
+            for x in range(grid_width):
+                y_start = y * cell_height
+                y_end = (y + 1) * cell_height
+                x_start = x * cell_width
+                x_end = (x + 1) * cell_width
+
+                # Extraire la cellule
+                cell = img_array[y_start:y_end, x_start:x_end]
+
+                # Calculer la couleur moyenne de la cellule
+                if cell.size > 0:
+                    cell_colors[y * grid_width + x] = np.mean(cell, axis=(0, 1))
+                else:
+                    cell_colors[y * grid_width + x] = [
+                        255,
+                        255,
+                        255,
+                    ]  # Blanc par défaut
+
+        # Normaliser les couleurs
+        scaler = StandardScaler()
+        cell_colors_normalized = scaler.fit_transform(cell_colors)
+
+        # 3. Appliquer K-means
+        kmeans = KMeans(n_clusters=color_reduction, random_state=42)
+        kmeans.fit(cell_colors_normalized)
+
+        # 4. Créer l'image pixélisée
+        clustered_colors = scaler.inverse_transform(kmeans.cluster_centers_)
+        # S'assurer que les valeurs sont dans la plage [0, 255]
+        clustered_colors = np.maximum(0, np.minimum(255, clustered_colors)).astype(
+            np.uint8
+        )
+
+        # Créer l'image pixélisée
+        pixelated_image = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
+        for y in range(grid_height):
+            for x in range(grid_width):
+                cluster_idx = kmeans.labels_[y * grid_width + x]
+                pixelated_image[y, x] = clustered_colors[cluster_idx]
+
+        # Ajouter les contours si demandé
         if edge_detection:
-            # Détection des contours avec Sobel
             from scipy import ndimage
 
             # Convertir en niveaux de gris pour la détection des contours
-            gray = np.dot(img_array[..., :3], [0.2989, 0.5870, 0.1140])
+            gray = np.dot(pixelated_image, [0.2989, 0.5870, 0.1140])
 
             # Appliquer les filtres Sobel
             sobel_h = ndimage.sobel(gray, axis=0)
@@ -488,61 +564,48 @@ def transform_image(request, pk):
             edge_threshold = 50
             edges = edge_magnitude > edge_threshold
 
-            # Superposer les contours sur l'image
-            img_array[edges] = [0, 0, 0]  # Mettre les contours en noir
-
-        # Reconvertir en image PIL
-        processed_image = Image.fromarray(img_array)
-
-        # Réduire les couleurs
-        if color_reduction < 256:
-            processed_image = processed_image.quantize(
-                colors=color_reduction, method=2
-            ).convert("RGB")
+            # Superposer les contours
+            pixelated_image[edges] = [0, 0, 0]
 
         # Créer l'image finale avec la grille
-        width, height = original_image.size
-        final_image = Image.new("RGB", (width, height), (255, 255, 255))
-
-        # Calculer la taille de chaque cellule
-        cell_width = width // grid_width
-        cell_height = height // grid_height
-        grid_width_px = max(
-            1, min(cell_width, cell_height) // 10
-        )  # Grille proportionnelle
-
-        # Dessiner les perles et la grille
-        processed_pixels = processed_image.load()
+        final_image = Image.new(
+            "RGB", (original_image.size[0], original_image.size[1]), (255, 255, 255)
+        )
         final_pixels = final_image.load()
 
+        # Calculer la taille de chaque cellule pour l'affichage
+        display_cell_width = original_image.size[0] // grid_width
+        display_cell_height = original_image.size[1] // grid_height
+
+        # Dessiner les perles et la grille
         for y in range(grid_height):
             for x in range(grid_width):
                 # Couleur de la perle
-                bead_color = processed_pixels[x, y]
+                bead_color = tuple(pixelated_image[y, x])
 
                 # Dessiner la perle
-                for py in range(cell_height):
-                    for px in range(cell_width):
-                        final_pixels[x * cell_width + px, y * cell_height + py] = (
-                            bead_color
-                        )
+                for py in range(display_cell_height):
+                    for px in range(display_cell_width):
+                        final_pixels[
+                            x * display_cell_width + px, y * display_cell_height + py
+                        ] = bead_color
 
                 # Dessiner la grille horizontale
                 if y < grid_height - 1:
-                    for px in range(cell_width):
-                        for g in range(grid_width_px):
+                    for px in range(display_cell_width):
+                        for g in range(2):  # Grille fine de 2 pixels
                             final_pixels[
-                                x * cell_width + px,
-                                (y + 1) * cell_height - grid_width_px + g,
+                                x * display_cell_width + px,
+                                (y + 1) * display_cell_height - 2 + g,
                             ] = (240, 240, 240)
 
                 # Dessiner la grille verticale
                 if x < grid_width - 1:
-                    for py in range(cell_height):
-                        for g in range(grid_width_px):
+                    for py in range(display_cell_height):
+                        for g in range(2):  # Grille fine de 2 pixels
                             final_pixels[
-                                (x + 1) * cell_width - grid_width_px + g,
-                                y * cell_height + py,
+                                (x + 1) * display_cell_width - 2 + g,
+                                y * display_cell_height + py,
                             ] = (240, 240, 240)
 
         # Sauvegarder le résultat temporairement
