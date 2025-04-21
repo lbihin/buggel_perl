@@ -36,7 +36,7 @@ from .forms import (
     UserProfileForm,
     UserRegistrationForm,
 )
-from .models import Bead, BeadModel, BeadShape, CustomShape
+from .models import Bead, BeadBoard, BeadModel, BeadShape, CustomShape
 
 
 def home(request):
@@ -817,154 +817,299 @@ def save_transformation(request):
 @login_required
 def pixelization_wizard(request):
     """Vue pour le wizard de pixelisation basé sur les fonctionnalités du notebook."""
-    
+
     # Variables pour gérer les étapes du wizard
-    wizard_step = request.session.get('wizard_step', 1)
-    wizard_data = request.session.get('wizard_data', {})
-    
+    wizard_step = request.session.get("wizard_step", 1)
+    wizard_data = request.session.get("wizard_data", {})
+
     # Récupérer le modèle sélectionné si un ID est fourni
-    model_id = request.GET.get('model_id')
+    model_id = request.GET.get("model_id") or wizard_data.get("model_id")
     model = None
-    
+
     if model_id:
         try:
             model = BeadModel.objects.get(pk=model_id)
             # Vérifier que l'utilisateur a accès au modèle
             if model.creator != request.user and not model.is_public:
                 messages.error(request, "Vous n'avez pas accès à ce modèle.")
-                return redirect('beadmodels:home')
-                
+                return redirect("beadmodels:home")
+
             # Stocker l'ID du modèle dans la session
-            wizard_data['model_id'] = model_id
-            request.session['wizard_data'] = wizard_data
+            wizard_data["model_id"] = model_id
+            request.session["wizard_data"] = wizard_data
         except BeadModel.DoesNotExist:
             model = None
-    
-    # Gestion du bouton "Précédent"
-    if request.method == 'POST' and 'previous_step' in request.POST:
-        wizard_step = max(1, wizard_step - 1)
-        request.session['wizard_step'] = wizard_step
-        
-        # Si on revient à l'étape 1, on garde les données
-        if wizard_step == 1:
-            return render(request, 'beadmodels/pixelization_wizard.html', {
-                'form': PixelizationWizardForm(initial=wizard_data),
-                'wizard_step': wizard_step,
-                'model': model,
-                'wizard_data': wizard_data
-            })
-        
-    # Gestion du bouton "Quitter"
-    if request.method == 'POST' and 'cancel_wizard' in request.POST:
-        # Nettoyer les données de session liées au wizard
-        if 'wizard_step' in request.session:
-            del request.session['wizard_step']
-        if 'wizard_data' in request.session:
-            del request.session['wizard_data']
-        
-        # Rediriger vers la page précédente ou la page d'accueil
-        referer = request.META.get('HTTP_REFERER')
-        if referer:
-            return redirect(referer)
-        return redirect('beadmodels:home')
-    
-    # Traitement du formulaire à l'étape 1
-    if request.method == 'POST' and wizard_step == 1:
-        form = PixelizationWizardForm(request.POST, request.FILES)
-        
+
+    # Traitement du formulaire à l'étape 1 (bouton Suivant)
+    if request.method == "POST" and wizard_step == 1 and "next_step" in request.POST:
+        form = PixelizationWizardForm(request.POST)
+
         if form.is_valid():
             # Stocker les données du formulaire dans la session
-            wizard_data.update({
-                'grid_width': form.cleaned_data['grid_width'],
-                'grid_height': form.cleaned_data['grid_height'],
-                'color_reduction': form.cleaned_data['color_reduction'],
-                'use_available_colors': form.cleaned_data['use_available_colors'],
-            })
-            
-            # Si une image est téléchargée, la traiter
-            if 'image' in form.cleaned_data and form.cleaned_data['image']:
-                # Traiter l'image téléchargée (temporaire)
-                image = form.cleaned_data['image']
-                image_data = process_image_for_wizard(image)
-                wizard_data['uploaded_image'] = True
-            # Sinon, utiliser l'image du modèle si disponible
-            elif model and model.original_image:
-                image = model.original_image
-                image_data = process_image_for_wizard(image)
-                wizard_data['uploaded_image'] = False
+            wizard_data.update(
+                {
+                    "grid_width": form.cleaned_data["grid_width"],
+                    "grid_height": form.cleaned_data["grid_height"],
+                    "color_reduction": form.cleaned_data["color_reduction"],
+                    "use_available_colors": form.cleaned_data["use_available_colors"],
+                    "grid_type": request.POST.get(
+                        "grid_type", "square"
+                    ),  # Nouveau champ pour le type de grille
+                }
+            )
+
+            # Utiliser l'image du modèle
+            if model and model.original_image:
+                # Traiter l'image du modèle
+                image_data = process_image_for_wizard(model.original_image)
+                wizard_data["uploaded_image"] = False
+
+                # Traiter l'image pour la pixelisation
+                processed_image = process_image_pixelization(
+                    image_data["image_array"],
+                    wizard_data["grid_width"],
+                    wizard_data["grid_height"],
+                    wizard_data["color_reduction"],
+                    wizard_data["use_available_colors"],
+                    request.user if wizard_data["use_available_colors"] else None,
+                )
+
+                # Mettre à jour les données d'image dans la session
+                image_data.update(
+                    {
+                        "image_base64": processed_image["image_base64"],
+                        "palette": processed_image["palette"],
+                    }
+                )
+
+                wizard_data["image_data"] = image_data
+                request.session["wizard_data"] = wizard_data
+
+                # Passer à l'étape suivante
+                wizard_step = 2
+                request.session["wizard_step"] = wizard_step
+
+                # Rediriger vers l'étape 2
+                return redirect(f"{request.path}?model_id={model_id}&step=2")
             else:
-                messages.error(request, "Aucune image fournie. Veuillez télécharger une image ou sélectionner un modèle existant.")
-                return render(request, 'beadmodels/pixelization_wizard.html', {
-                    'form': form,
-                    'wizard_step': wizard_step,
-                    'model': model
-                })
-            
-            # Stocker les données d'image traitée dans la session
-            wizard_data['image_data'] = image_data
-            request.session['wizard_data'] = wizard_data
-            
-            # Passer à l'étape suivante
-            wizard_step = 2
-            request.session['wizard_step'] = wizard_step
-            
-            # Rediriger avec les données pour l'étape 2
-            return render(request, 'beadmodels/pixelization_result.html', {
-                'image_base64': image_data['image_base64'],
-                'grid_width': wizard_data['grid_width'],
-                'grid_height': wizard_data['grid_height'],
-                'palette': image_data['palette'],
-                'total_beads': wizard_data['grid_width'] * wizard_data['grid_height'],
-                'wizard_step': wizard_step,
-                'wizard_data': wizard_data,
-                'model': model
-            })
+                messages.error(
+                    request,
+                    "Aucune image disponible. Veuillez sélectionner un modèle avec une image.",
+                )
+                return redirect("beadmodels:home")
         else:
             # Formulaire invalide, rester à l'étape 1
-            return render(request, 'beadmodels/pixelization_wizard.html', {
-                'form': form,
-                'wizard_step': wizard_step,
-                'model': model
-            })
-    
+            return render(
+                request,
+                "beadmodels/pixelization_wizard.html",
+                {"form": form, "wizard_step": wizard_step, "model": model},
+            )
+
+    # Si on accède directement à l'étape 2 via l'URL
+    if request.GET.get("step") == "2":
+        wizard_step = 2
+        request.session["wizard_step"] = wizard_step
+
+    # Gestion du bouton "Précédent" depuis l'étape 2
+    if request.method == "POST" and "previous_step" in request.POST and wizard_step > 1:
+        wizard_step = wizard_step - 1
+        request.session["wizard_step"] = wizard_step
+
+        # Si on revient à l'étape 1, on garde les données du formulaire
+        initial_data = {
+            "grid_width": wizard_data.get("grid_width", 29),
+            "grid_height": wizard_data.get("grid_height", 29),
+            "color_reduction": wizard_data.get("color_reduction", 16),
+            "use_available_colors": wizard_data.get("use_available_colors", False),
+        }
+
+        form = PixelizationWizardForm(initial=initial_data)
+        return render(
+            request,
+            "beadmodels/pixelization_wizard.html",
+            {
+                "form": form,
+                "wizard_step": wizard_step,
+                "model": model,
+                "grid_type": wizard_data.get("grid_type", "square"),
+            },
+        )
+
     # Affichage initial du formulaire à l'étape 1
     if wizard_step == 1:
         # Utiliser les données déjà saisies si elles existent
-        initial_data = {}
-        if wizard_data:
-            initial_data = {
-                'grid_width': wizard_data.get('grid_width', 29),
-                'grid_height': wizard_data.get('grid_height', 29),
-                'color_reduction': wizard_data.get('color_reduction', 16),
-                'use_available_colors': wizard_data.get('use_available_colors', False),
-            }
-        
+        initial_data = {
+            "grid_width": wizard_data.get("grid_width", 29),
+            "grid_height": wizard_data.get("grid_height", 29),
+            "color_reduction": wizard_data.get("color_reduction", 16),
+            "use_available_colors": wizard_data.get("use_available_colors", False),
+        }
+
         form = PixelizationWizardForm(initial=initial_data)
-        return render(request, 'beadmodels/pixelization_wizard.html', {
-            'form': form,
-            'wizard_step': wizard_step,
-            'model': model
-        })
-    
+
+        # Récupérer tous les supports disponibles pour l'affichage des tailles de grille
+        available_boards = BeadBoard.objects.all()
+
+        return render(
+            request,
+            "beadmodels/pixelization_wizard.html",
+            {
+                "form": form,
+                "wizard_step": wizard_step,
+                "model": model,
+                "grid_type": wizard_data.get("grid_type", "square"),
+                "available_boards": available_boards,
+            },
+        )
+
     # Si on accède directement à l'étape 2 mais qu'on n'a pas les données nécessaires
-    if wizard_step == 2 and (not wizard_data or 'image_data' not in wizard_data):
-        messages.error(request, "Une erreur est survenue. Veuillez recommencer le processus.")
-        request.session['wizard_step'] = 1
-        return redirect('beadmodels:pixelization_wizard')
-    
+    if wizard_step == 2 and (not wizard_data or "image_data" not in wizard_data):
+        messages.error(
+            request, "Une erreur est survenue. Veuillez recommencer le processus."
+        )
+        request.session["wizard_step"] = 1
+        return redirect("beadmodels:pixelization_wizard")
+
     # Affichage de l'étape 2 avec les données de la session
     if wizard_step == 2:
-        image_data = wizard_data.get('image_data', {})
-        return render(request, 'beadmodels/pixelization_result.html', {
-            'image_base64': image_data.get('image_base64', ''),
-            'grid_width': wizard_data.get('grid_width', 29),
-            'grid_height': wizard_data.get('grid_height', 29),
-            'palette': image_data.get('palette', []),
-            'total_beads': wizard_data.get('grid_width', 29) * wizard_data.get('grid_height', 29),
-            'wizard_step': wizard_step,
-            'wizard_data': wizard_data,
-            'model': model
-        })
+        image_data = wizard_data.get("image_data", {})
+        return render(
+            request,
+            "beadmodels/pixelization_result.html",
+            {
+                "image_base64": image_data.get("image_base64", ""),
+                "grid_width": wizard_data.get("grid_width", 29),
+                "grid_height": wizard_data.get("grid_height", 29),
+                "palette": image_data.get("palette", []),
+                "total_beads": wizard_data.get("grid_width", 29)
+                * wizard_data.get("grid_height", 29),
+                "wizard_step": wizard_step,
+                "wizard_data": wizard_data,
+                "model": model,
+            },
+        )
+
+
+def process_image_pixelization(
+    image_array,
+    grid_width,
+    grid_height,
+    color_reduction,
+    use_available_colors=False,
+    user=None,
+):
+    """
+    Traite l'image en appliquant la pixelisation avec les paramètres spécifiés.
+    """
+    # Convertir la liste en tableau numpy s'il ne s'agit pas déjà d'un tableau
+    if not isinstance(image_array, np.ndarray):
+        image_array = np.array(image_array)
+
+    # Obtenir les dimensions de l'image
+    height, width = image_array.shape[:2]
+
+    # Calculer la taille de chaque cellule
+    cell_height = height // grid_height
+    cell_width = width // grid_width
+
+    # Créer un tableau pour les couleurs moyennes
+    cell_colors = np.zeros((grid_height * grid_width, 3))
+
+    # Calculer la couleur moyenne de chaque cellule
+    for y in range(grid_height):
+        for x in range(grid_width):
+            y_start = y * cell_height
+            y_end = min((y + 1) * cell_height, height)
+            x_start = x * cell_width
+            x_end = min((x + 1) * cell_width, width)
+
+            # Extraire la cellule
+            cell = image_array[y_start:y_end, x_start:x_end]
+
+            # Calculer la couleur moyenne
+            if cell.size > 0:
+                cell_colors[y * grid_width + x] = np.mean(cell, axis=(0, 1))
+            else:
+                cell_colors[y * grid_width + x] = [255, 255, 255]  # Blanc par défaut
+
+    # Réduction des couleurs
+    if use_available_colors and user:
+        # Utiliser les couleurs des perles disponibles pour l'utilisateur
+        available_beads = Bead.objects.filter(creator=user)
+        if available_beads:
+            bead_colors = np.array([[b.red, b.green, b.blue] for b in available_beads])
+            color_centers = bead_colors
+        else:
+            color_centers = apply_kmeans(cell_colors, color_reduction)
+    else:
+        color_centers = apply_kmeans(cell_colors, color_reduction)
+
+    # Créer l'image pixelisée
+    pixelated_image = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
+
+    # Calculer les occurrences de chaque couleur
+    color_counts = {}
+
+    # Attribuer les couleurs des clusters à chaque cellule
+    for i, color in enumerate(cell_colors):
+        y = i // grid_width
+        x = i % grid_width
+
+        # Trouver la couleur la plus proche
+        distances = np.sqrt(np.sum((color_centers - color) ** 2, axis=1))
+        closest_color_idx = np.argmin(distances)
+        pixelated_color = color_centers[closest_color_idx]
+        pixelated_image[y, x] = pixelated_color
+
+        # Incrémenter le compteur pour cette couleur
+        color_tuple = tuple(map(int, pixelated_color))
+        if color_tuple in color_counts:
+            color_counts[color_tuple] += 1
+        else:
+            color_counts[color_tuple] = 1
+
+    # Créer l'image finale avec grille
+    cell_size = 20  # Taille fixe pour l'affichage
+    final_width = grid_width * cell_size
+    final_height = grid_height * cell_size
+
+    final_image = Image.new("RGB", (final_width, final_height), (255, 255, 255))
+    draw_pixels = final_image.load()
+
+    # Dessiner les pixels et la grille
+    for y in range(grid_height):
+        for x in range(grid_width):
+            color = tuple(map(int, pixelated_image[y, x]))
+
+            # Dessiner le pixel
+            for py in range(cell_size):
+                for px in range(cell_size):
+                    if px == 0 or px == cell_size - 1 or py == 0 or py == cell_size - 1:
+                        # Bordure de la grille
+                        draw_pixels[x * cell_size + px, y * cell_size + py] = (
+                            200,
+                            200,
+                            200,
+                        )
+                    else:
+                        # Pixel de couleur
+                        draw_pixels[x * cell_size + px, y * cell_size + py] = color
+
+    # Convertir en base64
+    buffered = BytesIO()
+    final_image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    # Préparer la palette de couleurs
+    palette = [
+        {"color": f"rgb({r}, {g}, {b})", "count": count}
+        for (r, g, b), count in sorted(
+            color_counts.items(), key=lambda x: x[1], reverse=True
+        )
+    ]
+
+    return {"image_base64": img_str, "palette": palette}
+
 
 def process_image_for_wizard(image):
     """Traite l'image pour le wizard en utilisant les fonctionnalités du notebook."""
@@ -973,13 +1118,13 @@ def process_image_for_wizard(image):
         pil_image = Image.open(image)
     else:
         pil_image = Image.open(image)
-    
+
     if pil_image.mode != "RGB":
         pil_image = pil_image.convert("RGB")
-    
+
     # Convertir en tableau numpy
     img_array = np.array(pil_image)
-    
+
     # Etape 1: Centrer l'image (extraction de la zone d'intérêt)
     try:
         # Conversion de l'image en niveaux de gris
@@ -987,21 +1132,21 @@ def process_image_for_wizard(image):
             gray_img = img_array.copy()
         else:
             gray_img = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        
+
         # Appliquer le seuillage d'Otsu
         upper_threshold, thresh_img = cv2.threshold(
             gray_img, thresh=0, maxval=255, type=cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
         lower_threshold = 0.5 * upper_threshold
-        
+
         # Détection des contours
         canny = cv2.Canny(img_array, lower_threshold, upper_threshold)
         pts = np.argwhere(canny > 0)
-        
+
         # Trouver les points min et max
         y1, x1 = pts.min(axis=0)
         y2, x2 = pts.max(axis=0)
-        
+
         # Ajouter une marge
         BORDER = 10
         height, width = img_array.shape[:2]
@@ -1009,18 +1154,19 @@ def process_image_for_wizard(image):
         x2 = min(x2 + BORDER, width)
         y1 = max(y1 - BORDER, 0)
         y2 = min(y2 + BORDER, height)
-        
+
         # Extraire la région
         cropped_region = img_array[y1:y2, x1:x2]
     except Exception as e:
         # En cas d'erreur, utiliser l'image entière
         cropped_region = img_array
-    
+
     return {
-        'image_array': cropped_region.tolist(),  # Convertir en liste pour la sérialisation JSON
-        'image_base64': array_to_base64(cropped_region),
-        'palette': []  # Sera rempli plus tard dans le processus
+        "image_array": cropped_region.tolist(),  # Convertir en liste pour la sérialisation JSON
+        "image_base64": array_to_base64(cropped_region),
+        "palette": [],  # Sera rempli plus tard dans le processus
     }
+
 
 def array_to_base64(image_array):
     """Convertit un tableau numpy en chaîne base64 pour l'affichage dans le template."""

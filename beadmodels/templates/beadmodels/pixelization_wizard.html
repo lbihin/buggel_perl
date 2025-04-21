@@ -1,157 +1,205 @@
 {% extends 'beadmodels/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-  <h1>Assistant de pixelisation</h1>
-  
-  {% if wizard_step == 1 %}
-  <div class="card">
-    <div class="card-header bg-primary text-white">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Étape 1 : Configuration du modèle</h5>
-        <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur 2</span>
-      </div>
-    </div>
-    <div class="card-body">
-      <p class="mb-3">Sélectionnez une image et configurez les paramètres pour créer votre modèle de perles.</p>
-      
-      <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-        {% csrf_token %}
-        
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {% if model %}
-              <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> Vous utilisez l'image du modèle "<strong>{{ model.name }}</strong>".
-                <small>Vous pouvez télécharger une autre image pour remplacer celle-ci.</small>
-              </div>
-            {% endif %}
-            
-            <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
-            {{ form.image }}
-            <small class="form-text text-muted">{{ form.image.help_text }}</small>
+  <div class="container mt-4">
+    <h1>Assistant de pixelisation</h1>
+
+    {% if wizard_step == 1 %}
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Étape 1 : Configuration du modèle</h5>
+            <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur 2</span>
           </div>
-          
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Aperçu de l'image</label>
-              <div id="imagePreview" class="border rounded p-2 d-flex justify-content-center align-items-center" style="height: 200px; background-color: #f8f9fa;">
+        </div>
+        <div class="card-body">
+          <p class="mb-3">Configurez les paramètres pour créer votre modèle de perles.</p>
+
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="mb-3">Image à pixeliser</h5>
                 {% if model and model.original_image %}
-                  <img id="preview" src="{{ model.original_image.url }}" alt="Aperçu" style="max-width: 100%; max-height: 100%;">
+                  <div class="text-center">
+                    <img id="preview" src="{{ model.original_image.url }}" alt="Image à pixeliser" style="max-height: 300px; max-width: 100%;" />
+                  </div>
+                  <input type="hidden" name="use_model_image" value="true" />
+                  <input type="hidden" name="model_id" value="{{ model.id }}" />
                 {% else %}
-                  <span id="previewPlaceholder" class="text-muted">L'aperçu de l'image s'affichera ici</span>
-                  <img id="preview" src="" alt="Aperçu" style="max-width: 100%; max-height: 100%; display: none;">
+                  <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Aucune image n'est disponible. Veuillez retourner à un modèle pour sélectionner une image.
+                  </div>
                 {% endif %}
               </div>
             </div>
-          </div>
-        </div>
-        
-        <hr class="my-4">
-        <h5 class="mb-3">Paramètres de la grille</h5>
-        
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.grid_width.id_for_label }}" class="form-label">{{ form.grid_width.label }}</label>
-            {{ form.grid_width }}
-          </div>
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.grid_height.id_for_label }}" class="form-label">{{ form.grid_height.label }}</label>
-            {{ form.grid_height }}
-          </div>
-        </div>
-        
-        <hr class="my-4">
-        <h5 class="mb-3">Paramètres des couleurs</h5>
-        
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="{{ form.color_reduction.id_for_label }}" class="form-label">{{ form.color_reduction.label }}</label>
-            {{ form.color_reduction }}
-            <small class="form-text text-muted">{{ form.color_reduction.help_text }}</small>
-          </div>
-          
-          <div class="col-md-6 mb-3">
-            <div class="form-check mt-4">
-              {{ form.use_available_colors }}
-              <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">
-                {{ form.use_available_colors.label }}
-              </label>
-              <small class="d-block form-text text-muted">{{ form.use_available_colors.help_text }}</small>
+
+            <hr class="my-4" />
+            <h5 class="mb-3">Taille de la grille</h5>
+
+            <div class="row mb-4">
+              <div class="col-12">
+                <label class="form-label">Choisissez une grille</label>
+
+                <div class="segmented-control mb-3">
+                  {% for board in available_boards %}
+                  <div class="form-check form-check-inline">
+                    <input 
+                      class="btn-check" 
+                      type="radio" 
+                      name="board_id" 
+                      id="board_{{ board.id }}" 
+                      value="{{ board.id }}" 
+                      {% if forloop.first %}checked{% endif %}
+                      autocomplete="off"
+                      data-width="{{ board.width_pegs }}"
+                      data-height="{{ board.height_pegs }}"
+                    >
+                    <label class="btn btn-outline-primary" for="board_{{ board.id }}">
+                      {{ board.name }} ({{ board.width_pegs }}×{{ board.height_pegs }})
+                    </label>
+                  </div>
+                  {% empty %}
+                  <div class="alert alert-warning">
+                    Aucun support défini. Veuillez utiliser les dimensions personnalisées.
+                  </div>
+                  {% endfor %}
+                </div>
+
+                <!-- Champs cachés qui seront mis à jour par JavaScript -->
+                <input type="hidden" name="grid_width" id="id_grid_width" value="{{ form.grid_width.value|default:'29' }}">
+                <input type="hidden" name="grid_height" id="id_grid_height" value="{{ form.grid_height.value|default:'29' }}">
+
+                <div class="row mb-2">
+                  <div class="col-md-6">
+                    <div class="form-text mb-2">
+                      Largeur actuelle: <span id="display_width">{{ form.grid_width.value|default:'29' }}</span> perles
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-text mb-2">
+                      Hauteur actuelle: <span id="display_height">{{ form.grid_height.value|default:'29' }}</span> perles
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+
+            <hr class="my-4" />
+            <h5 class="mb-3">Paramètres des couleurs</h5>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre de couleurs</label>
+                <div class="segmented-control mb-3">
+                  {% for value in "246810162432"|slice:"2::" %}
+                  <div class="form-check form-check-inline">
+                    <input 
+                      class="btn-check" 
+                      type="radio" 
+                      name="color_reduction" 
+                      id="color_{{ value }}" 
+                      value="{{ value }}" 
+                      {% if value == "16" %}checked{% endif %}
+                      autocomplete="off"
+                    >
+                    <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+                <small class="form-text text-muted">{{ form.color_reduction.help_text }}</small>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="form-check mt-4">
+                  {{ form.use_available_colors }}
+                  <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">{{ form.use_available_colors.label }}</label>
+                  <small class="d-block form-text text-muted">{{ form.use_available_colors.help_text }}</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+              <button type="submit" name="next_step" class="btn btn-primary">Suivant <i class="bi bi-arrow-right"></i></button>
+            </div>
+          </form>
         </div>
-        
-        <div class="d-flex justify-content-between mt-4">
-          <button type="submit" name="cancel_wizard" class="btn btn-secondary">
-            <i class="bi bi-x-circle"></i> Quitter le wizard
-          </button>
-          
-          <button type="submit" class="btn btn-primary">
-            Suivant <i class="bi bi-arrow-right"></i>
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    {% endif %}
   </div>
-  {% endif %}
-</div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Gestion de l'aperçu de l'image
-    const imageInput = document.getElementById('{{ form.image.id_for_label }}');
-    const preview = document.getElementById('preview');
-    const previewPlaceholder = document.getElementById('previewPlaceholder');
-    
-    if (imageInput) {
-      imageInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-          const reader = new FileReader();
-          
-          reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-            if (previewPlaceholder) {
-              previewPlaceholder.style.display = 'none';
-            }
-          };
-          
-          reader.readAsDataURL(this.files[0]);
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Mise à jour des dimensions de la grille en fonction du support sélectionné
+      const boardRadios = document.querySelectorAll('input[name="board_id"]');
+      const gridWidthInput = document.getElementById('id_grid_width');
+      const gridHeightInput = document.getElementById('id_grid_height');
+      const displayWidth = document.getElementById('display_width');
+      const displayHeight = document.getElementById('display_height');
+
+      // Fonction pour mettre à jour les dimensions
+      function updateGridDimensions() {
+        const selectedBoard = document.querySelector('input[name="board_id"]:checked');
+        if (selectedBoard) {
+          const width = selectedBoard.dataset.width;
+          const height = selectedBoard.dataset.height;
+
+          gridWidthInput.value = width;
+          gridHeightInput.value = height;
+          displayWidth.textContent = width;
+          displayHeight.textContent = height;
         }
+      }
+
+      // Initialiser avec la valeur sélectionnée
+      updateGridDimensions();
+
+      // Ajouter un écouteur d'événements pour chaque radio
+      boardRadios.forEach(radio => {
+        radio.addEventListener('change', updateGridDimensions);
       });
+
+      // Validation du formulaire
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', function(event) {
+          // S'assurer qu'une image est disponible si on utilise un modèle
+          const hasModelImage = document.getElementById('preview');
+          if (!hasModelImage) {
+            event.preventDefault();
+            alert('Aucune image n\'est disponible pour la pixelisation.');
+            return false;
+          }
+        });
+      }
+    });
+  </script>
+
+  <style>
+    /* Styles pour les contrôles segmentés */
+    .segmented-control {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    
-    // Gestion du bouton "Quitter le wizard"
-    const cancelButton = document.querySelector('button[name="cancel_wizard"]');
-    if (cancelButton) {
-      cancelButton.addEventListener('click', function(event) {
-        if (!confirm('Êtes-vous sûr de vouloir quitter le wizard? Les modifications non enregistrées seront perdues.')) {
-          event.preventDefault();
-        }
-      });
+
+    .segmented-control .form-check {
+      margin: 0;
+      padding: 0;
     }
-    
-    // Validation du formulaire
-    const form = document.querySelector('form');
-    if (form) {
-      form.addEventListener('submit', function(event) {
-        // Ne pas vérifier la présence d'une image si on quitte le wizard
-        if (event.submitter && event.submitter.name === 'cancel_wizard') {
-          return true;
-        }
-        
-        // Vérifier si une image est sélectionnée OU si nous avons un modèle avec une image
-        const hasModelImage = document.getElementById('preview').src !== '';
-        if (!hasModelImage && (!imageInput.files || !imageInput.files[0])) {
-          event.preventDefault();
-          alert('Veuillez sélectionner une image.');
-          return false;
-        }
-      });
+
+    .segmented-control .btn-check + .btn {
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 14px;
     }
-  });
-</script>
+
+    .segmented-control .btn-check:checked + .btn-outline-primary {
+      background-color: #0d6efd;
+      color: white;
+    }
+  </style>
 {% endblock %}
