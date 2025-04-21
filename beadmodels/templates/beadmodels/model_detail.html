@@ -178,8 +178,8 @@
       }
     
       window.startWizard = function () {
-        // Redirection vers le nouveau wizard de pixelisation
-        window.location.href = "{% url 'beadmodels:pixelization_wizard' %}";
+        // Redirection vers le nouveau wizard de pixelisation avec l'ID du modèle
+        window.location.href = "{% url 'beadmodels:pixelization_wizard' %}?model_id={{ model.id }}";
       }
     
       function updateWizardUI() {
