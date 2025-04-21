@@ -1,13 +1,17 @@
+import base64
 import json
 import os
 import time
+from io import BytesIO
 
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
@@ -19,10 +23,14 @@ from django.views.generic import (
     UpdateView,
 )
 from PIL import Image
+from scipy import ndimage
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 from .forms import (
     BeadForm,
     BeadModelForm,
+    PixelizationWizardForm,
     ShapeForm,
     TransformModelForm,
     UserProfileForm,
@@ -802,5 +810,241 @@ def save_transformation(request):
     except Exception as e:
         return JsonResponse(
             {"success": False, "message": f"Erreur lors de la sauvegarde : {str(e)}"},
+            status=500,
+        )
+
+
+@login_required
+def pixelization_wizard(request):
+    """Vue pour le wizard de pixelisation basé sur les fonctionnalités du notebook."""
+    if request.method == "POST":
+        form = PixelizationWizardForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Récupérer les paramètres du formulaire
+            uploaded_image = form.cleaned_data["image"]
+            grid_width = form.cleaned_data["grid_width"]
+            grid_height = form.cleaned_data["grid_height"]
+            color_reduction = form.cleaned_data["color_reduction"]
+            use_available_colors = form.cleaned_data["use_available_colors"]
+
+            # Ouvrir l'image téléchargée
+            image = Image.open(uploaded_image)
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+
+            # Convertir en tableau numpy
+            img_array = np.array(image)
+
+            # Étape 1: Centrer l'image (extraction de la zone d'intérêt)
+            try:
+                # Conversion de l'image en niveaux de gris
+                if len(img_array.shape) == 2:
+                    gray_img = img_array.copy()
+                else:
+                    gray_img = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+                # Appliquer le seuillage d'Otsu
+                upper_threshold, thresh_img = cv2.threshold(
+                    gray_img,
+                    thresh=0,
+                    maxval=255,
+                    type=cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+                )
+                lower_threshold = 0.5 * upper_threshold
+
+                # Détection des contours
+                canny = cv2.Canny(img_array, lower_threshold, upper_threshold)
+                pts = np.argwhere(canny > 0)
+
+                # Trouver les points min et max
+                y1, x1 = pts.min(axis=0)
+                y2, x2 = pts.max(axis=0)
+
+                # Ajouter une marge
+                BORDER = 10
+                height, width = img_array.shape[:2]
+                x1 = max(x1 - BORDER, 0)
+                x2 = min(x2 + BORDER, width)
+                y1 = max(y1 - BORDER, 0)
+                y2 = min(y2 + BORDER, height)
+
+                # Extraire la région
+                cropped_region = img_array[y1:y2, x1:x2]
+            except Exception as e:
+                # En cas d'erreur, utiliser l'image entière
+                cropped_region = img_array
+
+            # Étape 2: Diviser l'image en grille
+            height, width = cropped_region.shape[:2]
+            cell_height = height // grid_height
+            cell_width = width // grid_width
+
+            # Créer un tableau pour stocker les couleurs moyennes
+            cell_colors = np.zeros((grid_height * grid_width, 3))
+
+            # Calculer la couleur moyenne de chaque cellule
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    y_start = y * cell_height
+                    y_end = min((y + 1) * cell_height, height)
+                    x_start = x * cell_width
+                    x_end = min((x + 1) * cell_width, width)
+
+                    # Extraire la cellule
+                    cell = cropped_region[y_start:y_end, x_start:x_end]
+
+                    # Calculer la couleur moyenne
+                    if cell.size > 0:
+                        cell_colors[y * grid_width + x] = np.mean(cell, axis=(0, 1))
+                    else:
+                        cell_colors[y * grid_width + x] = [
+                            255,
+                            255,
+                            255,
+                        ]  # Blanc par défaut
+
+            # Étape 3: Réduction des couleurs avec K-means
+            if use_available_colors:
+                # Utiliser les perles disponibles pour l'utilisateur
+                available_beads = Bead.objects.filter(creator=request.user)
+                if not available_beads:
+                    # Si aucune perle n'est disponible, utiliser K-means standard
+                    color_centers = apply_kmeans(cell_colors, color_reduction)
+                else:
+                    # Utiliser les couleurs des perles disponibles
+                    bead_colors = np.array(
+                        [[b.red, b.green, b.blue] for b in available_beads]
+                    )
+                    color_centers = bead_colors
+            else:
+                # Utiliser K-means standard
+                color_centers = apply_kmeans(cell_colors, color_reduction)
+
+            # Étape 4: Créer l'image pixelisée
+            pixelated_image = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
+
+            # Attribuer les couleurs des clusters à chaque cellule
+            for i, color in enumerate(cell_colors):
+                y = i // grid_width
+                x = i % grid_width
+
+                # Trouver la couleur la plus proche dans les centres
+                distances = np.sqrt(np.sum((color_centers - color) ** 2, axis=1))
+                closest_color_idx = np.argmin(distances)
+                pixelated_image[y, x] = color_centers[closest_color_idx]
+
+            # Créer l'image finale avec grille
+            cell_size = 20  # Taille fixe pour l'affichage
+            final_width = grid_width * cell_size
+            final_height = grid_height * cell_size
+
+            final_image = Image.new("RGB", (final_width, final_height), (255, 255, 255))
+            draw_pixels = final_image.load()
+
+            # Dessiner les pixels et la grille
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    color = tuple(map(int, pixelated_image[y, x]))
+
+                    # Dessiner le pixel
+                    for py in range(cell_size):
+                        for px in range(cell_size):
+                            if (
+                                px == 0
+                                or px == cell_size - 1
+                                or py == 0
+                                or py == cell_size - 1
+                            ):
+                                # Bordure de la grille
+                                draw_pixels[x * cell_size + px, y * cell_size + py] = (
+                                    200,
+                                    200,
+                                    200,
+                                )
+                            else:
+                                # Pixel de couleur
+                                draw_pixels[x * cell_size + px, y * cell_size + py] = (
+                                    color
+                                )
+
+            # Convertir l'image en base64 pour l'afficher sans la sauvegarder
+            buffered = BytesIO()
+            final_image.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+
+            # Générer la palette de couleurs utilisée
+            unique_colors = np.unique(pixelated_image.reshape(-1, 3), axis=0)
+            color_counts = {}
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    color_tuple = tuple(pixelated_image[y, x])
+                    if color_tuple in color_counts:
+                        color_counts[color_tuple] += 1
+                    else:
+                        color_counts[color_tuple] = 1
+
+            # Trier les couleurs par fréquence
+            sorted_colors = sorted(
+                color_counts.items(), key=lambda x: x[1], reverse=True
+            )
+            palette = [
+                {"color": f"rgb({r}, {g}, {b})", "count": count}
+                for (r, g, b), count in sorted_colors
+            ]
+
+            return render(
+                request,
+                "beadmodels/pixelization_result.html",
+                {
+                    "image_base64": img_str,
+                    "grid_width": grid_width,
+                    "grid_height": grid_height,
+                    "palette": palette,
+                    "total_beads": grid_width * grid_height,
+                },
+            )
+    else:
+        form = PixelizationWizardForm()
+
+    return render(request, "beadmodels/pixelization_wizard.html", {"form": form})
+
+
+def apply_kmeans(colors, n_clusters):
+    """Applique K-means pour réduire les couleurs"""
+    # Normaliser les couleurs
+    scaler = StandardScaler()
+    normalized_colors = scaler.fit_transform(colors)
+
+    # Appliquer K-means
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    kmeans.fit(normalized_colors)
+
+    # Récupérer les centres des clusters
+    centers = scaler.inverse_transform(kmeans.cluster_centers_)
+    centers = np.clip(centers, 0, 255).astype(np.uint8)
+
+    return centers
+
+
+@login_required
+@require_http_methods(["POST"])
+def download_pixelized_image(request):
+    """Vue pour télécharger l'image pixelisée"""
+    try:
+        data = json.loads(request.body)
+        image_data = data.get("image_data")
+
+        # Décoder l'image base64
+        image_data = image_data.split(",")[1]
+        image_bytes = base64.b64decode(image_data)
+
+        # Créer la réponse HTTP avec l'image
+        response = HttpResponse(image_bytes, content_type="image/png")
+        response["Content-Disposition"] = 'attachment; filename="pixelized_model.png"'
+
+        return response
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": f"Erreur lors du téléchargement: {str(e)}"},
             status=500,
         )

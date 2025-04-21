@@ -217,3 +217,40 @@ class ShapeForm(forms.Form):
         label="Diamètre (pics)",
         widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
     )
+
+
+class PixelizationWizardForm(forms.Form):
+    image = forms.ImageField(
+        label="Image à pixeliser",
+        help_text="Téléchargez une image à convertir en modèle de perles",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
+    )
+    grid_width = forms.IntegerField(
+        label="Largeur de la grille (en perles)",
+        min_value=5,
+        max_value=100,
+        initial=29,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    grid_height = forms.IntegerField(
+        label="Hauteur de la grille (en perles)",
+        min_value=5,
+        max_value=100,
+        initial=29,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    color_reduction = forms.IntegerField(
+        label="Nombre de couleurs",
+        min_value=2,
+        max_value=64,
+        initial=16,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+        help_text="Nombre de couleurs à utiliser dans le modèle final",
+    )
+    use_available_colors = forms.BooleanField(
+        label="Utiliser les couleurs disponibles",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        help_text="Utiliser uniquement les couleurs de perles que vous avez enregistrées",
+    )

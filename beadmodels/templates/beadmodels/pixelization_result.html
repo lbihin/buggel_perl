@@ -1,0 +1,85 @@
+{% extends 'beadmodels/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1>Modèle pixelisé</h1>
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Votre modèle est prêt !</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="position-relative">
+              <img id="pixelizedImage" src="data:image/png;base64,{{ image_base64 }}" alt="Modèle pixelisé" class="img-fluid border rounded" />
+            </div>
+          </div>
+          <div class="col-md-4">
+            <h5 class="mb-3">Informations du modèle</h5>
+            <div class="list-group mb-4">
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-grid"></i> Dimension de la grille</span>
+                <span class="badge bg-primary rounded-pill">{{ grid_width }}×{{ grid_height }}</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-gem"></i> Nombre total de perles</span>
+                <span class="badge bg-primary rounded-pill">{{ total_beads }}</span>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-palette"></i> Couleurs utilisées</span>
+                <span class="badge bg-primary rounded-pill">{{ palette|length }}</span>
+              </div>
+            </div>
+
+            <h5 class="mb-3">Actions</h5>
+            <div class="d-grid gap-2">
+              <button id="downloadBtn" class="btn btn-primary"><i class="bi bi-download"></i> Télécharger l'image</button>
+              <a href="{% url 'beadmodels:pixelization_wizard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle</a>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <h5 class="mb-3">Palette de couleurs</h5>
+        <div class="row mb-4">
+          {% for color_info in palette %}
+            <div class="col-lg-3 col-md-4 col-6 mb-2">
+              <div class="d-flex align-items-center">
+                <div style="width: 30px; height: 30px; background-color: {{ color_info.color }}; border: 1px solid #dee2e6; border-radius: 4px;"></div>
+                <div class="ms-2">
+                  <small class="d-block text-muted">{{ color_info.color }}</small>
+                  <small class="d-block">{{ color_info.count }} perle{{ color_info.count|pluralize }}</small>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle"></i> Le modèle n'est pas sauvegardé sur le serveur. Pour le conserver, téléchargez-le à l'aide du bouton ci-dessus.
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Fonction pour télécharger l'image
+      document.getElementById('downloadBtn').addEventListener('click', function () {
+        const imageElement = document.getElementById('pixelizedImage')
+        const imageURL = imageElement.getAttribute('src')
+    
+        // Créer un élément a temporaire pour déclencher le téléchargement
+        const downloadLink = document.createElement('a')
+        downloadLink.href = imageURL
+        downloadLink.download = 'modele_perles.png'
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        document.body.removeChild(downloadLink)
+      })
+    })
+  </script>
+{% endblock %}

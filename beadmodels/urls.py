@@ -32,6 +32,13 @@ urlpatterns = [
         views.save_transformation,
         name="save_transformation",
     ),
+    # Wizard de pixelisation
+    path("pixelization-wizard/", views.pixelization_wizard, name="pixelization_wizard"),
+    path(
+        "download-pixelized/",
+        views.download_pixelized_image,
+        name="download_pixelized_image",
+    ),
     # Routes utilisateur
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),

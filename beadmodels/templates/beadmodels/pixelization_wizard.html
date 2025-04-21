@@ -1,0 +1,109 @@
+{% extends 'beadmodels/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1>Assistant de pixelisation</h1>
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Étape 1 : Configuration du modèle</h5>
+      </div>
+      <div class="card-body">
+        <p class="mb-3">Sélectionnez une image et configurez les paramètres pour créer votre modèle de perles.</p>
+
+        <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+          {% csrf_token %}
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
+              {{ form.image }}
+              <small class="form-text text-muted">{{ form.image.help_text }}</small>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Aperçu de l'image</label>
+                <div id="imagePreview" class="border rounded p-2 d-flex justify-content-center align-items-center" style="height: 200px; background-color: #f8f9fa;">
+                  <span id="previewPlaceholder" class="text-muted">L'aperçu de l'image s'affichera ici</span>
+                  <img id="preview" src="" alt="Aperçu" style="max-width: 100%; max-height: 100%; display: none;" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+          <h5 class="mb-3">Paramètres de la grille</h5>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.grid_width.id_for_label }}" class="form-label">{{ form.grid_width.label }}</label>
+              {{ form.grid_width }}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.grid_height.id_for_label }}" class="form-label">{{ form.grid_height.label }}</label>
+              {{ form.grid_height }}
+            </div>
+          </div>
+
+          <hr class="my-4" />
+          <h5 class="mb-3">Paramètres des couleurs</h5>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="{{ form.color_reduction.id_for_label }}" class="form-label">{{ form.color_reduction.label }}</label>
+              {{ form.color_reduction }}
+              <small class="form-text text-muted">{{ form.color_reduction.help_text }}</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <div class="form-check mt-4">
+                {{ form.use_available_colors }}
+                <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">{{ form.use_available_colors.label }}</label>
+                <small class="d-block form-text text-muted">{{ form.use_available_colors.help_text }}</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+            <button type="submit" class="btn btn-primary">Générer le modèle <i class="bi bi-arrow-right"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Gestion de l'aperçu de l'image
+      const imageInput = document.getElementById('{{ form.image.id_for_label }}')
+      const preview = document.getElementById('preview')
+      const previewPlaceholder = document.getElementById('previewPlaceholder')
+    
+      imageInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader()
+    
+          reader.onload = function (e) {
+            preview.src = e.target.result
+            preview.style.display = 'block'
+            previewPlaceholder.style.display = 'none'
+          }
+    
+          reader.readAsDataURL(this.files[0])
+        }
+      })
+    
+      // Validation du formulaire
+      const form = document.querySelector('form')
+      form.addEventListener('submit', function (event) {
+        if (!imageInput.files || !imageInput.files[0]) {
+          event.preventDefault()
+          alert('Veuillez sélectionner une image.')
+          return false
+        }
+      })
+    })
+  </script>
+{% endblock %}

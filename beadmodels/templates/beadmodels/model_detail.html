@@ -178,10 +178,8 @@
       }
     
       window.startWizard = function () {
-        currentStep = 1
-        updateWizardUI()
-        const wizardModal = new bootstrap.Modal(document.getElementById('wizardModal'))
-        wizardModal.show()
+        // Redirection vers le nouveau wizard de pixelisation
+        window.location.href = "{% url 'beadmodels:pixelization_wizard' %}";
       }
     
       function updateWizardUI() {
