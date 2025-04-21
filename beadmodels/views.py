@@ -909,9 +909,8 @@ def pixelization_wizard(request):
                     "grid_height": form.cleaned_data["grid_height"],
                     "color_reduction": form.cleaned_data["color_reduction"],
                     "use_available_colors": form.cleaned_data["use_available_colors"],
-                    "grid_type": request.POST.get(
-                        "grid_type", "square"
-                    ),  # Nouveau champ pour le type de grille
+                    "grid_type": request.POST.get("grid_type", "square"),
+                    "shape_id": request.POST.get("shape_id"),
                 }
             )
 
@@ -956,10 +955,27 @@ def pixelization_wizard(request):
                 return redirect("beadmodels:home")
         else:
             # Formulaire invalide, rester à l'étape 1
+            # Récupérer les données nécessaires pour le template
+            user_shapes = BeadShape.objects.filter(creator=request.user).order_by(
+                "name"
+            )
+
+            # Liste des valeurs de couleurs disponibles
+            color_values = [2, 4, 6, 8, 16, 24, 32]
+
             return render(
                 request,
                 "beadmodels/pixelization/pixelization_wizard.html",
-                {"form": form, "wizard_step": wizard_step, "model": model},
+                {
+                    "form": form,
+                    "wizard_step": wizard_step,
+                    "model": model,
+                    "user_shapes": user_shapes,
+                    "has_grid_options": bool(
+                        BeadBoard.objects.exists() or user_shapes.exists()
+                    ),
+                    "color_values": color_values,
+                },
             )
 
     # Si on accède directement à l'étape 2 via l'URL
@@ -981,6 +997,12 @@ def pixelization_wizard(request):
         }
 
         form = PixelizationWizardForm(initial=initial_data)
+        # Récupérer les formes de l'utilisateur
+        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
+
+        # Liste des valeurs de couleurs disponibles
+        color_values = [2, 4, 6, 8, 16, 24, 32]
+
         return render(
             request,
             "beadmodels/pixelization/pixelization_wizard.html",
@@ -989,6 +1011,12 @@ def pixelization_wizard(request):
                 "wizard_step": wizard_step,
                 "model": model,
                 "grid_type": wizard_data.get("grid_type", "square"),
+                "user_shapes": user_shapes,
+                "selected_shape_id": wizard_data.get("shape_id"),
+                "has_grid_options": bool(
+                    BeadBoard.objects.exists() or user_shapes.exists()
+                ),
+                "color_values": color_values,
             },
         )
 
@@ -1004,8 +1032,17 @@ def pixelization_wizard(request):
 
         form = PixelizationWizardForm(initial=initial_data)
 
+        # Récupérer les formes de l'utilisateur
+        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
+
         # Récupérer tous les supports disponibles pour l'affichage des tailles de grille
         available_boards = BeadBoard.objects.all()
+
+        # Déterminer si l'utilisateur a des options de grille disponibles
+        has_grid_options = bool(available_boards.exists() or user_shapes.exists())
+
+        # Liste des valeurs de couleurs disponibles
+        color_values = [2, 4, 6, 8, 16, 24, 32]
 
         return render(
             request,
@@ -1016,6 +1053,10 @@ def pixelization_wizard(request):
                 "model": model,
                 "grid_type": wizard_data.get("grid_type", "square"),
                 "available_boards": available_boards,
+                "user_shapes": user_shapes,
+                "selected_shape_id": wizard_data.get("shape_id"),
+                "has_grid_options": has_grid_options,
+                "color_values": color_values,
             },
         )
 
@@ -1032,7 +1073,7 @@ def pixelization_wizard(request):
         image_data = wizard_data.get("image_data", {})
         return render(
             request,
-            "beadmodels/pixelization_result.html",
+            "beadmodels/pixelization/pixelization_result.html",
             {
                 "image_base64": image_data.get("image_base64", ""),
                 "grid_width": wizard_data.get("grid_width", 29),

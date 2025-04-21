@@ -48,28 +48,69 @@
                 <label class="form-label">Choisissez une grille</label>
 
                 <div class="segmented-control mb-3">
-                  {% if available_boards %}
-                    {% for board in available_boards %}
-                    <div class="form-check form-check-inline">
-                      <input 
-                        class="btn-check" 
-                        type="radio" 
-                        name="board_id" 
-                        id="board_{{ board.id }}" 
-                        value="{{ board.id }}" 
-                        {% if forloop.first %}checked{% endif %}
-                        autocomplete="off"
-                        data-width="{{ board.width_pegs }}"
-                        data-height="{{ board.height_pegs }}"
-                      >
-                      <label class="btn btn-outline-primary" for="board_{{ board.id }}">
-                        {{ board.name }} ({{ board.width_pegs }}×{{ board.height_pegs }})
-                      </label>
+                  {% if available_boards or user_shapes %}
+                    <!-- Grilles prédéfinies -->
+                    <div class="mb-4">
+                      <h6>Grilles prédéfinies</h6>
+                      <div class="d-flex flex-wrap gap-2">
+                        {% for board in available_boards %}
+                          <div class="form-check form-check-inline">
+                            <input 
+                              class="btn-check" 
+                              type="radio" 
+                              name="board_id" 
+                              id="board_{{ board.id }}" 
+                              value="{{ board.id }}" 
+                              {% if forloop.first and not selected_shape_id %}checked{% endif %}
+                              autocomplete="off"
+                              data-width="{{ board.width_pegs }}"
+                              data-height="{{ board.height_pegs }}"
+                            >
+                            <label class="btn btn-outline-primary" for="board_{{ board.id }}">
+                              {{ board.name }} ({{ board.width_pegs }}×{{ board.height_pegs }})
+                            </label>
+                          </div>
+                        {% endfor %}
+                      </div>
                     </div>
-                    {% endfor %}
+                    
+                    <!-- Formes personnalisées -->
+                    <div class="mb-2">
+                      <h6>Mes formes personnalisées</h6>
+                      <div class="d-flex flex-wrap gap-2">
+                        {% for shape in user_shapes %}
+                          <div class="form-check form-check-inline">
+                            <input 
+                              class="btn-check shape-selector" 
+                              type="radio" 
+                              name="shape_id" 
+                              id="shape_{{ shape.id }}" 
+                              value="{{ shape.id }}"
+                              data-shape-type="{{ shape.shape_type }}"
+                              {% if shape.shape_type == 'rectangle' %}
+                              data-width="{{ shape.width }}"
+                              data-height="{{ shape.height }}"
+                              {% elif shape.shape_type == 'square' %}
+                              data-width="{{ shape.size }}"
+                              data-height="{{ shape.size }}"
+                              {% elif shape.shape_type == 'circle' %}
+                              data-width="{{ shape.diameter }}"
+                              data-height="{{ shape.diameter }}"
+                              {% endif %}
+                              {% if selected_shape_id|stringformat:'s' == shape.id|stringformat:'s' %}checked{% endif %}
+                              autocomplete="off"
+                            >
+                            <label class="btn btn-outline-success" for="shape_{{ shape.id }}">
+                              {{ shape.name }} ({{ shape.get_dimensions_display }})
+                            </label>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
                   {% else %}
-                    <div class="alert alert-warning">
-                      <i class="bi bi-exclamation-triangle"></i> Aucun support défini. Veuillez ajouter une grille dans les paramètres de votre compte.
+                    <div class="alert alert-warning mt-3">
+                      <i class="bi bi-exclamation-triangle"></i> Aucune grille ou forme personnalisée n'est disponible. 
+                      <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="alert-link">Créez une forme</a> dans vos paramètres pour adapter votre modèle à vos besoins.
                     </div>
                   {% endif %}
                 </div>
@@ -100,7 +141,7 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Nombre de couleurs</label>
                 <div class="segmented-control mb-3">
-                  {% for value in "2468162432" %}
+                  {% for value in color_values %}
                   <div class="form-check form-check-inline">
                     <input 
                       class="btn-check" 
@@ -108,7 +149,7 @@
                       name="color_reduction" 
                       id="color_{{ value }}" 
                       value="{{ value }}" 
-                      {% if value == "16" %}checked{% endif %}
+                      {% if value == 16 %}checked{% endif %}
                       autocomplete="off"
                     >
                     <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
@@ -128,7 +169,7 @@
             </div>
 
             <div class="d-flex justify-content-end mt-4">
-              <button type="submit" name="next_step" class="btn btn-primary" {% if not available_boards %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
+              <button type="submit" name="next_step" class="btn btn-primary" {% if not has_grid_options %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
             </div>
           </form>
         </div>
@@ -139,5 +180,50 @@
 
 {% block extra_js %}
   <script src="{% static 'js/pixelization_wizard.js' %}"></script>
- 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Fonction pour mettre à jour les dimensions selon l'élément sélectionné
+      function updateDimensions(element) {
+        const width = parseInt(element.getAttribute('data-width'));
+        const height = parseInt(element.getAttribute('data-height'));
+        
+        if (width && height) {
+          document.getElementById('id_grid_width').value = width;
+          document.getElementById('id_grid_height').value = height;
+          document.getElementById('display_width').textContent = width;
+          document.getElementById('display_height').textContent = height;
+        }
+      }
+      
+      // Gestion des clics sur les formes personnalisées
+      const shapeSelectors = document.querySelectorAll('.shape-selector');
+      shapeSelectors.forEach(selector => {
+        selector.addEventListener('change', function() {
+          if (this.checked) {
+            updateDimensions(this);
+          }
+        });
+        
+        // Initialisation si une forme est déjà sélectionnée
+        if (selector.checked) {
+          updateDimensions(selector);
+        }
+      });
+      
+      // Gestion des clics sur les grilles prédéfinies
+      const boardSelectors = document.querySelectorAll('input[name="board_id"]');
+      boardSelectors.forEach(selector => {
+        selector.addEventListener('change', function() {
+          if (this.checked) {
+            updateDimensions(this);
+          }
+        });
+        
+        // Initialisation si une grille est déjà sélectionnée
+        if (selector.checked) {
+          updateDimensions(selector);
+        }
+      });
+    });
+  </script>
 {% endblock %}
