@@ -43,28 +43,30 @@
                 <label class="form-label">Choisissez une grille</label>
 
                 <div class="segmented-control mb-3">
-                  {% for board in available_boards %}
-                  <div class="form-check form-check-inline">
-                    <input 
-                      class="btn-check" 
-                      type="radio" 
-                      name="board_id" 
-                      id="board_{{ board.id }}" 
-                      value="{{ board.id }}" 
-                      {% if forloop.first %}checked{% endif %}
-                      autocomplete="off"
-                      data-width="{{ board.width_pegs }}"
-                      data-height="{{ board.height_pegs }}"
-                    >
-                    <label class="btn btn-outline-primary" for="board_{{ board.id }}">
-                      {{ board.name }} ({{ board.width_pegs }}×{{ board.height_pegs }})
-                    </label>
-                  </div>
-                  {% empty %}
-                  <div class="alert alert-warning">
-                    Aucun support défini. Veuillez utiliser les dimensions personnalisées.
-                  </div>
-                  {% endfor %}
+                  {% if available_boards %}
+                    {% for board in available_boards %}
+                    <div class="form-check form-check-inline">
+                      <input 
+                        class="btn-check" 
+                        type="radio" 
+                        name="board_id" 
+                        id="board_{{ board.id }}" 
+                        value="{{ board.id }}" 
+                        {% if forloop.first %}checked{% endif %}
+                        autocomplete="off"
+                        data-width="{{ board.width_pegs }}"
+                        data-height="{{ board.height_pegs }}"
+                      >
+                      <label class="btn btn-outline-primary" for="board_{{ board.id }}">
+                        {{ board.name }} ({{ board.width_pegs }}×{{ board.height_pegs }})
+                      </label>
+                    </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="alert alert-warning">
+                      <i class="bi bi-exclamation-triangle"></i> Aucun support défini. Veuillez ajouter une grille dans les paramètres de votre compte.
+                    </div>
+                  {% endif %}
                 </div>
 
                 <!-- Champs cachés qui seront mis à jour par JavaScript -->
@@ -93,7 +95,7 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Nombre de couleurs</label>
                 <div class="segmented-control mb-3">
-                  {% for value in "246810162432"|slice:"2::" %}
+                  {% for value in "2468162432" %}
                   <div class="form-check form-check-inline">
                     <input 
                       class="btn-check" 
@@ -121,7 +123,7 @@
             </div>
 
             <div class="d-flex justify-content-end mt-4">
-              <button type="submit" name="next_step" class="btn btn-primary">Suivant <i class="bi bi-arrow-right"></i></button>
+              <button type="submit" name="next_step" class="btn btn-primary" {% if not available_boards %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
             </div>
           </form>
         </div>
@@ -171,6 +173,14 @@
           if (!hasModelImage) {
             event.preventDefault();
             alert('Aucune image n\'est disponible pour la pixelisation.');
+            return false;
+          }
+
+          // Vérifier si des grilles sont disponibles
+          const hasBoards = {% if available_boards %}true{% else %}false{% endif %};
+          if (!hasBoards) {
+            event.preventDefault();
+            alert('Vous devez avoir au moins une grille disponible pour continuer.');
             return false;
           }
         });
