@@ -1,4 +1,5 @@
 {% extends 'beadmodels/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container mt-4">
@@ -51,5 +52,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/edit_shape.js' %}"></script>
+  <script src="{% static 'js/edit_shape.js' %}"></script>
 {% endblock %}

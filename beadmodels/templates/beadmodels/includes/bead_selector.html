@@ -42,40 +42,7 @@
   </div>
 </div>
 
-<style>
-  .bead-selection-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.5rem;
-    max-height: 300px;
-    overflow-y: auto;
-    padding: 0.5rem;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-  }
-  
-  .bead-color-preview {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid #dee2e6;
-  }
-</style>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const useCustomBeadsCheckbox = document.getElementById('useCustomBeads');
-    const beadSelectionContainer = document.getElementById('beadSelectionContainer');
-    
-    if (useCustomBeadsCheckbox && beadSelectionContainer) {
-      useCustomBeadsCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-          new bootstrap.Collapse(beadSelectionContainer).show();
-        } else {
-          new bootstrap.Collapse(beadSelectionContainer).hide();
-        }
-      });
-    }
-  });
-</script>
+{% block extra_js %}
+  <script src="{% static 'js/bead_selector.js' %}"></script>
+{% endblock %}

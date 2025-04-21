@@ -64,82 +64,95 @@ def register(request):
 @login_required
 def user_settings(request):
     active_tab = request.GET.get("tab", "profile")
-    context = {
-        "active_tab": active_tab,
-    }
+    context = {"active_tab": active_tab}
 
     if request.method == "POST":
         if active_tab == "profile":
-            form = UserProfileForm(request.POST, instance=request.user)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "Votre profil a été mis à jour avec succès!")
-                return redirect("beadmodels:user_settings")
-            context["form"] = form
+            return gerer_mise_a_jour_profil(request, context)
         elif active_tab == "password":
-            # TODO: Implémenter le changement de mot de passe
+            # TODO: Implémenter la logique de changement de mot de passe
             pass
         elif active_tab == "preferences":
-            # Gérer les préférences utilisateur
-            default_grid_size = request.POST.get("default_grid_size")
-            public_by_default = request.POST.get("public_by_default") == "on"
-            # TODO: Sauvegarder les préférences
-            messages.success(
-                request, "Vos préférences ont été mises à jour avec succès!"
-            )
-            return redirect("beadmodels:user_settings")
+            return gerer_mise_a_jour_preferences(request)
         elif active_tab == "beads":
-            try:
-                data = json.loads(request.body)
-                action = data.get("action")
-                bead_id = data.get("bead_id")
-                name = data.get("name")
-                red = data.get("red")
-                green = data.get("green")
-                blue = data.get("blue")
-                quantity = data.get("quantity")
-                notes = data.get("notes")
+            return gerer_actions_perles(request)
 
-                if action == "add":
-                    Bead.objects.create(
-                        creator=request.user,
-                        name=name,
-                        red=red,
-                        green=green,
-                        blue=blue,
-                        quantity=quantity,
-                        notes=notes,
-                    )
-                    messages.success(request, "Perle ajoutée avec succès!")
-                elif action == "update" and bead_id:
-                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-                    bead.name = name
-                    bead.red = red
-                    bead.green = green
-                    bead.blue = blue
-                    bead.quantity = quantity
-                    bead.notes = notes
-                    bead.save()
-                    messages.success(request, "Perle mise à jour avec succès!")
-                elif action == "delete" and bead_id:
-                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-                    bead.delete()
-                    messages.success(request, "Perle supprimée avec succès!")
-
-                return JsonResponse({"success": True})
-            except Exception as e:
-                return JsonResponse({"success": False, "message": str(e)})
-    else:
-        if active_tab == "profile":
-            context["form"] = UserProfileForm(instance=request.user)
-        elif active_tab == "shapes":
-            context["saved_shapes"] = BeadShape.objects.filter(
-                creator=request.user
-            ).order_by("-created_at")
-        elif active_tab == "beads":
-            context["beads"] = Bead.objects.filter(creator=request.user)
-
+    remplir_contexte_pour_requete_get(active_tab, context, request)
     return render(request, "beadmodels/user_settings.html", context)
+
+
+def gerer_mise_a_jour_profil(request, context):
+    form = UserProfileForm(request.POST, instance=request.user)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Votre profil a été mis à jour avec succès!")
+        return redirect("beadmodels:user_settings")
+    context["form"] = form
+    return None
+
+
+def gerer_mise_a_jour_preferences(request):
+    # TODO: Sauvegarder les préférences utilisateur
+    messages.success(request, "Vos préférences ont été mises à jour avec succès!")
+    return redirect("beadmodels:user_settings")
+
+
+def gerer_actions_perles(request):
+    try:
+        data = json.loads(request.body)
+        action = data.get("action")
+        bead_id = data.get("bead_id")
+        if action == "add":
+            creer_perle(request, data)
+        elif action == "update" and bead_id:
+            mettre_a_jour_perle(request, bead_id, data)
+        elif action == "delete" and bead_id:
+            supprimer_perle(request, bead_id)
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)})
+
+
+def creer_perle(request, data):
+    Bead.objects.create(
+        creator=request.user,
+        name=data.get("name"),
+        red=data.get("red"),
+        green=data.get("green"),
+        blue=data.get("blue"),
+        quantity=data.get("quantity"),
+        notes=data.get("notes"),
+    )
+    messages.success(request, "Perle ajoutée avec succès!")
+
+
+def mettre_a_jour_perle(request, bead_id, data):
+    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+    bead.name = data.get("name")
+    bead.red = data.get("red")
+    bead.green = data.get("green")
+    bead.blue = data.get("blue")
+    bead.quantity = data.get("quantity")
+    bead.notes = data.get("notes")
+    bead.save()
+    messages.success(request, "Perle mise à jour avec succès!")
+
+
+def supprimer_perle(request, bead_id):
+    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+    bead.delete()
+    messages.success(request, "Perle supprimée avec succès!")
+
+
+def remplir_contexte_pour_requete_get(active_tab, context, request):
+    if active_tab == "profile":
+        context["form"] = UserProfileForm(instance=request.user)
+    elif active_tab == "shapes":
+        context["saved_shapes"] = BeadShape.objects.filter(
+            creator=request.user
+        ).order_by("-created_at")
+    elif active_tab == "beads":
+        context["beads"] = Bead.objects.filter(creator=request.user)
 
 
 # Vues basées sur des classes pour la gestion des modèles

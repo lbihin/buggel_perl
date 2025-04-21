@@ -1,4 +1,5 @@
 {% extends 'beadmodels/base.html' %}
+{% load static %}
 
 {% block content %}
   <div class="container mt-4">
@@ -82,31 +83,5 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // Fonction pour télécharger l'image
-      document.getElementById('downloadBtn').addEventListener('click', function () {
-        const imageElement = document.getElementById('pixelizedImage')
-        const imageURL = imageElement.getAttribute('src')
-    
-        // Créer un élément a temporaire pour déclencher le téléchargement
-        const downloadLink = document.createElement('a')
-        downloadLink.href = imageURL
-        downloadLink.download = 'modele_perles.png'
-        document.body.appendChild(downloadLink)
-        downloadLink.click()
-        document.body.removeChild(downloadLink)
-      })
-    
-      // Confirmation avant de quitter le wizard
-      const cancelButton = document.querySelector('button[name="cancel_wizard"]')
-      if (cancelButton) {
-        cancelButton.addEventListener('click', function (event) {
-          if (!confirm('Êtes-vous sûr de vouloir quitter le wizard? Les modifications non enregistrées seront perdues.')) {
-            event.preventDefault()
-          }
-        })
-      }
-    })
-  </script>
+  <script src="{% static 'js/pixelization_result.js' %}"></script>
 {% endblock %}

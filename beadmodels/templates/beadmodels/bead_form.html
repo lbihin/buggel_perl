@@ -1,5 +1,6 @@
 {% extends 'beadmodels/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block content %}
   <div class="container">
@@ -88,97 +89,6 @@
   </div>
 
   {% block extra_js %}
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        // Fonction pour mettre à jour l'aperçu de couleur
-        function updateColorPreview() {
-          const r = document.getElementById('id_red').value
-          const g = document.getElementById('id_green').value
-          const b = document.getElementById('id_blue').value
-          document.getElementById('colorPreview').style.backgroundColor = `rgb(${r}, ${g}, ${b})`
-      
-          // Générer un nom de couleur si le champ est vide (seulement pour un nouveau bead)
-          const nameField = document.getElementById('id_name')
-          if (!nameField.value.trim() || nameField.dataset.autoNamed === 'true') {
-            const colorName = getColorName(parseInt(r), parseInt(g), parseInt(b))
-            nameField.value = colorName
-            nameField.dataset.autoNamed = 'true'
-          }
-        }
-      
-        // Attacher des écouteurs d'événements aux inputs RGB
-        document.getElementById('id_red').addEventListener('input', updateColorPreview)
-        document.getElementById('id_green').addEventListener('input', updateColorPreview)
-        document.getElementById('id_blue').addEventListener('input', updateColorPreview)
-      
-        // Écouter les changements sur le champ nom pour éviter d'écraser les valeurs modifiées manuellement
-        document.getElementById('id_name').addEventListener('input', function () {
-          this.dataset.autoNamed = 'false'
-        })
-      
-        // Initialiser l'aperçu de couleur
-        updateColorPreview()
-      
-        // Gestion des boutons de couleurs prédéfinies
-        const colorBtns = document.querySelectorAll('.color-btn')
-        colorBtns.forEach((btn) => {
-          // Définir la taille des boutons
-          btn.style.width = '30px'
-          btn.style.height = '30px'
-      
-          btn.addEventListener('click', function () {
-            const r = this.getAttribute('data-r')
-            const g = this.getAttribute('data-g')
-            const b = this.getAttribute('data-b')
-      
-            document.getElementById('id_red').value = r
-            document.getElementById('id_green').value = g
-            document.getElementById('id_blue').value = b
-      
-            updateColorPreview()
-          })
-        })
-      
-        // Fonction pour déterminer le nom de la couleur en fonction des valeurs RGB
-        function getColorName(red, green, blue) {
-          // Couleurs de base
-          if (red === 255 && green === 0 && blue === 0) return 'Rouge'
-          if (red === 0 && green === 255 && blue === 0) return 'Vert'
-          if (red === 0 && green === 0 && blue === 255) return 'Bleu'
-          if (red === 255 && green === 255 && blue === 0) return 'Jaune'
-          if (red === 255 && green === 0 && blue === 255) return 'Magenta'
-          if (red === 0 && green === 255 && blue === 255) return 'Cyan'
-          if (red === 255 && green === 255 && blue === 255) return 'Blanc'
-          if (red === 0 && green === 0 && blue === 0) return 'Noir'
-          if (red === 128 && green === 128 && blue === 128) return 'Gris'
-          if (red === 255 && green === 165 && blue === 0) return 'Orange'
-          if (red === 165 && green === 42 && blue === 42) return 'Marron'
-          if (red === 255 && green === 192 && blue === 203) return 'Rose'
-      
-          // Pour les autres couleurs, on utilise une description basée sur les composantes
-          let name = ''
-          if (red > 200) name += 'Rouge '
-          if (green > 200) name += 'Vert '
-          if (blue > 200) name += 'Bleu '
-      
-          if (name === '') {
-            if (red > 100) name += 'Rouge '
-            if (green > 100) name += 'Vert '
-            if (blue > 100) name += 'Bleu '
-          }
-      
-          if (name === '') {
-            if (red > 50) name += 'Rouge '
-            if (green > 50) name += 'Vert '
-            if (blue > 50) name += 'Bleu '
-          }
-      
-          if (name === '') return 'Gris foncé'
-      
-          name = name.trim() + (red + green + blue > 500 ? ' clair' : ' foncé')
-          return name
-        }
-      })
-    </script>
+    <script src="{% static 'js/bead_form.js' %}"></script>
   {% endblock %}
 {% endblock %}
