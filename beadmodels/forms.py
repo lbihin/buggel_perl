@@ -224,6 +224,7 @@ class PixelizationWizardForm(forms.Form):
         label="Image à pixeliser",
         help_text="Téléchargez une image à convertir en modèle de perles",
         widget=forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
+        required=False,  # L'image est maintenant optionnelle
     )
     grid_width = forms.IntegerField(
         label="Largeur de la grille (en perles)",
@@ -254,3 +255,24 @@ class PixelizationWizardForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
         help_text="Utiliser uniquement les couleurs de perles que vous avez enregistrées",
     )
+
+    def __init__(self, *args, **kwargs):
+        # Extrayons model_provided de kwargs si présent
+        model_provided = kwargs.pop("model_provided", False)
+        super().__init__(*args, **kwargs)
+
+        # Si un modèle est fourni avec une image, nous pouvons supprimer la validation du champ image
+        if model_provided:
+            self.fields["image"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Vérifier si nous avons soit une image soumise, soit un modèle avec image
+        if not cleaned_data.get("image") and not self.initial.get("use_model_image"):
+            # S'il n'y a pas d'image et qu'on n'utilise pas l'image du modèle, afficher une erreur
+            self.add_error(
+                "image",
+                "Une image est requise si vous n'utilisez pas un modèle avec image.",
+            )
+
+        return cleaned_data

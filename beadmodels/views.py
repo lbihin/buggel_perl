@@ -899,7 +899,13 @@ def pixelization_wizard(request):
 
     # Traitement du formulaire à l'étape 1 (bouton Suivant)
     if request.method == "POST" and wizard_step == 1 and "next_step" in request.POST:
-        form = PixelizationWizardForm(request.POST)
+        # Passer model_provided=True au formulaire si un modèle avec image est fourni
+        model_has_image = model and model.original_image
+        form = PixelizationWizardForm(
+            request.POST,
+            model_provided=model_has_image,
+            initial={"use_model_image": model_has_image},
+        )
 
         if form.is_valid():
             # Stocker les données du formulaire dans la session
@@ -915,7 +921,7 @@ def pixelization_wizard(request):
             )
 
             # Utiliser l'image du modèle
-            if model and model.original_image:
+            if model_has_image:
                 # Traiter l'image du modèle
                 image_data = process_image_for_wizard(model.original_image)
                 wizard_data["uploaded_image"] = False
