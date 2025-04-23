@@ -32,9 +32,12 @@
 }
 
 .wizard-image {
-    max-height: 200px;
-    width: auto;
-    object-fit: contain;
+    max-height: 600px;
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+    display: block;
+    margin: 0 auto;
 }
 
 /* Rendre la palette de couleurs plus compacte */
@@ -103,7 +106,7 @@
 /* Optimisation de l'affichage sur les appareils mobiles */
 @media (max-width: 768px) {
     .wizard-image {
-        max-height: 150px;
+        max-height: 200px;
     }
 
     .segmented-control .btn-check+.btn {
@@ -185,6 +188,13 @@
 .image-container {
     flex-grow: 1;
     flex-basis: 70%;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .actions-container {
@@ -207,10 +217,37 @@
         flex-basis: 100%;
         width: 100%;
     }
+
+    .order-md-1 {
+        order: 1;
+    }
+
+    .order-md-2 {
+        order: 2;
+    }
 }
 
 /* Styles pour la pixelized-result image */
 .border.rounded {
     border: 1px solid #dee2e6 !important;
     border-radius: 0.25rem !important;
+}
+
+/* Styling for the configuration sections */
+.configuration-section {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+/* Make the button styling consistent */
+.btn-primary {
+    padding: 0.5rem 1.5rem;
+}
+
+.parameters-container {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    height: 100%;
 }

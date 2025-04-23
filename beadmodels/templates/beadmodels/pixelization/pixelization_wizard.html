@@ -31,131 +31,138 @@
               </div>
             {% endif %}
 
-            <div class="row mb-3">
-              <div class="col-12">
-                <h5 class="h6 mb-2">Image à pixeliser</h5>
-                {% if model and model.original_image %}
-                  <div class="text-center">
-                    <img id="preview" src="{{ model.original_image.url }}" alt="Image à pixeliser" class="wizard-image" />
-                  </div>
-                  <input type="hidden" name="use_model_image" value="true" />
-                  <input type="hidden" name="model_id" value="{{ model.id }}" />
-                {% else %}
-                  <div class="alert alert-warning py-2">
-                    <i class="bi bi-exclamation-triangle"></i> Aucune image n'est disponible. Veuillez retourner à un modèle pour sélectionner une image.
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-12">
-                <h5 class="h6 mb-2">Taille de la grille</h5>
-                <label class="form-label small">Choisissez une forme</label>
-
-                <div class="segmented-control mb-2">
-                  {% if user_shapes %}
-                    <div class="mb-1">
-                      <div class="d-flex flex-wrap gap-2">
-                        {% for shape in user_shapes %}
-                          <div class="form-check form-check-inline">
-                            <input 
-                              class="btn-check shape-selector" 
-                              type="radio" 
-                              name="shape_id" 
-                              id="shape_{{ shape.id }}" 
-                              value="{{ shape.id }}"
-                              data-shape-type="{{ shape.shape_type }}"
-                              {% if shape.shape_type == 'rectangle' %}
-                              data-width="{{ shape.width }}"
-                              data-height="{{ shape.height }}"
-                              {% elif shape.shape_type == 'square' %}
-                              data-width="{{ shape.size }}"
-                              data-height="{{ shape.size }}"
-                              {% elif shape.shape_type == 'circle' %}
-                              data-width="{{ shape.diameter }}"
-                              data-height="{{ shape.diameter }}"
-                              {% endif %}
-                              {% if forloop.first or selected_shape_id|stringformat:'s' == shape.id|stringformat:'s' %}checked{% endif %}
-                              autocomplete="off"
-                              required
-                            >
-                            <label class="btn btn-outline-success" for="shape_{{ shape.id }}">
-                              {{ shape.name }} ({{ shape.get_dimensions_display }})
-                            </label>
-                          </div>
-                        {% endfor %}
-                      </div>
-                    </div>
+            <div class="row">
+              <!-- Colonne de gauche pour l'image (swapped) -->
+              <div class="col-md-6 order-md-1 order-1 mb-4">
+                {% comment %} <h5 class="h6 mb-3">Image à pixeliser</h5> {% endcomment %}
+                <div class="image-container text-center">
+                  {% if model and model.original_image %}
+                    <img id="preview" src="{{ model.original_image.url }}" alt="Image à pixeliser" class="img-fluid border rounded" style="max-height: 350px;" />
+                    <input type="hidden" name="use_model_image" value="true" />
+                    <input type="hidden" name="model_id" value="{{ model.id }}" />
                   {% else %}
-                    <div class="alert alert-warning py-2 mt-2">
-                      <i class="bi bi-exclamation-triangle"></i> Aucune forme personnalisée n'est disponible. 
-                      <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="alert-link">Créez une forme</a> dans vos paramètres pour adapter votre modèle à vos besoins.
+                    <div class="alert alert-warning py-2">
+                      <i class="bi bi-exclamation-triangle"></i> Aucune image n'est disponible. Veuillez retourner à un modèle pour sélectionner une image.
                     </div>
                   {% endif %}
                 </div>
+              </div>
 
-                <!-- Champs cachés qui seront mis à jour par JavaScript -->
-                <input type="hidden" name="grid_width" id="id_grid_width" value="{{ form.grid_width.value|default:'29' }}" required>
-                <input type="hidden" name="grid_height" id="id_grid_height" value="{{ form.grid_height.value|default:'29' }}" required>
+              <!-- Colonne de droite pour les paramètres (swapped) -->
+              <div class="col-md-6 order-md-2 order-2">
+                <div class="parameters-container border rounded p-3">
+                  <div class="configuration-section mb-4">
+                    <h5 class="h6 mb-3">Taille de la grille</h5>
+                    <label class="form-label small">Choisissez une forme</label>
 
-                <div class="row">
-                  <div class="col-6">
-                    <div class="form-text">
-                      Largeur: <span id="display_width">{{ form.grid_width.value|default:'29' }}</span> perles
+                    <div class="segmented-control mb-2">
+                      {% if user_shapes %}
+                        <div class="mb-1">
+                          <div class="d-flex flex-wrap gap-2">
+                            {% for shape in user_shapes %}
+                              <div class="form-check form-check-inline">
+                                <input 
+                                  class="btn-check shape-selector" 
+                                  type="radio" 
+                                  name="shape_id" 
+                                  id="shape_{{ shape.id }}" 
+                                  value="{{ shape.id }}"
+                                  data-shape-type="{{ shape.shape_type }}"
+                                  {% if shape.shape_type == 'rectangle' %}
+                                  data-width="{{ shape.width }}"
+                                  data-height="{{ shape.height }}"
+                                  {% elif shape.shape_type == 'square' %}
+                                  data-width="{{ shape.size }}"
+                                  data-height="{{ shape.size }}"
+                                  {% elif shape.shape_type == 'circle' %}
+                                  data-width="{{ shape.diameter }}"
+                                  data-height="{{ shape.diameter }}"
+                                  {% endif %}
+                                  {% if forloop.first or selected_shape_id|stringformat:'s' == shape.id|stringformat:'s' %}checked{% endif %}
+                                  autocomplete="off"
+                                  required
+                                >
+                                <label class="btn btn-outline-success" for="shape_{{ shape.id }}">
+                                  {{ shape.name }} ({{ shape.get_dimensions_display }})
+                                </label>
+                              </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% else %}
+                        <div class="alert alert-warning py-2 mt-2">
+                          <i class="bi bi-exclamation-triangle"></i> Aucune forme personnalisée n'est disponible. 
+                          <a href="{% url 'beadmodels:user_settings' %}?tab=shapes_new" class="alert-link">Créez une forme</a> dans vos paramètres pour adapter votre modèle à vos besoins.
+                        </div>
+                      {% endif %}
                     </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="form-text">
-                      Hauteur: <span id="display_height">{{ form.grid_height.value|default:'29' }}</span> perles
+
+                    <!-- Champs cachés qui seront mis à jour par JavaScript -->
+                    <input type="hidden" name="grid_width" id="id_grid_width" value="{{ form.grid_width.value|default:'29' }}" required>
+                    <input type="hidden" name="grid_height" id="id_grid_height" value="{{ form.grid_height.value|default:'29' }}" required>
+
+                    {% comment %} <div class="row">
+                      <div class="col-6">
+                        <div class="form-text">
+                          Largeur: <span id="display_width">{{ form.grid_width.value|default:'29' }}</span> perles
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="form-text">
+                          Hauteur: <span id="display_height">{{ form.grid_height.value|default:'29' }}</span> perles
+                        </div>
+                      </div>
+                    </div>
+                  </div> {% endcomment %}
+
+                  <div class="configuration-section mb-4">
+                    <h5 class="h6 mb-3">Paramètres des couleurs</h5>
+                    <div class="row">
+                      <div class="col-md-12 mb-2">
+                        <label class="form-label small">Nombre de couleurs</label>
+                        <div class="segmented-control">
+                          {% for value in color_values %}
+                          <div class="form-check form-check-inline">
+                            <input 
+                              class="btn-check" 
+                              type="radio" 
+                              name="color_reduction" 
+                              id="color_{{ value }}" 
+                              value="{{ value }}" 
+                              {% if value == 16 %}checked{% endif %}
+                              autocomplete="off"
+                              required
+                            >
+                            <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% if form.color_reduction.errors %}
+                          <div class="invalid-feedback d-block">
+                            {{ form.color_reduction.errors }}
+                          </div>
+                        {% endif %}
+                      </div>
+
+                      <div class="col-md-12 mt-2">
+                        <div class="form-check">
+                          {{ form.use_available_colors }}
+                          <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">{{ form.use_available_colors.label }}</label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div class="row mb-2">
+            
+            <!-- Nouvelle ligne pour le bouton suivant -->
+            <div class="row mt-4">
               <div class="col-12">
-                <h5 class="h6 mb-2">Paramètres des couleurs</h5>
-                <div class="row">
-                  <div class="col-md-8 mb-2">
-                    <label class="form-label small">Nombre de couleurs</label>
-                    <div class="segmented-control">
-                      {% for value in color_values %}
-                      <div class="form-check form-check-inline">
-                        <input 
-                          class="btn-check" 
-                          type="radio" 
-                          name="color_reduction" 
-                          id="color_{{ value }}" 
-                          value="{{ value }}" 
-                          {% if value == 16 %}checked{% endif %}
-                          autocomplete="off"
-                          required
-                        >
-                        <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
-                      </div>
-                      {% endfor %}
-                    </div>
-                    {% if form.color_reduction.errors %}
-                      <div class="invalid-feedback d-block">
-                        {{ form.color_reduction.errors }}
-                      </div>
-                    {% endif %}
-                  </div>
-
-                  <div class="col-md-4 mb-2">
-                    <div class="form-check">
-                      {{ form.use_available_colors }}
-                      <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">{{ form.use_available_colors.label }}</label>
-                    </div>
-                  </div>
+                <div class="d-flex justify-content-end">
+                  <button type="submit" name="next_step" class="btn btn-primary" {% if not has_grid_options %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
                 </div>
               </div>
-            </div>
-
-            <div class="d-flex justify-content-end mt-3">
-              <button type="submit" name="next_step" class="btn btn-primary" {% if not has_grid_options %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
             </div>
           </form>
         </div>
