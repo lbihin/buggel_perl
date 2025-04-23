@@ -1,0 +1,45 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Django: Run Server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "runserver",
+                "8000"
+            ],
+            "django": true,
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env",
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Django: Shell",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "shell"
+            ],
+            "django": true,
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env",
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Django: Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "test"
+            ],
+            "django": true,
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env",
+            "python": "${command:python.interpreterPath}"
+        }
+    ]
+}
