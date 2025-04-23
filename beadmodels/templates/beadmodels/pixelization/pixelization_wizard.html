@@ -101,19 +101,6 @@
                     <input type="hidden" name="grid_width" id="id_grid_width" value="{{ form.grid_width.value|default:'29' }}" required>
                     <input type="hidden" name="grid_height" id="id_grid_height" value="{{ form.grid_height.value|default:'29' }}" required>
 
-                    {% comment %} <div class="row">
-                      <div class="col-6">
-                        <div class="form-text">
-                          Largeur: <span id="display_width">{{ form.grid_width.value|default:'29' }}</span> perles
-                        </div>
-                      </div>
-                      <div class="col-6">
-                        <div class="form-text">
-                          Hauteur: <span id="display_height">{{ form.grid_height.value|default:'29' }}</span> perles
-                        </div>
-                      </div>
-                    </div>
-                  </div> {% endcomment %}
 
                   <div class="configuration-section mb-4">
                     <h5 class="h6 mb-3">Paramètres des couleurs</h5>
@@ -153,13 +140,9 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            <!-- Nouvelle ligne pour le bouton suivant -->
-            <div class="row mt-4">
-              <div class="col-12">
-                <div class="d-flex justify-content-end">
+                
+                <!-- Bouton suivant sous la colonne de droite, à l'extérieur de la bordure -->
+                <div class="mt-3 d-flex justify-content-end">
                   <button type="submit" name="next_step" class="btn btn-primary" {% if not has_grid_options %}disabled{% endif %}>Suivant <i class="bi bi-arrow-right"></i></button>
                 </div>
               </div>
