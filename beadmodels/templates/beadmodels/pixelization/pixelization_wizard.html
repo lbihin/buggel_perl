@@ -78,7 +78,11 @@
                                   data-width="{{ shape.diameter }}"
                                   data-height="{{ shape.diameter }}"
                                   {% endif %}
-                                  {% if forloop.first or selected_shape_id|stringformat:'s' == shape.id|stringformat:'s' %}checked{% endif %}
+                                  {% if selected_shape_id|stringformat:'s' == shape.id|stringformat:'s' %}
+                                    checked
+                                  {% elif not selected_shape_id and forloop.first %}
+                                    checked
+                                  {% endif %}
                                   autocomplete="off"
                                   required
                                 >
@@ -116,7 +120,11 @@
                               name="color_reduction" 
                               id="color_{{ value }}" 
                               value="{{ value }}" 
-                              {% if value == 16 %}checked{% endif %}
+                              {% if form.color_reduction.value|stringformat:'s' == value|stringformat:'s' %}
+                                checked
+                              {% elif not form.color_reduction.value and value == 16 %}
+                                checked
+                              {% endif %}
                               autocomplete="off"
                               required
                             >
@@ -133,7 +141,13 @@
 
                       <div class="col-md-12 mt-2">
                         <div class="form-check">
-                          {{ form.use_available_colors }}
+                          <input 
+                            type="checkbox" 
+                            class="form-check-input" 
+                            name="use_available_colors" 
+                            id="{{ form.use_available_colors.id_for_label }}" 
+                            {% if form.use_available_colors.value %}checked{% endif %}
+                          >
                           <label class="form-check-label" for="{{ form.use_available_colors.id_for_label }}">{{ form.use_available_colors.label }}</label>
                         </div>
                       </div>
@@ -147,8 +161,6 @@
                 </div>
               </div>
             </div>
-            
-            <!-- Suppression de l'ancien bouton suivant qui était sous les deux colonnes -->
           </form>
         </div>
       </div>
