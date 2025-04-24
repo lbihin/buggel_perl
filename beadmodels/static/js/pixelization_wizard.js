@@ -7,8 +7,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (width && height) {
             document.getElementById('id_grid_width').value = width;
             document.getElementById('id_grid_height').value = height;
-            document.getElementById('display_width').textContent = width;
-            document.getElementById('display_height').textContent = height;
+
+            // Check if these elements exist before trying to update them
+            const displayWidth = document.getElementById('display_width');
+            const displayHeight = document.getElementById('display_height');
+
+            if (displayWidth) {
+                displayWidth.textContent = width;
+            }
+
+            if (displayHeight) {
+                displayHeight.textContent = height;
+            }
         }
     }
 
