@@ -1,4 +1,24 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Fonction pour afficher l'overlay de chargement
+    function showLoading(message = "Traitement en cours...") {
+        const overlay = document.getElementById('loadingOverlay');
+        const textElement = overlay.querySelector('.loading-text');
+
+        if (textElement) {
+            textElement.textContent = message;
+        }
+
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Empêche le défilement pendant le chargement
+    }
+
+    // Fonction pour masquer l'overlay de chargement
+    function hideLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.classList.remove('show');
+        document.body.style.overflow = ''; // Restaure le défilement
+    }
+
     // Fonction pour mettre à jour les dimensions selon l'élément sélectionné
     function updateDimensions(element) {
         const width = parseInt(element.getAttribute('data-width'));
@@ -67,6 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     errorAlert.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Veuillez vérifier les champs du formulaire et réessayer.';
                     form.prepend(errorAlert);
                 }
+            } else {
+                // Le formulaire est valide, afficher l'overlay de chargement
+                showLoading("Création du modèle de perles en cours...");
             }
 
             form.classList.add('was-validated');
