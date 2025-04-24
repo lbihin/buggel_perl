@@ -277,3 +277,48 @@ class PixelizationWizard(LoginRequiredWizard):
         if model_id:
             return {"model_id": model_id}
         return {}
+
+    def dispatch(self, request, *args, **kwargs):
+        """Point d'entrée principal pour le traitement des requêtes."""
+        self.request = request
+
+        # Vérifier si on doit réinitialiser le wizard
+        model_id = request.GET.get("model_id")
+        current_data = request.session.get(self.session_key, {})
+        current_model_id = current_data.get("model_id")
+
+        # On force le reset du wizard dans deux cas :
+        # 1. Si explicitement demandé par ?reset=true
+        # 2. Si un nouvel ID de modèle est fourni qui diffère de celui en session
+        # 3. Si on est à l'étape 2 et qu'on demande à accéder à l'étape 1
+        reset_wizard = (
+            request.GET.get("reset") == "true"
+            or (model_id and str(current_model_id) != str(model_id))
+            or (request.GET.get("step") == "1" and self.get_current_step_number() == 2)
+        )
+
+        if reset_wizard:
+            self.reset_wizard()
+            if model_id:
+                # Réinitialiser mais conserver l'ID du modèle
+                self.update_data({"model_id": model_id})
+
+            # Revenir à l'étape 1
+            self.set_current_step_number(1)
+
+            # Afficher un message seulement si demandé explicitement
+            if request.GET.get("reset") == "true":
+                messages.info(request, f"Le {self.name.lower()} a été réinitialisé.")
+
+        # Continuer avec la logique standard
+        # Gestion des boutons précédent/suivant
+        if request.method == "POST":
+            if "previous_step" in request.POST:
+                return self.go_to_previous_step(self.get_redirect_kwargs())
+
+        # Déléguer à l'étape courante
+        step = self.get_current_step()
+        if request.method == "GET":
+            return step.handle_get(**kwargs)
+        elif request.method == "POST":
+            return step.handle_post(**kwargs)
