@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.urls import path
 
 from . import views
+from .pixelization_wizard import PixelizationWizard
 
 app_name = "beadmodels"
 
@@ -32,6 +33,15 @@ urlpatterns = [
         views.save_transformation,
         name="save_transformation",
     ),
+    # Wizard de pixelisation (nouveau, basé sur des classes)
+    path(
+        "pixelization-wizard/", PixelizationWizard.as_view(), name="pixelization_wizard"
+    ),
+    path(
+        "download-pixelized/",
+        views.download_pixelized_image,
+        name="download_pixelized_image",
+    ),
     # Routes utilisateur
     path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
@@ -42,4 +52,8 @@ urlpatterns = [
     path("shapes/create/", views.create_shape, name="create_shape"),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
     path("shapes/<int:shape_id>/delete/", views.delete_shape, name="delete_shape"),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Ajouter les chemins statiques seulement en développement
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

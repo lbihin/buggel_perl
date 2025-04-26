@@ -1,0 +1,53 @@
+/* Styles pour le menu latéral */
+.settings-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.settings-sidebar {
+    flex: 0 0 250px;
+}
+
+.settings-content {
+    flex: 1;
+}
+
+.settings-nav {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav-section {
+    padding: 1rem 0;
+}
+
+.nav-section small {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.settings-nav .nav-link {
+    color: #24292f;
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+    border-left: 3px solid transparent;
+}
+
+.settings-nav .nav-link:hover {
+    background-color: #f6f8fa;
+}
+
+.settings-nav .nav-link.active {
+    color: #0d6efd;
+    background-color: #f6f8fa;
+    border-left-color: #0d6efd;
+}
+
+.settings-divider {
+    height: 1px;
+    background-color: #d0d7de;
+    margin: 0;
+}

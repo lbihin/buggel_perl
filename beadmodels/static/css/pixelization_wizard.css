@@ -1,0 +1,329 @@
+.segmented-control {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.segmented-control .form-check {
+    margin: 0;
+    padding: 0;
+}
+
+.segmented-control .btn-check+.btn {
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.segmented-control .btn-check:checked+.btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+/* Optimisations pour éviter le défilement */
+.wizard-container {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.wizard-card {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.wizard-image {
+    max-height: 600px;
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Rendre la palette de couleurs plus compacte */
+.color-palette {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+/* Nouvelle disposition pour la palette de couleurs */
+.palette-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 colonnes de taille égale */
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.palette-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.color-info {
+    display: flex;
+    flex-direction: column;
+    margin-left: 8px;
+    font-size: 0.75rem;
+    overflow: hidden;
+}
+
+.color-code {
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.color-count {
+    font-weight: 500;
+}
+
+/* Optimisation de l'affichage sur les appareils mobiles */
+@media (max-width: 768px) {
+    .wizard-image {
+        max-height: 200px;
+    }
+
+    .segmented-control .btn-check+.btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .palette-container {
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 colonnes sur mobile */
+    }
+
+    .image-actions-container {
+        flex-direction: column;
+    }
+}
+
+/* Optimisation pour l'image dans l'étape 2 */
+.pixelized-result {
+    max-height: 180px !important;
+    max-width: 180px !important;
+    height: auto !important;
+    width: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Adaptation pour les écrans plus petits */
+@media (max-width: 1200px) {
+    .palette-container {
+        grid-template-columns: repeat(3, 1fr);
+        /* 3 colonnes sur écrans moyens */
+    }
+}
+
+@media (max-width: 992px) {
+    .palette-container {
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 colonnes sur petits écrans */
+    }
+}
+
+@media (max-width: 768px) {
+    .palette-container {
+        grid-template-columns: repeat(1, 1fr);
+        /* 1 colonne sur mobile */
+    }
+}
+
+/* Styles pour la page de résultat de pixelisation */
+#pixelizedImage {
+    max-height: 600px;
+    max-width: 100%;
+    height: auto !important;
+    width: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+
+.color-square {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* Container pour l'image et les actions */
+.image-actions-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 20px;
+    margin-right: 20px;
+}
+
+.image-container {
+    flex-grow: 1;
+    flex-basis: 70%;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actions-container {
+    flex-basis: 30%;
+    min-width: 120px;
+}
+
+/* Adaptation pour les écrans plus petits */
+@media (max-width: 768px) {
+    .palette-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .image-actions-container {
+        flex-direction: column;
+    }
+
+    .image-container,
+    .actions-container {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .order-md-1 {
+        order: 1;
+    }
+
+    .order-md-2 {
+        order: 2;
+    }
+}
+
+/* Styles pour la pixelized-result image */
+.border.rounded {
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.25rem !important;
+}
+
+/* Styling for the configuration sections */
+.configuration-section {
+    background-color: #f8f9fa;
+    /* border: 1px solid #e9ecef; */
+    border-radius: 4px;
+    padding: 15px;
+}
+
+/* Make the button styling consistent */
+.btn-primary {
+    padding: 0.5rem 1.5rem;
+}
+
+.parameters-container {
+    /* background-color: #f8f9fa; */
+    /* border: 1px solid #e9ecef; */
+    height: 100%;
+    margin-bottom: 20px;
+    /* Add margin to create space between container and button */
+}
+
+/* Style for the next button container */
+.next-button-container {
+    margin-top: 15px;
+    text-align: right;
+}
+
+/* Styles pour l'overlay de chargement */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    /* Fond semi-transparent */
+    z-index: 9999;
+    /* Au-dessus de tout le contenu */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    visibility: hidden;
+    /* Caché par défaut */
+    opacity: 0;
+    transition: visibility 0s linear 0.2s, opacity 0.2s ease;
+}
+
+.loading-overlay.show {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(0, 123, 255, 0.3);
+    border-top: 5px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 15px;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Animation pour les transitions entre les étapes */
+.wizard-step-transition {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

@@ -1,0 +1,25 @@
+/* Styles pour les composants réutilisables */
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+.alert {
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+}

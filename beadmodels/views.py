@@ -1,15 +1,19 @@
+import base64
 import json
 import os
 import time
+from io import BytesIO
 
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_http_methods
 from django.views.generic import (
     CreateView,
@@ -19,16 +23,21 @@ from django.views.generic import (
     UpdateView,
 )
 from PIL import Image
+from scipy import ndimage
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 from .forms import (
     BeadForm,
     BeadModelForm,
+    BeadShapeForm,
+    PixelizationWizardForm,
     ShapeForm,
     TransformModelForm,
     UserProfileForm,
     UserRegistrationForm,
 )
-from .models import Bead, BeadModel, BeadShape, CustomShape
+from .models import Bead, BeadBoard, BeadModel, BeadShape, CustomShape
 
 
 def home(request):
@@ -56,88 +65,136 @@ def register(request):
 @login_required
 def user_settings(request):
     active_tab = request.GET.get("tab", "profile")
-    context = {
-        "active_tab": active_tab,
-    }
+    context = {"active_tab": active_tab}
 
     if request.method == "POST":
         if active_tab == "profile":
-            form = UserProfileForm(request.POST, instance=request.user)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "Votre profil a été mis à jour avec succès!")
-                return redirect("beadmodels:user_settings")
-            context["form"] = form
+            return gerer_mise_a_jour_profil(request, context)
         elif active_tab == "password":
-            # TODO: Implémenter le changement de mot de passe
+            # TODO: Implémenter la logique de changement de mot de passe
             pass
         elif active_tab == "preferences":
-            # Gérer les préférences utilisateur
-            default_grid_size = request.POST.get("default_grid_size")
-            public_by_default = request.POST.get("public_by_default") == "on"
-            # TODO: Sauvegarder les préférences
-            messages.success(
-                request, "Vos préférences ont été mises à jour avec succès!"
+            return gerer_mise_a_jour_preferences(request)
+        elif active_tab == "beads":
+            return gerer_actions_perles(request)
+        elif active_tab == "shapes_new":
+            return gerer_creation_forme(request)
+
+    remplir_contexte_pour_requete_get(active_tab, context, request)
+    return render(request, "beadmodels/user/user_settings.html", context)
+
+
+def gerer_mise_a_jour_profil(request, context):
+    form = UserProfileForm(request.POST, instance=request.user)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Votre profil a été mis à jour avec succès!")
+        return redirect("beadmodels:user_settings")
+    context["form"] = form
+    return None
+
+
+def gerer_mise_a_jour_preferences(request):
+    # TODO: Sauvegarder les préférences utilisateur
+    messages.success(request, "Vos préférences ont été mises à jour avec succès!")
+    return redirect("beadmodels:user_settings")
+
+
+def gerer_actions_perles(request):
+    try:
+        data = json.loads(request.body)
+        action = data.get("action")
+        bead_id = data.get("bead_id")
+        if action == "add":
+            creer_perle(request, data)
+        elif action == "update" and bead_id:
+            mettre_a_jour_perle(request, bead_id, data)
+        elif action == "delete" and bead_id:
+            supprimer_perle(request, bead_id)
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)})
+
+
+def creer_perle(request, data):
+    Bead.objects.create(
+        creator=request.user,
+        name=data.get("name"),
+        red=data.get("red"),
+        green=data.get("green"),
+        blue=data.get("blue"),
+        quantity=data.get("quantity"),
+        notes=data.get("notes"),
+    )
+    messages.success(request, "Perle ajoutée avec succès!")
+
+
+def mettre_a_jour_perle(request, bead_id, data):
+    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+    bead.name = data.get("name")
+    bead.red = data.get("red")
+    bead.green = data.get("green")
+    bead.blue = data.get("blue")
+    bead.quantity = data.get("quantity")
+    bead.notes = data.get("notes")
+    bead.save()
+    messages.success(request, "Perle mise à jour avec succès!")
+
+
+def supprimer_perle(request, bead_id):
+    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
+    bead.delete()
+    messages.success(request, "Perle supprimée avec succès!")
+
+
+def remplir_contexte_pour_requete_get(active_tab, context, request):
+    if active_tab == "profile":
+        context["form"] = UserProfileForm(instance=request.user)
+    elif active_tab == "shapes":
+        context["saved_shapes"] = BeadShape.objects.filter(
+            creator=request.user
+        ).order_by("-created_at")
+    elif active_tab == "shapes_new":
+        context["form"] = BeadShapeForm()
+    elif active_tab == "beads":
+        context["beads"] = Bead.objects.filter(creator=request.user)
+
+
+def gerer_creation_forme(request):
+    form = BeadShapeForm(request.POST)
+    if form.is_valid():
+        # Vérifier si une forme avec le même nom existe déjà pour cet utilisateur
+        shape_name = form.cleaned_data.get("name")
+        existing_shape = BeadShape.objects.filter(
+            name=shape_name, creator=request.user
+        ).first()
+
+        if existing_shape:
+            # Si une forme avec ce nom existe déjà, ajouter une erreur au formulaire
+            form.add_error(
+                "name",
+                f"Une forme avec le nom '{shape_name}' existe déjà. Veuillez choisir un autre nom.",
             )
-            return redirect("beadmodels:user_settings")
-        elif active_tab == "beads":
-            try:
-                data = json.loads(request.body)
-                action = data.get("action")
-                bead_id = data.get("bead_id")
-                name = data.get("name")
-                red = data.get("red")
-                green = data.get("green")
-                blue = data.get("blue")
-                quantity = data.get("quantity")
-                notes = data.get("notes")
+            context = {"active_tab": "shapes_new", "form": form}
+            return render(request, "beadmodels/user/user_settings.html", context)
 
-                if action == "add":
-                    Bead.objects.create(
-                        creator=request.user,
-                        name=name,
-                        red=red,
-                        green=green,
-                        blue=blue,
-                        quantity=quantity,
-                        notes=notes,
-                    )
-                    messages.success(request, "Perle ajoutée avec succès!")
-                elif action == "update" and bead_id:
-                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-                    bead.name = name
-                    bead.red = red
-                    bead.green = green
-                    bead.blue = blue
-                    bead.quantity = quantity
-                    bead.notes = notes
-                    bead.save()
-                    messages.success(request, "Perle mise à jour avec succès!")
-                elif action == "delete" and bead_id:
-                    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-                    bead.delete()
-                    messages.success(request, "Perle supprimée avec succès!")
+        # Si aucune forme existante, créer une nouvelle forme
+        shape = form.save(commit=False)
+        shape.creator = request.user
+        shape.is_shared = True
+        shape.save()
+        messages.success(request, "Votre forme a été créée avec succès!")
+        return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
 
-                return JsonResponse({"success": True})
-            except Exception as e:
-                return JsonResponse({"success": False, "message": str(e)})
-    else:
-        if active_tab == "profile":
-            context["form"] = UserProfileForm(instance=request.user)
-        elif active_tab == "shapes":
-            context["saved_shapes"] = BeadShape.objects.filter(
-                creator=request.user
-            ).order_by("-created_at")
-        elif active_tab == "beads":
-            context["beads"] = Bead.objects.filter(creator=request.user)
-
-    return render(request, "beadmodels/user_settings.html", context)
+    # En cas d'erreur, rester sur la page de création avec le formulaire
+    context = {"active_tab": "shapes_new", "form": form}
+    return render(request, "beadmodels/user/user_settings.html", context)
 
 
 # Vues basées sur des classes pour la gestion des modèles
 class BeadModelListView(ListView):
     model = BeadModel
-    template_name = "beadmodels/my_models.html"
+    template_name = "beadmodels/models/my_models.html"
     context_object_name = "models"
 
     def get_queryset(self):
@@ -148,7 +205,7 @@ class BeadModelListView(ListView):
 
 class BeadModelDetailView(DetailView):
     model = BeadModel
-    template_name = "beadmodels/model_detail.html"
+    template_name = "beadmodels/models/model_detail.html"
     context_object_name = "model"
 
     def get_context_data(self, **kwargs):
@@ -167,7 +224,7 @@ class BeadModelDetailView(DetailView):
 class BeadModelCreateView(LoginRequiredMixin, CreateView):
     model = BeadModel
     form_class = BeadModelForm
-    template_name = "beadmodels/create_model.html"
+    template_name = "beadmodels/models/create_model.html"
 
     def form_valid(self, form):
         form.instance.creator = self.request.user
@@ -181,7 +238,7 @@ class BeadModelCreateView(LoginRequiredMixin, CreateView):
 class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
     model = BeadModel
     form_class = BeadModelForm
-    template_name = "beadmodels/edit_model.html"
+    template_name = "beadmodels/models/edit_model.html"
 
     def dispatch(self, request, *args, **kwargs):
         model = self.get_object()
@@ -237,7 +294,7 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     model = BeadModel
-    template_name = "beadmodels/delete_model.html"
+    template_name = "beadmodels/models/delete_model.html"
     success_url = reverse_lazy("beadmodels:my_models")
 
     def dispatch(self, request, *args, **kwargs):
@@ -255,7 +312,7 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
 # Vues basées sur des classes pour la gestion des perles
 class BeadListView(LoginRequiredMixin, ListView):
     model = Bead
-    template_name = "beadmodels/bead_list.html"
+    template_name = "beadmodels/beads/bead_list.html"
     context_object_name = "beads"
 
     def get_queryset(self):
@@ -270,7 +327,7 @@ class BeadListView(LoginRequiredMixin, ListView):
 class BeadCreateView(LoginRequiredMixin, CreateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/bead_form.html"
+    template_name = "beadmodels/beads/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def form_valid(self, form):
@@ -282,7 +339,7 @@ class BeadCreateView(LoginRequiredMixin, CreateView):
 class BeadUpdateView(LoginRequiredMixin, UpdateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/bead_form.html"
+    template_name = "beadmodels/beads/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def get_queryset(self):
@@ -295,7 +352,7 @@ class BeadUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadDeleteView(LoginRequiredMixin, DeleteView):
     model = Bead
-    template_name = "beadmodels/bead_confirm_delete.html"
+    template_name = "beadmodels/beads/bead_confirm_delete.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def get_queryset(self):
@@ -453,7 +510,7 @@ def delete_shape(request, shape_id):
             messages.error(
                 request, f"Une erreur est survenue lors de la suppression : {str(e)}"
             )
-    return redirect("beadmodels:user_settings", tab="shapes")
+    return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
 
 
 @login_required
@@ -468,7 +525,7 @@ def create_shape(request):
     else:
         form = ShapeForm()
 
-    return render(request, "beadmodels/create_shape.html", {"form": form})
+    return render(request, "beadmodels/shapes/create_shape.html", {"form": form})
 
 
 @login_required
@@ -476,72 +533,80 @@ def edit_shape(request, shape_id):
     shape = get_object_or_404(BeadShape, id=shape_id, creator=request.user)
 
     if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            name = data.get("name")
-            shape_type = data.get("type")
-            parameters = data.get("parameters", {})
-
+        form = BeadShapeForm(request.POST, instance=shape)
+        if form.is_valid():
             # Vérifier si une autre forme similaire existe déjà (exclure la forme actuelle)
-            existing_shapes = BeadShape.objects.filter(creator=request.user).exclude(
-                id=shape.id
-            )
-            for existing_shape in existing_shapes:
-                if existing_shape.shape_type == shape_type:
-                    if shape_type == "rectangle":
-                        if existing_shape.width == parameters.get(
-                            "width"
-                        ) and existing_shape.height == parameters.get("height"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Une forme rectangulaire avec ces dimensions existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "square":
-                        if existing_shape.size == parameters.get("size"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un carré avec cette taille existe déjà",
-                                },
-                                status=400,
-                            )
-                    elif shape_type == "circle":
-                        if existing_shape.diameter == parameters.get("diameter"):
-                            return JsonResponse(
-                                {
-                                    "success": False,
-                                    "message": "Un cercle avec ce diamètre existe déjà",
-                                },
-                                status=400,
-                            )
+            shape_name = form.cleaned_data.get("name")
+            shape_type = form.cleaned_data.get("shape_type")
 
-            shape.name = name
-            shape.shape_type = shape_type
+            # Vérifier si le nom a changé et s'il existe déjà
+            if shape.name != shape_name:
+                existing_shape = BeadShape.objects.filter(
+                    name=shape_name, creator=request.user
+                ).first()
+                if existing_shape:
+                    form.add_error(
+                        "name",
+                        f"Une forme avec le nom '{shape_name}' existe déjà. Veuillez choisir un autre nom.",
+                    )
+                    return render(
+                        request,
+                        "beadmodels/shapes/edit_shape.html",
+                        {"form": form, "shape": shape},
+                    )
+
+            # Vérifier les dimensions pour les formes similaires
+            duplicate_params = False
+            existing_shapes = BeadShape.objects.filter(
+                creator=request.user, shape_type=shape_type
+            ).exclude(id=shape.id)
 
             if shape_type == "rectangle":
-                shape.width = parameters.get("width")
-                shape.height = parameters.get("height")
+                width = form.cleaned_data.get("width")
+                height = form.cleaned_data.get("height")
+                for existing_shape in existing_shapes:
+                    if (
+                        existing_shape.width == width
+                        and existing_shape.height == height
+                    ):
+                        duplicate_params = True
+                        message = (
+                            "Une forme rectangulaire avec ces dimensions existe déjà"
+                        )
+                        break
             elif shape_type == "square":
-                shape.size = parameters.get("size")
+                size = form.cleaned_data.get("size")
+                for existing_shape in existing_shapes:
+                    if existing_shape.size == size:
+                        duplicate_params = True
+                        message = "Un carré avec cette taille existe déjà"
+                        break
             elif shape_type == "circle":
-                shape.diameter = parameters.get("diameter")
-            shape.save()
+                diameter = form.cleaned_data.get("diameter")
+                for existing_shape in existing_shapes:
+                    if existing_shape.diameter == diameter:
+                        duplicate_params = True
+                        message = "Un cercle avec ce diamètre existe déjà"
+                        break
 
-            return JsonResponse(
-                {"success": True, "message": "La forme a été modifiée avec succès"}
-            )
+            if duplicate_params:
+                messages.error(request, message)
+                return render(
+                    request,
+                    "beadmodels/shapes/edit_shape.html",
+                    {"form": form, "shape": shape},
+                )
 
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {"success": False, "message": "Données JSON invalides"}, status=400
-            )
-        except Exception as e:
-            return JsonResponse({"success": False, "message": str(e)}, status=500)
+            # Tout est bon, enregistrer la forme
+            form.save()
+            messages.success(request, "La forme a été modifiée avec succès.")
+            return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
+    else:
+        form = BeadShapeForm(instance=shape)
 
-    return render(request, "beadmodels/edit_shape.html", {"shape": shape})
+    return render(
+        request, "beadmodels/shapes/edit_shape.html", {"form": form, "shape": shape}
+    )
 
 
 @login_required
@@ -802,5 +867,471 @@ def save_transformation(request):
     except Exception as e:
         return JsonResponse(
             {"success": False, "message": f"Erreur lors de la sauvegarde : {str(e)}"},
+            status=500,
+        )
+
+
+@login_required
+def pixelization_wizard(request):
+    """Vue pour le wizard de pixelisation basé sur les fonctionnalités du notebook."""
+
+    # Récupérer le modèle sélectionné si un ID est fourni
+    model_id = request.GET.get("model_id")
+    model = None
+
+    # Détecter quand on passe à un nouveau modèle ou qu'on demande explicitement de reset
+    reset_wizard = False
+    if model_id:
+        # Récupérer l'ID du modèle stocké en session (s'il existe)
+        session_model_id = request.session.get("wizard_data", {}).get("model_id")
+
+        # Si l'ID du modèle est différent ou si on demande explicitement un reset
+        if str(session_model_id) != str(model_id) or request.GET.get("reset") == "true":
+            reset_wizard = True
+
+        try:
+            model = BeadModel.objects.get(pk=model_id)
+            # Vérifier que l'utilisateur a accès au modèle
+            if model.creator != request.user and not model.is_public:
+                messages.error(request, "Vous n'avez pas accès à ce modèle.")
+                return redirect("beadmodels:home")
+        except BeadModel.DoesNotExist:
+            model = None
+            messages.error(request, "Le modèle spécifié n'existe pas.")
+            return redirect("beadmodels:home")
+
+    # Variables pour gérer les étapes du wizard
+    wizard_step = 1  # Par défaut, on commence à l'étape 1
+    wizard_data = {}
+
+    # Réinitialiser le wizard si nécessaire ou charger les données de session
+    if reset_wizard:
+        # Réinitialiser complètement le wizard
+        request.session["wizard_step"] = 1
+        request.session["wizard_data"] = {"model_id": model_id}
+        wizard_step = 1
+        wizard_data = {"model_id": model_id}
+        messages.info(request, "Assistant de pixelisation initialisé pour ce modèle.")
+    else:
+        # Utiliser les données de session existantes
+        wizard_step = request.session.get("wizard_step", 1)
+        wizard_data = request.session.get("wizard_data", {})
+
+        # Pour les cas où wizard_data existe mais model_id n'est pas défini
+        if model_id and "model_id" not in wizard_data:
+            wizard_data["model_id"] = model_id
+            request.session["wizard_data"] = wizard_data
+
+    # Gestion du bouton "Précédent" depuis l'étape 2
+    if request.method == "POST" and "previous_step" in request.POST:
+        wizard_step = 1
+        request.session["wizard_step"] = wizard_step
+
+        # Garder les données du formulaire pour l'étape 1
+        initial_data = {
+            "grid_width": wizard_data.get("grid_width", 29),
+            "grid_height": wizard_data.get("grid_height", 29),
+            "color_reduction": wizard_data.get("color_reduction", 16),
+            "use_available_colors": wizard_data.get("use_available_colors", False),
+        }
+
+        form = PixelizationWizardForm(initial=initial_data)
+
+        # Récupérer les formes de l'utilisateur
+        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
+
+        # Liste des valeurs de couleurs disponibles
+        color_values = [2, 4, 6, 8, 16, 24, 32]
+
+        # Rediriger vers l'étape 1 sans les paramètres d'étape dans l'URL
+        return redirect(
+            f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}"
+        )
+
+    # Traitement du formulaire à l'étape 1 (bouton Suivant)
+    if request.method == "POST" and wizard_step == 1 and "next_step" in request.POST:
+        # Passer model_provided=True au formulaire si un modèle avec image est fourni
+        model_has_image = model and model.original_image
+        form = PixelizationWizardForm(
+            request.POST,
+            model_provided=model_has_image,
+            initial={"use_model_image": model_has_image},
+        )
+
+        if form.is_valid():
+            # Stocker les données du formulaire dans la session
+            wizard_data.update(
+                {
+                    "grid_width": form.cleaned_data["grid_width"],
+                    "grid_height": form.cleaned_data["grid_height"],
+                    "color_reduction": form.cleaned_data["color_reduction"],
+                    "use_available_colors": form.cleaned_data["use_available_colors"],
+                    "grid_type": request.POST.get("grid_type", "square"),
+                    "shape_id": request.POST.get("shape_id"),
+                }
+            )
+
+            # Assurer que model_id est dans wizard_data
+            if model_id:
+                wizard_data["model_id"] = model_id
+
+            # Utiliser l'image du modèle
+            if model_has_image:
+                # Traiter l'image du modèle
+                image_data = process_image_for_wizard(model.original_image)
+                wizard_data["uploaded_image"] = False
+
+                # Traiter l'image pour la pixelisation
+                processed_image = process_image_pixelization(
+                    image_data["image_array"],
+                    wizard_data["grid_width"],
+                    wizard_data["grid_height"],
+                    wizard_data["color_reduction"],
+                    wizard_data["use_available_colors"],
+                    request.user if wizard_data["use_available_colors"] else None,
+                )
+
+                # Mettre à jour les données d'image dans la session
+                image_data.update(
+                    {
+                        "image_base64": processed_image["image_base64"],
+                        "palette": processed_image["palette"],
+                    }
+                )
+
+                wizard_data["image_data"] = image_data
+                request.session["wizard_data"] = wizard_data
+
+                # Passer à l'étape suivante
+                wizard_step = 2
+                request.session["wizard_step"] = wizard_step
+
+                # Rediriger vers l'étape 2
+                return redirect(
+                    f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}&step=2"
+                )
+            else:
+                messages.error(
+                    request,
+                    "Aucune image disponible. Veuillez sélectionner un modèle avec une image.",
+                )
+                return redirect("beadmodels:home")
+        else:
+            # Formulaire invalide, rester à l'étape 1
+            # Récupérer les données nécessaires pour le template
+            user_shapes = BeadShape.objects.filter(creator=request.user).order_by(
+                "name"
+            )
+
+            # Liste des valeurs de couleurs disponibles
+            color_values = [2, 4, 6, 8, 16, 24, 32]
+
+            return render(
+                request,
+                "beadmodels/pixelization/pixelization_wizard.html",
+                {
+                    "form": form,
+                    "wizard_step": wizard_step,
+                    "model": model,
+                    "user_shapes": user_shapes,
+                    "has_grid_options": bool(user_shapes.exists()),
+                    "color_values": color_values,
+                    "selected_shape_id": request.POST.get("shape_id"),
+                },
+            )
+
+    # Si on accède directement à l'étape 2 via l'URL
+    if request.GET.get("step") == "2":
+        # Vérifier que les données nécessaires sont présentes avant de passer à l'étape 2
+        if model_id and "image_data" in wizard_data:
+            wizard_step = 2
+            request.session["wizard_step"] = wizard_step
+        else:
+            # Si les données nécessaires sont absentes, rediriger vers l'étape 1
+            messages.warning(request, "Veuillez d'abord configurer votre modèle.")
+            return redirect(
+                f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}"
+            )
+
+    # Affichage initial du formulaire à l'étape 1
+    if wizard_step == 1:
+        # Utiliser les données déjà saisies si elles existent
+        initial_data = {
+            "grid_width": wizard_data.get("grid_width", 29),
+            "grid_height": wizard_data.get("grid_height", 29),
+            "color_reduction": wizard_data.get("color_reduction", 16),
+            "use_available_colors": wizard_data.get("use_available_colors", False),
+        }
+
+        form = PixelizationWizardForm(initial=initial_data)
+
+        # Récupérer les formes de l'utilisateur
+        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
+
+        # Déterminer si l'utilisateur a des options de grille disponibles
+        has_grid_options = bool(user_shapes.exists())
+
+        # Liste des valeurs de couleurs disponibles
+        color_values = [2, 4, 6, 8, 16, 24, 32]
+
+        return render(
+            request,
+            "beadmodels/pixelization/pixelization_wizard.html",
+            {
+                "form": form,
+                "wizard_step": wizard_step,
+                "model": model,
+                "grid_type": wizard_data.get("grid_type", "square"),
+                "user_shapes": user_shapes,
+                "selected_shape_id": wizard_data.get("shape_id"),
+                "has_grid_options": has_grid_options,
+                "color_values": color_values,
+            },
+        )
+
+    # Affichage de l'étape 2 avec les données de la session
+    if wizard_step == 2:
+        image_data = wizard_data.get("image_data", {})
+        return render(
+            request,
+            "beadmodels/pixelization/pixelization_result.html",
+            {
+                "image_base64": image_data.get("image_base64", ""),
+                "grid_width": wizard_data.get("grid_width", 29),
+                "grid_height": wizard_data.get("grid_height", 29),
+                "palette": image_data.get("palette", []),
+                "total_beads": wizard_data.get("grid_width", 29)
+                * wizard_data.get("grid_height", 29),
+                "wizard_step": wizard_step,
+                "wizard_data": wizard_data,
+                "model": model,
+            },
+        )
+
+
+def process_image_pixelization(
+    image_array,
+    grid_width,
+    grid_height,
+    color_reduction,
+    use_available_colors=False,
+    user=None,
+):
+    """
+    Traite l'image en appliquant la pixelisation avec les paramètres spécifiés.
+    """
+    # Convertir la liste en tableau numpy s'il ne s'agit pas déjà d'un tableau
+    if not isinstance(image_array, np.ndarray):
+        image_array = np.array(image_array)
+
+    # Obtenir les dimensions de l'image
+    height, width = image_array.shape[:2]
+
+    # Calculer la taille de chaque cellule
+    cell_height = height // grid_height
+    cell_width = width // grid_width
+
+    # Créer un tableau pour les couleurs moyennes
+    cell_colors = np.zeros((grid_height * grid_width, 3))
+
+    # Calculer la couleur moyenne de chaque cellule
+    for y in range(grid_height):
+        for x in range(grid_width):
+            y_start = y * cell_height
+            y_end = min((y + 1) * cell_height, height)
+            x_start = x * cell_width
+            x_end = min((x + 1) * cell_width, width)
+
+            # Extraire la cellule
+            cell = image_array[y_start:y_end, x_start:x_end]
+
+            # Calculer la couleur moyenne
+            if cell.size > 0:
+                cell_colors[y * grid_width + x] = np.mean(cell, axis=(0, 1))
+            else:
+                cell_colors[y * grid_width + x] = [255, 255, 255]  # Blanc par défaut
+
+    # Réduction des couleurs
+    if use_available_colors and user:
+        # Utiliser les couleurs des perles disponibles pour l'utilisateur
+        available_beads = Bead.objects.filter(creator=user)
+        if available_beads:
+            bead_colors = np.array([[b.red, b.green, b.blue] for b in available_beads])
+            color_centers = bead_colors
+        else:
+            color_centers = apply_kmeans(cell_colors, color_reduction)
+    else:
+        color_centers = apply_kmeans(cell_colors, color_reduction)
+
+    # Créer l'image pixelisée
+    pixelated_image = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
+
+    # Calculer les occurrences de chaque couleur
+    color_counts = {}
+
+    # Attribuer les couleurs des clusters à chaque cellule
+    for i, color in enumerate(cell_colors):
+        y = i // grid_width
+        x = i % grid_width
+
+        # Trouver la couleur la plus proche
+        distances = np.sqrt(np.sum((color_centers - color) ** 2, axis=1))
+        closest_color_idx = np.argmin(distances)
+        pixelated_color = color_centers[closest_color_idx]
+        pixelated_image[y, x] = pixelated_color
+
+        # Incrémenter le compteur pour cette couleur
+        color_tuple = tuple(map(int, pixelated_color))
+        if color_tuple in color_counts:
+            color_counts[color_tuple] += 1
+        else:
+            color_counts[color_tuple] = 1
+
+    # Créer l'image finale avec grille
+    cell_size = 20  # Taille fixe pour l'affichage
+    final_width = grid_width * cell_size
+    final_height = grid_height * cell_size
+
+    final_image = Image.new("RGB", (final_width, final_height), (255, 255, 255))
+    draw_pixels = final_image.load()
+
+    # Dessiner les pixels et la grille
+    for y in range(grid_height):
+        for x in range(grid_width):
+            color = tuple(map(int, pixelated_image[y, x]))
+
+            # Dessiner le pixel
+            for py in range(cell_size):
+                for px in range(cell_size):
+                    if px == 0 or px == cell_size - 1 or py == 0 or py == cell_size - 1:
+                        # Bordure de la grille
+                        draw_pixels[x * cell_size + px, y * cell_size + py] = (
+                            200,
+                            200,
+                            200,
+                        )
+                    else:
+                        # Pixel de couleur
+                        draw_pixels[x * cell_size + px, y * cell_size + py] = color
+
+    # Convertir en base64
+    buffered = BytesIO()
+    final_image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    # Préparer la palette de couleurs
+    palette = [
+        {"color": f"rgb({r}, {g}, {b})", "count": count}
+        for (r, g, b), count in sorted(
+            color_counts.items(), key=lambda x: x[1], reverse=True
+        )
+    ]
+
+    return {"image_base64": img_str, "palette": palette}
+
+
+def process_image_for_wizard(image):
+    """Traite l'image pour le wizard en utilisant les fonctionnalités du notebook."""
+    # Ouvrir l'image
+    if isinstance(image, str):
+        pil_image = Image.open(image)
+    else:
+        pil_image = Image.open(image)
+
+    if pil_image.mode != "RGB":
+        pil_image = pil_image.convert("RGB")
+
+    # Convertir en tableau numpy
+    img_array = np.array(pil_image)
+
+    # Etape 1: Centrer l'image (extraction de la zone d'intérêt)
+    try:
+        # Conversion de l'image en niveaux de gris
+        if len(img_array.shape) == 2:
+            gray_img = img_array.copy()
+        else:
+            gray_img = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+        # Appliquer le seuillage d'Otsu
+        upper_threshold, thresh_img = cv2.threshold(
+            gray_img, thresh=0, maxval=255, type=cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        lower_threshold = 0.5 * upper_threshold
+
+        # Détection des contours
+        canny = cv2.Canny(img_array, lower_threshold, upper_threshold)
+        pts = np.argwhere(canny > 0)
+
+        # Trouver les points min et max
+        y1, x1 = pts.min(axis=0)
+        y2, x2 = pts.max(axis=0)
+
+        # Ajouter une marge
+        BORDER = 10
+        height, width = img_array.shape[:2]
+        x1 = max(x1 - BORDER, 0)
+        x2 = min(x2 + BORDER, width)
+        y1 = max(y1 - BORDER, 0)
+        y2 = min(y2 + BORDER, height)
+
+        # Extraire la région
+        cropped_region = img_array[y1:y2, x1:x2]
+    except Exception as e:
+        # En cas d'erreur, utiliser l'image entière
+        cropped_region = img_array
+
+    return {
+        "image_array": cropped_region.tolist(),  # Convertir en liste pour la sérialisation JSON
+        "image_base64": array_to_base64(cropped_region),
+        "palette": [],  # Sera rempli plus tard dans le processus
+    }
+
+
+def array_to_base64(image_array):
+    """Convertit un tableau numpy en chaîne base64 pour l'affichage dans le template."""
+    image = Image.fromarray(np.uint8(image_array))
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    return img_str
+
+
+def apply_kmeans(colors, n_clusters):
+    """Applique K-means pour réduire les couleurs"""
+    # Normaliser les couleurs
+    scaler = StandardScaler()
+    normalized_colors = scaler.fit_transform(colors)
+
+    # Appliquer K-means
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    kmeans.fit(normalized_colors)
+
+    # Récupérer les centres des clusters
+    centers = scaler.inverse_transform(kmeans.cluster_centers_)
+    centers = np.clip(centers, 0, 255).astype(np.uint8)
+
+    return centers
+
+
+@login_required
+@require_http_methods(["POST"])
+def download_pixelized_image(request):
+    """Vue pour télécharger l'image pixelisée"""
+    try:
+        data = json.loads(request.body)
+        image_data = data.get("image_data")
+
+        # Décoder l'image base64
+        image_data = image_data.split(",")[1]
+        image_bytes = base64.b64decode(image_data)
+
+        # Créer la réponse HTTP avec l'image
+        response = HttpResponse(image_bytes, content_type="image/png")
+        response["Content-Disposition"] = 'attachment; filename="pixelized_model.png"'
+
+        return response
+    except Exception as e:
+        return JsonResponse(
+            {"success": False, "message": f"Erreur lors du téléchargement: {str(e)}"},
             status=500,
         )

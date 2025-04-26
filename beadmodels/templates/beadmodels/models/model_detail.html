@@ -1,4 +1,4 @@
-{% extends 'beadmodels/base.html' %}
+{% extends 'beadmodels/base/base.html' %}
 
 {% block content %}
   {% csrf_token %}
@@ -178,10 +178,8 @@
       }
     
       window.startWizard = function () {
-        currentStep = 1
-        updateWizardUI()
-        const wizardModal = new bootstrap.Modal(document.getElementById('wizardModal'))
-        wizardModal.show()
+        // Redirection vers le nouveau wizard de pixelisation avec l'ID du modèle
+        window.location.href = "{% url 'beadmodels:pixelization_wizard' %}?model_id={{ model.id }}";
       }
     
       function updateWizardUI() {
