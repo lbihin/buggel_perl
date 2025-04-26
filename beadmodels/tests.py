@@ -1,3 +1,8 @@
-from django.test import TestCase
+import pytest
+from django.test import Client
 
-# Create your tests here.
+@pytest.mark.django_db
+def test_example():
+    client = Client()
+    response = client.get("/")
+    assert response.status_code == 200
