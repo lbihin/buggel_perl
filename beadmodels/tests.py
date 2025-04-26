@@ -1,4 +1,3 @@
-import base64
 import io
 import json
 from unittest.mock import MagicMock, patch
@@ -7,21 +6,12 @@ import numpy as np
 import pytest
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, RequestFactory
 from django.urls import reverse
 from PIL import Image
 
 from .forms import BeadForm, BeadModelForm, BeadShapeForm
 from .models import Bead, BeadBoard, BeadModel, BeadShape, CustomShape
-from .views import (
-    BeadListView,
-    BeadModelCreateView,
-    BeadModelDeleteView,
-    BeadModelDetailView,
-    home,
-    pixelization_wizard,
-    process_image_for_wizard,
-)
+from .views import process_image_for_wizard
 
 # ------------------- Fixtures -------------------
 

@@ -5,7 +5,6 @@ import time
 from io import BytesIO
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from django.conf import settings
 from django.contrib import messages
@@ -23,7 +22,6 @@ from django.views.generic import (
     UpdateView,
 )
 from PIL import Image
-from scipy import ndimage
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -37,7 +35,7 @@ from .forms import (
     UserProfileForm,
     UserRegistrationForm,
 )
-from .models import Bead, BeadBoard, BeadModel, BeadShape, CustomShape
+from .models import Bead, BeadModel, BeadShape
 
 
 def home(request):
