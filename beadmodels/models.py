@@ -226,20 +226,25 @@ class Bead(models.Model):
         if hue < 0:
             hue += 360
 
-        # Catégoriser selon la teinte
+        # Ajouter une vérification spécifique pour les verts avec dominante verte claire
+        # Si la composante verte est significativement plus élevée que les autres
+        if g > 0.4 and g > 1.5 * r and g > 1.5 * b:
+            return "Vert"
+
+        # Catégoriser selon la teinte avec des plages ajustées
         if 0 <= hue < 30 or 330 <= hue <= 360:
             return "Rouge"
-        elif 30 <= hue < 90:
+        elif 30 <= hue < 65:  # Réduit la plage de l'orange
             return "Orange"
-        elif 90 <= hue < 150:
+        elif 65 <= hue < 120:  # Ajuste la plage du jaune
             return "Jaune"
-        elif 150 <= hue < 210:
+        elif 120 <= hue < 180:  # Élargit la plage du vert vers le bas
             return "Vert"
-        elif 210 <= hue < 270:
+        elif 180 <= hue < 240:  # Ajuste la plage du cyan
             return "Cyan"
-        elif 270 <= hue < 330:
+        elif 240 <= hue < 300:  # Ajuste la plage du bleu
             return "Bleu"
-        elif 330 <= hue <= 360:
+        elif 300 <= hue <= 360:  # Élargit la plage du violet
             return "Violet"
 
         return "Autres"
