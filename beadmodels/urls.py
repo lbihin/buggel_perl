@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
 
-from . import views
+from . import shapes_views, views
 from .pixelization_wizard import PixelizationWizard
 
 app_name = "beadmodels"
@@ -43,6 +43,68 @@ urlpatterns = [
         "settings/delete-shape/<int:shape_id>/", views.delete_shape, name="delete_shape"
     ),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
+    # Routes HTMX pour les formes
+    path("shapes/", shapes_views.shape_list, name="shape_list"),
+    path("shapes/form/", shapes_views.shape_form, name="shape_form_new"),
+    path(
+        "shapes/<int:shape_id>/form/", shapes_views.shape_form, name="shape_form_edit"
+    ),
+    path("shapes/save/", shapes_views.shape_save, name="shape_save_new"),
+    path(
+        "shapes/<int:shape_id>/save/", shapes_views.shape_save, name="shape_save_edit"
+    ),
+    path(
+        "shapes/<int:shape_id>/delete/", shapes_views.shape_delete, name="shape_delete"
+    ),
+    path(
+        "shapes/<int:shape_id>/detail/", shapes_views.shape_detail, name="shape_detail"
+    ),
+    # Route pour l'aperçu des formes
+    path(
+        "shapes/<int:shape_id>/preview/",
+        shapes_views.shape_preview,
+        name="shape_preview",
+    ),
+    # Routes pour l'édition en ligne des dimensions
+    path(
+        "shapes/<int:shape_id>/inline-edit/",
+        shapes_views.shape_inline_edit,
+        name="shape_inline_edit",
+    ),
+    path(
+        "shapes/<int:shape_id>/inline-update/",
+        shapes_views.shape_inline_update,
+        name="shape_inline_update",
+    ),
+    path(
+        "shapes/<int:shape_id>/dimensions/",
+        shapes_views.shape_dimensions,
+        name="shape_dimensions",
+    ),
+    # Nouvelles routes pour l'édition en ligne du nom
+    path("shapes/<int:shape_id>/name/", shapes_views.shape_name, name="shape_name"),
+    path(
+        "shapes/<int:shape_id>/name/edit/",
+        shapes_views.shape_name_edit,
+        name="shape_name_edit",
+    ),
+    path(
+        "shapes/<int:shape_id>/name/update/",
+        shapes_views.shape_name_update,
+        name="shape_name_update",
+    ),
+    # Nouvelles routes pour l'édition en ligne du type
+    path("shapes/<int:shape_id>/type/", shapes_views.shape_type, name="shape_type"),
+    path(
+        "shapes/<int:shape_id>/type/edit/",
+        shapes_views.shape_type_edit,
+        name="shape_type_edit",
+    ),
+    path(
+        "shapes/<int:shape_id>/type/update/",
+        shapes_views.shape_type_update,
+        name="shape_type_update",
+    ),
 ]
 
 # Ajouter les chemins statiques seulement en développement

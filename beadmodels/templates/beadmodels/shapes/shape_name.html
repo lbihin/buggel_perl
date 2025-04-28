@@ -1,0 +1,2 @@
+{{ shape.name }}
+<button class="edit-inline-btn" hx-get="{% url 'beadmodels:shape_name_edit' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>

@@ -1,0 +1,20 @@
+{% csrf_token %}
+<form class="inline-edit-form" hx-post="{% url 'beadmodels:shape_inline_update' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML">
+  {% if type_changed %}
+    <div class="alert alert-warning mb-2" style="font-size: 0.9rem; padding: 0.25rem 0.5rem;">Veuillez ajuster les dimensions pour la nouvelle forme</div>
+  {% endif %}
+
+  {% if shape.shape_type == 'rectangle' %}
+    <input type="number" name="width" value="{{ shape.width }}" min="1" required placeholder="Largeur" class="form-control form-control-sm" />
+    <input type="number" name="height" value="{{ shape.height }}" min="1" required placeholder="Hauteur" class="form-control form-control-sm" />
+  {% elif shape.shape_type == 'square' %}
+    <input type="number" name="size" value="{{ shape.size }}" min="1" required placeholder="Taille" class="form-control form-control-sm" />
+  {% elif shape.shape_type == 'circle' %}
+    <input type="number" name="diameter" value="{{ shape.diameter }}" min="1" required placeholder="Diamètre" class="form-control form-control-sm" />
+  {% endif %}
+
+  <div class="inline-edit-actions">
+    <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
+    <button type="button" class="cancel-inline-btn" hx-get="{% url 'beadmodels:shape_dimensions' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Annuler"><i class="bi bi-x"></i></button>
+  </div>
+</form>
