@@ -1,23 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Fonction pour afficher l'overlay de chargement
-    function showLoading(message = "Traitement en cours...") {
-        const overlay = document.getElementById('loadingOverlay');
-        const textElement = overlay.querySelector('.loading-text');
-
-        if (textElement) {
-            textElement.textContent = message;
-        }
-
-        overlay.classList.add('show');
-        document.body.style.overflow = 'hidden'; // Empêche le défilement pendant le chargement
-    }
-
-    // Fonction pour masquer l'overlay de chargement
-    function hideLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.classList.remove('show');
-        document.body.style.overflow = ''; // Restaure le défilement
-    }
+    // Les fonctions showLoading() et hideLoading() sont maintenant importées depuis utils.js
 
     // Fonction pour mettre à jour les dimensions selon l'élément sélectionné
     function updateDimensions(element) {
@@ -28,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('id_grid_width').value = width;
             document.getElementById('id_grid_height').value = height;
 
-            // Check if these elements exist before trying to update them
+            // Check if these elements exist avant trying to update them
             const displayWidth = document.getElementById('display_width');
             const displayHeight = document.getElementById('display_height');
 
@@ -52,21 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Initialisation si une forme est déjà sélectionnée
-        if (selector.checked) {
-            updateDimensions(selector);
-        }
-    });
-
-    // Gestion des clics sur les grilles prédéfinies (obsolète mais maintenu pour compatibilité)
-    const boardSelectors = document.querySelectorAll('input[name="board_id"]');
-    boardSelectors.forEach(selector => {
-        selector.addEventListener('change', function () {
-            if (this.checked) {
-                updateDimensions(this);
-            }
-        });
-
-        // Initialisation si une grille est déjà sélectionnée
         if (selector.checked) {
             updateDimensions(selector);
         }
