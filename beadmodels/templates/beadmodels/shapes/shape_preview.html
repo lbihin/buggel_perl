@@ -1,0 +1,22 @@
+{% load static %}
+
+<div class="shape-preview">
+  <div class="shape-visualization">
+    {% if shape.shape_type == 'RECTANGLE' %}
+      <div class="rectangle-preview" style="width: {{ shape.width }}px; height: {{ shape.height }}px;"></div>
+    {% elif shape.shape_type == 'CIRCLE' %}
+      <div class="circle-preview" style="width: {{ shape.diameter }}px; height: {{ shape.diameter }}px;"></div>
+    {% elif shape.shape_type == 'HEXAGON' %}
+      <div class="hexagon-preview" style="width: {{ shape.width }}px; height: {{ shape.height }}px;"></div>
+    {% endif %}
+  </div>
+  <div class="shape-dimensions-info">
+    {% if shape.shape_type == 'RECTANGLE' %}
+      <p>Dimensions: {{ shape.width }} × {{ shape.height }}</p>
+    {% elif shape.shape_type == 'CIRCLE' %}
+      <p>Diamètre: {{ shape.diameter }}</p>
+    {% elif shape.shape_type == 'HEXAGON' %}
+      <p>Dimensions: {{ shape.width }} × {{ shape.height }}</p>
+    {% endif %}
+  </div>
+</div>

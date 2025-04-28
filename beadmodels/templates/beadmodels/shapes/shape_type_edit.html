@@ -1,0 +1,23 @@
+{% csrf_token %}
+<form class="inline-edit-form"
+      hx-post="{% url 'beadmodels:shape_type_update' shape.id %}"
+      hx-target="#shape-type-{{ shape.id }}"
+      hx-swap="innerHTML">
+  <select name="shape_type" class="form-select form-select-sm" style="min-width: 120px;">
+    <option value="rectangle" {% if shape.shape_type == 'rectangle' %}selected{% endif %}>Rectangle</option>
+    <option value="square" {% if shape.shape_type == 'square' %}selected{% endif %}>Carré</option>
+    <option value="circle" {% if shape.shape_type == 'circle' %}selected{% endif %}>Cercle</option>
+  </select>
+  <div class="inline-edit-actions">
+    <button type="submit" class="save-inline-btn" title="Sauvegarder">
+      <i class="bi bi-check"></i>
+    </button>
+    <button type="button" class="cancel-inline-btn" 
+            hx-get="{% url 'beadmodels:shape_type' shape.id %}"
+            hx-target="#shape-type-{{ shape.id }}"
+            hx-swap="innerHTML"
+            title="Annuler">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+</form>
