@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_http_methods
@@ -29,8 +29,6 @@ from .forms import (
     BeadForm,
     BeadModelForm,
     BeadShapeForm,
-    PixelizationWizardForm,
-    ShapeForm,
     TransformModelForm,
     UserProfileForm,
     UserRegistrationForm,
@@ -431,73 +429,6 @@ def my_models(request):
 
 
 @login_required
-def save_shape(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            print("Données reçues:", data)  # Log des données reçues
-            name = data.get("name")
-            shape_type = data.get("type")
-            parameters = data.get("parameters", {})
-            original_shape_id = data.get(
-                "original_shape_id"
-            )  # ID de la forme originale à supprimer
-
-            # Si nous avons un ID de forme originale, la supprimer
-            if original_shape_id:
-                try:
-                    original_shape = BeadShape.objects.get(
-                        id=original_shape_id, creator=request.user
-                    )
-                    original_shape.delete()
-                except BeadShape.DoesNotExist:
-                    pass  # Ignorer si la forme n'existe pas
-
-            # Créer une nouvelle forme
-            shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                creator=request.user,
-                is_shared=True,  # Par défaut, la forme est partagée
-            )
-
-            if shape_type == "rectangle":
-                shape.width = parameters.get("width")
-                shape.height = parameters.get("height")
-            elif shape_type == "square":
-                shape.size = parameters.get("size")
-            elif shape_type == "circle":
-                shape.diameter = parameters.get("diameter")
-            shape.save()
-
-            return JsonResponse(
-                {
-                    "success": True,
-                    "message": "Forme sauvegardée avec succès",
-                    "shape": {
-                        "id": shape.id,
-                        "name": shape.name,
-                        "type": shape.shape_type,
-                        "parameters": shape.get_parameters(),
-                    },
-                }
-            )
-
-        except json.JSONDecodeError as e:
-            print("Erreur JSON:", str(e))  # Log de l'erreur JSON
-            return JsonResponse(
-                {"success": False, "message": "Données JSON invalides"}, status=400
-            )
-        except Exception as e:
-            print("Erreur générale:", str(e))  # Log de l'erreur générale
-            return JsonResponse({"success": False, "message": str(e)}, status=500)
-
-    return JsonResponse(
-        {"success": False, "message": "Méthode non autorisée"}, status=405
-    )
-
-
-@login_required
 def delete_shape(request, shape_id):
     if request.method == "POST":
         try:
@@ -509,21 +440,6 @@ def delete_shape(request, shape_id):
                 request, f"Une erreur est survenue lors de la suppression : {str(e)}"
             )
     return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
-
-
-@login_required
-def create_shape(request):
-    if request.method == "POST":
-        form = ShapeForm(request.POST)
-        if form.is_valid():
-            # Process the shape data (e.g., save to the database)
-            shape_data = form.cleaned_data
-            # Redirect to the user settings page with the shapes tab
-            return redirect("beadmodels:user_settings", tab="shapes")
-    else:
-        form = ShapeForm()
-
-    return render(request, "beadmodels/shapes/create_shape.html", {"form": form})
 
 
 @login_required
@@ -869,244 +785,6 @@ def save_transformation(request):
         )
 
 
-@login_required
-def pixelization_wizard(request):
-    """Vue pour le wizard de pixelisation basé sur les fonctionnalités du notebook."""
-
-    # Récupérer le modèle sélectionné si un ID est fourni
-    model_id = request.GET.get("model_id")
-    model = None
-
-    # Détecter quand on passe à un nouveau modèle ou qu'on demande explicitement de reset
-    reset_wizard = False
-    if model_id:
-        # Récupérer l'ID du modèle stocké en session (s'il existe)
-        session_model_id = request.session.get("wizard_data", {}).get("model_id")
-
-        # Si l'ID du modèle est différent ou si on demande explicitement un reset
-        if str(session_model_id) != str(model_id) or request.GET.get("reset") == "true":
-            reset_wizard = True
-
-        try:
-            model = BeadModel.objects.get(pk=model_id)
-            # Vérifier que l'utilisateur a accès au modèle
-            if model.creator != request.user and not model.is_public:
-                messages.error(request, "Vous n'avez pas accès à ce modèle.")
-                return redirect("beadmodels:home")
-        except BeadModel.DoesNotExist:
-            model = None
-            messages.error(request, "Le modèle spécifié n'existe pas.")
-            return redirect("beadmodels:home")
-
-    # Variables pour gérer les étapes du wizard
-    wizard_step = 1  # Par défaut, on commence à l'étape 1
-    wizard_data = {}
-
-    # Réinitialiser le wizard si nécessaire ou charger les données de session
-    if reset_wizard:
-        # Réinitialiser complètement le wizard
-        request.session["wizard_step"] = 1
-        request.session["wizard_data"] = {"model_id": model_id}
-        wizard_step = 1
-        wizard_data = {"model_id": model_id}
-        messages.info(request, "Assistant de pixelisation initialisé pour ce modèle.")
-    else:
-        # Utiliser les données de session existantes
-        wizard_step = request.session.get("wizard_step", 1)
-        wizard_data = request.session.get("wizard_data", {})
-
-        # Pour les cas où wizard_data existe mais model_id n'est pas défini
-        if model_id and "model_id" not in wizard_data:
-            wizard_data["model_id"] = model_id
-            request.session["wizard_data"] = wizard_data
-
-    # Gestion du bouton "Précédent" depuis l'étape 2
-    if request.method == "POST" and "previous_step" in request.POST:
-        wizard_step = 1
-        request.session["wizard_step"] = wizard_step
-
-        # Garder les données du formulaire pour l'étape 1
-        initial_data = {
-            "grid_width": wizard_data.get("grid_width", 29),
-            "grid_height": wizard_data.get("grid_height", 29),
-            "color_reduction": wizard_data.get("color_reduction", 16),
-            "use_available_colors": wizard_data.get("use_available_colors", False),
-        }
-
-        form = PixelizationWizardForm(initial=initial_data)
-
-        # Récupérer les formes de l'utilisateur
-        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
-
-        # Liste des valeurs de couleurs disponibles
-        color_values = [2, 4, 6, 8, 16, 24, 32]
-
-        # Rediriger vers l'étape 1 sans les paramètres d'étape dans l'URL
-        return redirect(
-            f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}"
-        )
-
-    # Traitement du formulaire à l'étape 1 (bouton Suivant)
-    if request.method == "POST" and wizard_step == 1 and "next_step" in request.POST:
-        # Passer model_provided=True au formulaire si un modèle avec image est fourni
-        model_has_image = model and model.original_image
-        form = PixelizationWizardForm(
-            request.POST,
-            model_provided=model_has_image,
-            initial={"use_model_image": model_has_image},
-        )
-
-        if form.is_valid():
-            # Stocker les données du formulaire dans la session
-            wizard_data.update(
-                {
-                    "grid_width": form.cleaned_data["grid_width"],
-                    "grid_height": form.cleaned_data["grid_height"],
-                    "color_reduction": form.cleaned_data["color_reduction"],
-                    "use_available_colors": form.cleaned_data["use_available_colors"],
-                    "grid_type": request.POST.get("grid_type", "square"),
-                    "shape_id": request.POST.get("shape_id"),
-                }
-            )
-
-            # Assurer que model_id est dans wizard_data
-            if model_id:
-                wizard_data["model_id"] = model_id
-
-            # Utiliser l'image du modèle
-            if model_has_image:
-                # Traiter l'image du modèle
-                image_data = process_image_for_wizard(model.original_image)
-                wizard_data["uploaded_image"] = False
-
-                # Traiter l'image pour la pixelisation
-                processed_image = process_image_pixelization(
-                    image_data["image_array"],
-                    wizard_data["grid_width"],
-                    wizard_data["grid_height"],
-                    wizard_data["color_reduction"],
-                    wizard_data["use_available_colors"],
-                    request.user if wizard_data["use_available_colors"] else None,
-                )
-
-                # Mettre à jour les données d'image dans la session
-                image_data.update(
-                    {
-                        "image_base64": processed_image["image_base64"],
-                        "palette": processed_image["palette"],
-                    }
-                )
-
-                wizard_data["image_data"] = image_data
-                request.session["wizard_data"] = wizard_data
-
-                # Passer à l'étape suivante
-                wizard_step = 2
-                request.session["wizard_step"] = wizard_step
-
-                # Rediriger vers l'étape 2
-                return redirect(
-                    f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}&step=2"
-                )
-            else:
-                messages.error(
-                    request,
-                    "Aucune image disponible. Veuillez sélectionner un modèle avec une image.",
-                )
-                return redirect("beadmodels:home")
-        else:
-            # Formulaire invalide, rester à l'étape 1
-            # Récupérer les données nécessaires pour le template
-            user_shapes = BeadShape.objects.filter(creator=request.user).order_by(
-                "name"
-            )
-
-            # Liste des valeurs de couleurs disponibles
-            color_values = [2, 4, 6, 8, 16, 24, 32]
-
-            return render(
-                request,
-                "beadmodels/pixelization/pixelization_wizard.html",
-                {
-                    "form": form,
-                    "wizard_step": wizard_step,
-                    "model": model,
-                    "user_shapes": user_shapes,
-                    "has_grid_options": bool(user_shapes.exists()),
-                    "color_values": color_values,
-                    "selected_shape_id": request.POST.get("shape_id"),
-                },
-            )
-
-    # Si on accède directement à l'étape 2 via l'URL
-    if request.GET.get("step") == "2":
-        # Vérifier que les données nécessaires sont présentes avant de passer à l'étape 2
-        if model_id and "image_data" in wizard_data:
-            wizard_step = 2
-            request.session["wizard_step"] = wizard_step
-        else:
-            # Si les données nécessaires sont absentes, rediriger vers l'étape 1
-            messages.warning(request, "Veuillez d'abord configurer votre modèle.")
-            return redirect(
-                f"{reverse('beadmodels:pixelization_wizard')}?model_id={model_id}"
-            )
-
-    # Affichage initial du formulaire à l'étape 1
-    if wizard_step == 1:
-        # Utiliser les données déjà saisies si elles existent
-        initial_data = {
-            "grid_width": wizard_data.get("grid_width", 29),
-            "grid_height": wizard_data.get("grid_height", 29),
-            "color_reduction": wizard_data.get("color_reduction", 16),
-            "use_available_colors": wizard_data.get("use_available_colors", False),
-        }
-
-        form = PixelizationWizardForm(initial=initial_data)
-
-        # Récupérer les formes de l'utilisateur
-        user_shapes = BeadShape.objects.filter(creator=request.user).order_by("name")
-
-        # Déterminer si l'utilisateur a des options de grille disponibles
-        has_grid_options = bool(user_shapes.exists())
-
-        # Liste des valeurs de couleurs disponibles
-        color_values = [2, 4, 6, 8, 16, 24, 32]
-
-        return render(
-            request,
-            "beadmodels/pixelization/pixelization_wizard.html",
-            {
-                "form": form,
-                "wizard_step": wizard_step,
-                "model": model,
-                "grid_type": wizard_data.get("grid_type", "square"),
-                "user_shapes": user_shapes,
-                "selected_shape_id": wizard_data.get("shape_id"),
-                "has_grid_options": has_grid_options,
-                "color_values": color_values,
-            },
-        )
-
-    # Affichage de l'étape 2 avec les données de la session
-    if wizard_step == 2:
-        image_data = wizard_data.get("image_data", {})
-        return render(
-            request,
-            "beadmodels/pixelization/pixelization_result.html",
-            {
-                "image_base64": image_data.get("image_base64", ""),
-                "grid_width": wizard_data.get("grid_width", 29),
-                "grid_height": wizard_data.get("grid_height", 29),
-                "palette": image_data.get("palette", []),
-                "total_beads": wizard_data.get("grid_width", 29)
-                * wizard_data.get("grid_height", 29),
-                "wizard_step": wizard_step,
-                "wizard_data": wizard_data,
-                "model": model,
-            },
-        )
-
-
 def process_image_pixelization(
     image_array,
     grid_width,
@@ -1309,27 +987,3 @@ def apply_kmeans(colors, n_clusters):
     centers = np.clip(centers, 0, 255).astype(np.uint8)
 
     return centers
-
-
-@login_required
-@require_http_methods(["POST"])
-def download_pixelized_image(request):
-    """Vue pour télécharger l'image pixelisée"""
-    try:
-        data = json.loads(request.body)
-        image_data = data.get("image_data")
-
-        # Décoder l'image base64
-        image_data = image_data.split(",")[1]
-        image_bytes = base64.b64decode(image_data)
-
-        # Créer la réponse HTTP avec l'image
-        response = HttpResponse(image_bytes, content_type="image/png")
-        response["Content-Disposition"] = 'attachment; filename="pixelized_model.png"'
-
-        return response
-    except Exception as e:
-        return JsonResponse(
-            {"success": False, "message": f"Erreur lors du téléchargement: {str(e)}"},
-            status=500,
-        )

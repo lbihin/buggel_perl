@@ -37,21 +37,12 @@ urlpatterns = [
     path(
         "pixelization-wizard/", PixelizationWizard.as_view(), name="pixelization_wizard"
     ),
-    path(
-        "download-pixelized/",
-        views.download_pixelized_image,
-        name="download_pixelized_image",
-    ),
     # Routes utilisateur
-    path("register/", views.register, name="register"),
     path("settings/", views.user_settings, name="user_settings"),
-    path("settings/save-shape/", views.save_shape, name="save_shape"),
     path(
         "settings/delete-shape/<int:shape_id>/", views.delete_shape, name="delete_shape"
     ),
-    path("shapes/create/", views.create_shape, name="create_shape"),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
-    path("shapes/<int:shape_id>/delete/", views.delete_shape, name="delete_shape"),
 ]
 
 # Ajouter les chemins statiques seulement en développement
