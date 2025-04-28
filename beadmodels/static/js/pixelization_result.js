@@ -1,26 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Fonction pour afficher l'overlay de chargement
-    function showLoading(message = "Traitement en cours...") {
-        const overlay = document.getElementById('loadingOverlay');
-        const textElement = overlay.querySelector('.loading-text');
-
-        if (textElement) {
-            textElement.textContent = message;
-        }
-
-        overlay.classList.add('show');
-        document.body.style.overflow = 'hidden'; // Empêche le défilement pendant le chargement
-    }
-
-    // Fonction pour masquer l'overlay de chargement
-    function hideLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.classList.remove('show');
-        document.body.style.overflow = ''; // Restaure le défilement
-    }
+    // Les fonctions showLoading() et hideLoading() sont maintenant disponibles globalement depuis utils.js
 
     // Gestion du téléchargement de l'image
-    document.getElementById('downloadBtn').addEventListener('click', function () {
+    document.getElementById('downloadBtn')?.addEventListener('click', function () {
         const imageElement = document.getElementById('pixelizedImage');
         const imageURL = imageElement.getAttribute('src');
 

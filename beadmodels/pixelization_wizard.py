@@ -5,14 +5,9 @@ Ce module contient l'implémentation du wizard de pixelisation,
 utilisant le framework de wizard modulaire.
 """
 
-import base64
-
-import numpy as np
 from django.contrib import messages
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse
-from PIL import Image
 
 from .forms import PixelizationWizardForm
 from .models import BeadModel, BeadShape
