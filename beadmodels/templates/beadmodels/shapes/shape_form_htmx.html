@@ -6,7 +6,7 @@
   </div>
   <div class="card-body">
     <form id="shapeForm" 
-          hx-post="{% if shape %}{% url 'beadmodels:shape_save_edit' shape.id %}{% else %}{% url 'beadmodels:shape_save_new' %}{% endif %}"
+          hx-post="{% if shape %}{% url 'shapes:shape_save_edit' shape.id %}{% else %}{% url 'shapes:shape_save_new' %}{% endif %}"
           hx-swap="outerHTML"
           hx-target="#shape-list-container">
       {% csrf_token %}

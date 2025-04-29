@@ -9,31 +9,16 @@
   <table class="shapes-table">
     <thead>
       <tr>
+        <th scope="col">ID</th>
         <th scope="col">Nom</th>
         <th scope="col">Type</th>
         <th scope="col">Dimensions</th>
+        <th scope="col"></th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="shapes-table-body">
       {% for shape in shapes %}
-        <tr class="shape-row {% if forloop.counter|divisibleby:2 %}
-            
-            
-            
-            even-row
-
-
-
-          {% else %}
-            
-            
-            
-            odd-row
-
-
-
-          {% endif %}"
-          id="shape-{{ shape.id }}">
+        <tr class="shape-row {% cycle 'odd-row' 'even-row' %}" id="shape-{{ shape.id }}">
           <!-- ID de la forme -->
           <td width="10%">{{ shape.id }}</td>
 
@@ -44,24 +29,26 @@
           <td width="20%" id="shape-type-{{ shape.id }}" hx-get="{% url 'shapes:shape_type' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
 
           <!-- Dimensions de la forme -->
-          <td width="40%" id="shape-dimensions-{{ shape.id }}" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <td width="40%" id="dimensions-display-{{ shape.id }}" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
 
           <!-- Bouton de suppression flottant -->
           <td width="0" style="padding: 0; position: relative;">
-            <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete' shape.id %}" hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?" hx-target="#shape-list-container" title="Supprimer cette forme"><i class="fas fa-times"></i></button>
+            <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?" hx-target="#shape-list-container" title="Supprimer cette forme"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
       {% empty %}
-        <tr>
-          <td colspan="4" class="text-center py-5">
+        <tr id="empty-state-row">
+          <td colspan="5" class="text-center py-5">
             <div class="empty-state">
-              <i class="fas fa-shapes fs-1 text-muted mb-3"></i>
+              <i class="bi bi-shapes fs-1 text-muted mb-3"></i>
               <h5>Aucune forme disponible</h5>
               <p class="text-muted">Cliquez sur le bouton + pour ajouter une nouvelle forme</p>
             </div>
           </td>
         </tr>
       {% endfor %}
+      <!-- L'emplacement où sera ajouté le formulaire d'ajout en ligne -->
+      <tr id="inline-form-placeholder"></tr>
     </tbody>
   </table>
 
@@ -83,8 +70,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -103,8 +92,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -138,8 +129,10 @@
                 
                 
                 
+                
                 &search={{ search }}
               {% endif %}{% if shape_type_filter %}
+                
                 
                 
                 
@@ -162,8 +155,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -182,8 +177,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               

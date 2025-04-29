@@ -27,7 +27,7 @@ from .views import home
 urlpatterns = [
     path("", home, name="home"),
     path("admin/", admin.site.urls),
-    path("beadmodels", include("beadmodels.urls")),
+    path("beadmodels/", include("beadmodels.urls")),
     path(
         "login/",
         auth_views.LoginView.as_view(template_name="registration/login.html"),
@@ -35,5 +35,5 @@ urlpatterns = [
     ),
     path("logout/", auth_views.LogoutView.as_view(next_page="/"), name="logout"),
     path("register/", beadmodels_views.register, name="register"),
-    path("shapes", include("shapes.urls")),
+    path("shapes/", include("shapes.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,56 @@
+{% if field_name == 'name' %}
+  <span class="shape-name-display">
+    {% if shape %}
+      {{ shape.name }}
+    {% elif session_data %}
+      {{ session_data.name }}
+    {% else %}
+      Nouvelle forme
+    {% endif %}
+  </span>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'name' %}" hx-target="#shape-name-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>
+{% elif field_name == 'type' %}
+  <span class="shape-type-display">
+    {% if shape %}
+      {{ shape.get_shape_type_display }}
+    {% elif session_data %}
+      {% if session_data.shape_type == 'rectangle' %}
+        Rectangle
+      {% elif session_data.shape_type == 'square' %}
+        Carré
+      {% elif session_data.shape_type == 'circle' %}
+        Cercle
+      {% else %}
+        Rectangle
+      {% endif %}
+    {% else %}
+      Rectangle
+    {% endif %}
+  </span>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'type' %}" hx-target="#shape-type-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier le type"><i class="bi bi-pencil-square"></i></button>
+{% elif field_name == 'dimensions' %}
+  <span class="shape-dimensions-display">
+    {% if shape %}
+      {% if shape.shape_type == 'rectangle' %}
+        {{ shape.width }} × {{ shape.height }}
+      {% elif shape.shape_type == 'square' %}
+        {{ shape.size }} × {{ shape.size }}
+      {% elif shape.shape_type == 'circle' %}
+        ∅{{ shape.diameter }}
+      {% endif %}
+    {% elif session_data %}
+      {% if session_data.shape_type == 'rectangle' %}
+        {{ session_data.width|default:'10' }} × {{ session_data.height|default:'10' }}
+      {% elif session_data.shape_type == 'square' %}
+        {{ session_data.size|default:'10' }} × {{ session_data.size|default:'10' }}
+      {% elif session_data.shape_type == 'circle' %}
+        ∅{{ session_data.diameter|default:'10' }}
+      {% else %}
+        10 × 10
+      {% endif %}
+    {% else %}
+      10 × 10
+    {% endif %}
+  </span>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'dimensions' %}" hx-target="#shape-dimensions-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
+{% endif %}
