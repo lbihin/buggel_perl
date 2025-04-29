@@ -82,33 +82,34 @@
     /* Bouton de suppression flottant */
     .floating-delete-btn {
       position: absolute;
-      right: -12px;
+      right: auto;
+      left: 50%;
       top: 50%;
-      transform: translateY(-50%) translateX(100%);
-      opacity: 0;
+      transform: translate(-50%, -50%);
+      opacity: 0; /* Invisible par défaut */
       background-color: #fff;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
       color: #dc3545;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       z-index: 2;
+      border: 1px solid #f1f1f1;
     }
     
     .shape-row:hover .floating-delete-btn {
-      opacity: 1;
-      right: -22px;
+      opacity: 1; /* Visible uniquement au survol */
     }
     
     .floating-delete-btn:hover {
       background-color: #dc3545;
       color: #fff;
-      transform: translateY(-50%) translateX(100%) scale(1.1);
+      transform: translate(-50%, -50%) scale(1.1);
     }
     
     /* Bouton d'ajout flottant */

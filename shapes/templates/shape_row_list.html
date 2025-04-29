@@ -13,26 +13,26 @@
         <th scope="col">Nom</th>
         <th scope="col">Type</th>
         <th scope="col">Dimensions</th>
-        <th scope="col"></th>
+        <th scope="col" style="width: 50px;"></th>
       </tr>
     </thead>
     <tbody id="shapes-table-body">
       {% for shape in shapes %}
         <tr class="shape-row {% cycle 'odd-row' 'even-row' %}" id="shape-{{ shape.id }}">
           <!-- ID de la forme -->
-          <td width="10%">{{ shape.id }}</td>
+          <td width="8%">{{ shape.id }}</td>
 
           <!-- Nom de la forme -->
-          <td width="30%" id="shape-name-{{ shape.id }}" hx-get="{% url 'shapes:shape_name' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <td width="35%" id="shape-name-{{ shape.id }}" hx-get="{% url 'shapes:shape_name' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
 
           <!-- Type de forme -->
-          <td width="20%" id="shape-type-{{ shape.id }}" hx-get="{% url 'shapes:shape_type' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <td width="22%" id="shape-type-{{ shape.id }}" hx-get="{% url 'shapes:shape_type' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
 
           <!-- Dimensions de la forme -->
-          <td width="40%" id="dimensions-display-{{ shape.id }}" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <td width="28%" id="dimensions-display-{{ shape.id }}" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
 
           <!-- Bouton de suppression flottant -->
-          <td width="0" style="padding: 0; position: relative;">
+          <td width="7%" style="padding: 0; position: relative;">
             <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?" hx-target="#shape-list-container" title="Supprimer cette forme"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
@@ -71,8 +71,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -93,8 +95,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -130,8 +134,10 @@
                 
                 
                 
+                
                 &search={{ search }}
               {% endif %}{% if shape_type_filter %}
+                
                 
                 
                 
@@ -156,8 +162,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -178,8 +186,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
