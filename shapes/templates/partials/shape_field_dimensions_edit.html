@@ -1,0 +1,19 @@
+{% csrf_token %}
+<form class="inline-edit-form" hx-post="{% url 'shapes:shape_update_field' shape.id|default:'new' 'dimensions' %}" hx-target="#shape-dimensions-{{ shape.id|default:'new' }}" hx-swap="innerHTML">
+  {% if shape.shape_type == 'rectangle' %}
+    <div class="input-group input-group-sm">
+      <input type="number" name="width" value="{{ shape.width|default:'10' }}" min="1" required placeholder="Largeur" class="form-control form-control-sm" />
+      <span class="input-group-text">×</span>
+      <input type="number" name="height" value="{{ shape.height|default:'10' }}" min="1" required placeholder="Hauteur" class="form-control form-control-sm" />
+    </div>
+  {% elif shape.shape_type == 'square' %}
+    <input type="number" name="size" value="{{ shape.size|default:'10' }}" min="1" required placeholder="Taille" class="form-control form-control-sm" />
+  {% elif shape.shape_type == 'circle' %}
+    <input type="number" name="diameter" value="{{ shape.diameter|default:'10' }}" min="1" required placeholder="Diamètre" class="form-control form-control-sm" />
+  {% endif %}
+
+  <div class="inline-edit-actions mt-1">
+    <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
+    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_display_field' shape.id|default:'new' 'dimensions' %}" hx-target="#shape-dimensions-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Annuler"><i class="bi bi-x"></i></button>
+  </div>
+</form>

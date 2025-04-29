@@ -1,2 +1,2 @@
 {{ shape.get_dimensions_display }}
-<button class="edit-inline-btn" hx-get="{% url 'beadmodels:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
+<button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>

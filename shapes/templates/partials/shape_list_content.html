@@ -1,0 +1,38 @@
+{% if success_message %}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ success_message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+
+<div class="table-responsive">
+  <table class="shapes-table">
+    <thead>
+      <tr>
+        <th scope="col">Nom</th>
+        <th scope="col">Type</th>
+        <th scope="col">Dimensions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for shape in custom_shapes %}
+        {% include 'partials/shape_row.html' with shape=shape %}
+      {% empty %}
+        <tr>
+          <td colspan="4" class="text-center py-5">
+            <div class="empty-state">
+              <i class="bi bi-shapes fs-1 text-muted mb-3"></i>
+              <h5>Aucune forme personnalisée</h5>
+              <p class="text-muted">Cliquez sur le bouton + pour ajouter une nouvelle forme</p>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Bouton flottant "+" pour ajouter une nouvelle forme -->
+  <div class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left" onclick="showAddShapeForm()">
+    <i class="bi bi-plus-lg"></i>
+  </div>
+</div>

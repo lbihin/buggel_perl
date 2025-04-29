@@ -1,0 +1,8 @@
+{% csrf_token %}
+<form class="inline-edit-form" hx-post="{% url 'shapes:shape_update_field' shape.id|default:'new' 'name' %}" hx-target="#shape-name-{{ shape.id|default:'new' }}" hx-swap="innerHTML">
+  <input type="text" name="name" value="{{ shape.name|default:'' }}" required placeholder="Nom" class="form-control form-control-sm" style="width: 100%; min-width: 120px;" />
+  <div class="inline-edit-actions">
+    <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
+    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_display_field' shape.id|default:'new' 'name' %}" hx-target="#shape-name-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Annuler"><i class="bi bi-x"></i></button>
+  </div>
+</form>

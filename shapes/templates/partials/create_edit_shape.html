@@ -1,0 +1,131 @@
+{% load crispy_forms_tags %}
+
+<div class="card mb-4 shape-form">
+  <div class="card-header bg-light">
+    <h5 class="mb-0">{% if shape %}Modifier{% else %}Ajouter{% endif %} une forme</h5>
+  </div>
+  <div class="card-body">
+    <form id="shapeForm" 
+          hx-post="{% if shape %}{% url 'shapes:shape_update_hx' shape.id %}{% else %}{% url 'shapes:shape_create_hx' %}{% endif %}"
+          hx-swap="outerHTML"
+          hx-target="#shape-form-container">
+      {% csrf_token %}
+      
+      <div class="mb-3">
+        <label for="id_name" class="form-label">Nom</label>
+        <input type="text" class="form-control" id="id_name" name="name" value="{{ shape.name|default:'' }}" required>
+      </div>
+      
+      <div class="mb-3">
+        <label for="id_shape_type" class="form-label">Type de forme</label>
+        <select class="form-select" id="id_shape_type" name="shape_type" required>
+          <option value="rectangle" {% if shape.shape_type == 'rectangle' %}selected{% endif %}>Rectangle</option>
+          <option value="square" {% if shape.shape_type == 'square' %}selected{% endif %}>Carré</option>
+          <option value="circle" {% if shape.shape_type == 'circle' %}selected{% endif %}>Cercle</option>
+        </select>
+      </div>
+      
+      <!-- Champs spécifiques pour Rectangle -->
+      <div id="shape-rectangle" class="shape-specific-fields{% if shape.shape_type and shape.shape_type != 'rectangle' %} d-none{% endif %}">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="id_width" class="form-label">Largeur</label>
+              <input type="number" class="form-control" id="id_width" name="width" min="1" value="{{ shape.width|default:'10' }}" required>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="id_height" class="form-label">Hauteur</label>
+              <input type="number" class="form-control" id="id_height" name="height" min="1" value="{{ shape.height|default:'10' }}" required>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Champs spécifiques pour Carré -->
+      <div id="shape-square" class="shape-specific-fields{% if shape.shape_type != 'square' %} d-none{% endif %}">
+        <div class="mb-3">
+          <label for="id_size" class="form-label">Taille</label>
+          <input type="number" class="form-control" id="id_size" name="size" min="1" value="{{ shape.size|default:'10' }}" required>
+        </div>
+      </div>
+      
+      <!-- Champs spécifiques pour Cercle -->
+      <div id="shape-circle" class="shape-specific-fields{% if shape.shape_type != 'circle' %} d-none{% endif %}">
+        <div class="mb-3">
+          <label for="id_diameter" class="form-label">Diamètre</label>
+          <input type="number" class="form-control" id="id_diameter" name="diameter" min="1" value="{{ shape.diameter|default:'10' }}" required>
+        </div>
+      </div>
+      
+      <!-- Option de partage -->
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="id_share_shape" name="share_shape" {% if shape.is_shared %}checked{% endif %}>
+        <label class="form-check-label" for="id_share_shape">Partager cette forme avec les autres utilisateurs</label>
+      </div>
+      
+      <!-- Aperçu de la forme -->
+      <div class="shape-preview-container mb-4">
+        <h6 class="mb-2">Aperçu</h6>
+        <div class="shape-preview bg-light border rounded d-flex align-items-center justify-content-center p-3">
+          <canvas id="previewCanvas" width="200" height="200"></canvas>
+        </div>
+      </div>
+      
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <span class="htmx-indicator spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+          {% if shape %}Modifier{% else %}Ajouter{% endif %}
+        </button>
+        <button type="button" class="btn btn-secondary cancel-form-btn" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-{{ shape.id|default:'new' }}" hx-swap="outerHTML">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const shapeTypeSelect = document.getElementById('id_shape_type');
+  const rectangleFields = document.getElementById('shape-rectangle');
+  const squareFields = document.getElementById('shape-square');
+  const circleFields = document.getElementById('shape-circle');
+  const previewCanvas = document.getElementById('previewCanvas');
+  
+  // Veiller à ce que le canvas existe (il pourrait ne pas être rendu dans certains cas)
+  if (previewCanvas) {
+    const ctx = previewCanvas.getContext('2d');
+    
+    // Mise à jour de l'aperçu lorsqu'on change de type de forme
+    shapeTypeSelect.addEventListener('change', function() {
+      updateFieldVisibility();
+      updateShapePreview();
+    });
+    
+    // Mise à jour lorsque les dimensions changent
+    ['id_width', 'id_height', 'id_size', 'id_diameter'].forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.addEventListener('input', updateShapePreview);
+      }
+    });
+    
+    // Mise à jour initiale
+    updateFieldVisibility();
+    updateShapePreview();
+    
+    function updateShapePreview() {
+      // ...existing code...
+    }
+  }
+  
+  function updateFieldVisibility() {
+    const shapeType = shapeTypeSelect.value;
+    
+    // Cacher tous les champs spécifiques
+    rectangleFields.classList.toggle('d-none', shapeType !== 'rectangle');
+    squareFields.classList.toggle('d-none', shapeType !== 'square');
+    circleFields.classList.toggle('d-none', shapeType !== 'circle');
+  }
+});
+</script>
