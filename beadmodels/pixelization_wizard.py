@@ -9,8 +9,10 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from shapes.models import BeadShape
+
 from .forms import PixelizationWizardForm
-from .models import BeadModel, BeadShape
+from .models import BeadModel
 from .wizards import LoginRequiredWizard, WizardStep
 
 

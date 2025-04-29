@@ -28,12 +28,11 @@ from sklearn.preprocessing import StandardScaler
 from .forms import (
     BeadForm,
     BeadModelForm,
-    BeadShapeForm,
     TransformModelForm,
     UserProfileForm,
     UserRegistrationForm,
 )
-from .models import Bead, BeadModel, BeadShape
+from .models import Bead, BeadModel
 
 
 def home(request):
