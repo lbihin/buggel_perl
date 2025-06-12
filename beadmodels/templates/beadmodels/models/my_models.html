@@ -9,44 +9,7 @@
   <div class="row">
     {% for model in models %}
       <div class="col-md-4 mb-4">
-        <div class="card">
-          {% if model.bead_pattern %}
-            <img src="{{ model.bead_pattern.url }}" class="card-img-top" alt="{{ model.title }}" />
-          {% else %}
-            <img src="{{ model.original_image.url }}" class="card-img-top" alt="{{ model.title }}" />
-          {% endif %}
-          <div class="card-body">
-            <h5 class="card-title">{{ model.title }}</h5>
-            <p class="card-text">{{ model.description|truncatewords:20 }}</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <a href="{% url 'beadmodels:model_detail' model.pk %}" class="btn btn-primary">Voir</a>
-              <span class="badge {% if model.is_public %}
-                  
-                  
-                  
-                  bg-success
-
-
-
-                {% else %}
-                  
-                  
-                  
-                  bg-secondary
-
-
-
-                {% endif %}">
-                {% if model.is_public %}
-                  Public
-                {% else %}
-                  Privé
-                {% endif %}
-              </span>
-            </div>
-          </div>
-          <div class="card-footer text-muted">Créé le {{ model.created_at|date:'d/m/Y' }}</div>
-        </div>
+        {% include 'components/inline-cards.html' with model=model show_privacy_badge=True %}
       </div>
     {% empty %}
       <div class="col-12">
