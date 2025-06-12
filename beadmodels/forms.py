@@ -99,7 +99,6 @@ class UserPreferencesForm(forms.Form):
     )
 
 
-
 class PixelizationWizardForm(forms.Form):
     image = forms.ImageField(
         label="Image à pixeliser",

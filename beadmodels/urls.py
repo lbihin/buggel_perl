@@ -44,7 +44,6 @@ urlpatterns = [
     ),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
     # Routes HTMX pour les formes
-
 ]
 
 # Ajouter les chemins statiques seulement en développement

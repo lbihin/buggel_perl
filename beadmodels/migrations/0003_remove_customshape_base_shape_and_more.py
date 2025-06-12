@@ -6,26 +6,26 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('beadmodels', '0002_add_default_boards'),
+        ("beadmodels", "0002_add_default_boards"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='customshape',
-            name='base_shape',
+            model_name="customshape",
+            name="base_shape",
         ),
         migrations.AlterUniqueTogether(
-            name='customshape',
+            name="customshape",
             unique_together=None,
         ),
         migrations.RemoveField(
-            model_name='customshape',
-            name='user',
+            model_name="customshape",
+            name="user",
         ),
         migrations.DeleteModel(
-            name='BeadShape',
+            name="BeadShape",
         ),
         migrations.DeleteModel(
-            name='CustomShape',
+            name="CustomShape",
         ),
     ]

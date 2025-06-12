@@ -22,6 +22,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from beadmodels import views as beadmodels_views
+
 from .views import home
 
 urlpatterns = [
