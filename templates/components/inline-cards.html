@@ -1,0 +1,17 @@
+<div class="card h-100">
+  <div class="card-img-container" style="height: 200px; overflow: hidden;">
+    {% if model.bead_pattern %}
+      <img src="{{ model.bead_pattern.url }}" class="card-img-top img-fluid h-100 object-fit-cover" alt="{{ model.title }}" />
+    {% else %}
+      <img src="{{ model.original_image.url }}" class="card-img-top img-fluid h-100 object-fit-cover" alt="{{ model.title }}" />
+    {% endif %}
+  </div>
+  <div class="card-body d-flex flex-column">
+    <h5 class="card-title">{{ model.title }}</h5>
+    <p class="card-text flex-grow-1">{{ model.description|truncatewords:20 }}</p>
+    <a href="{% url 'beadmodels:model_detail' model.pk %}" class="btn btn-primary mt-auto">{{ button_text|default:'Voir le modèle' }}</a>
+  </div>
+  {% if show_footer|default:True %}
+    <div class="card-footer text-muted">Par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}</div>
+  {% endif %}
+</div>
