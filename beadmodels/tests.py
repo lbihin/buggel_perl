@@ -10,8 +10,8 @@ from django.test import Client
 from django.urls import reverse
 from PIL import Image
 
-from .forms import BeadForm, BeadModelForm, BeadShapeForm
-from .models import Bead, BeadBoard, BeadModel, BeadShape, CustomShape
+from .forms import BeadForm, BeadModelForm
+from .models import Bead, BeadBoard, BeadModel
 from .views import process_image_for_wizard
 
 # ------------------- Fixtures -------------------
