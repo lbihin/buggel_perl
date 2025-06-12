@@ -16,48 +16,195 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='BeadShape',
+            name="BeadShape",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, verbose_name='Nom')),
-                ('shape_type', models.CharField(choices=[('rectangle', 'Rectangle'), ('square', 'Carré'), ('circle', 'Rond')], max_length=20, verbose_name='Type de forme')),
-                ('width', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Largeur')),
-                ('height', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Hauteur')),
-                ('size', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Taille')),
-                ('diameter', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Diamètre')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Créé le')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Modifié le')),
-                ('is_default', models.BooleanField(default=False, verbose_name='Forme par défaut')),
-                ('is_shared', models.BooleanField(default=False, verbose_name='Forme partagée')),
-                ('creator', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_shapes', to=settings.AUTH_USER_MODEL, verbose_name='Créateur')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100, verbose_name="Nom")),
+                (
+                    "shape_type",
+                    models.CharField(
+                        choices=[
+                            ("rectangle", "Rectangle"),
+                            ("square", "Carré"),
+                            ("circle", "Rond"),
+                        ],
+                        max_length=20,
+                        verbose_name="Type de forme",
+                    ),
+                ),
+                (
+                    "width",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Largeur",
+                    ),
+                ),
+                (
+                    "height",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Hauteur",
+                    ),
+                ),
+                (
+                    "size",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Taille",
+                    ),
+                ),
+                (
+                    "diameter",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Diamètre",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Créé le"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Modifié le"),
+                ),
+                (
+                    "is_default",
+                    models.BooleanField(default=False, verbose_name="Forme par défaut"),
+                ),
+                (
+                    "is_shared",
+                    models.BooleanField(default=False, verbose_name="Forme partagée"),
+                ),
+                (
+                    "creator",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_shapes",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Créateur",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Forme de perles',
-                'verbose_name_plural': 'Formes de perles',
-                'ordering': ['name'],
-                'unique_together': {('name', 'creator')},
+                "verbose_name": "Forme de perles",
+                "verbose_name_plural": "Formes de perles",
+                "ordering": ["name"],
+                "unique_together": {("name", "creator")},
             },
         ),
         migrations.CreateModel(
-            name='CustomShape',
+            name="CustomShape",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, verbose_name='Nom')),
-                ('shape_type', models.CharField(choices=[('rectangle', 'Rectangle'), ('square', 'Carré'), ('circle', 'Rond')], max_length=20, verbose_name='Type de forme')),
-                ('width', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Largeur')),
-                ('height', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Hauteur')),
-                ('size', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Taille')),
-                ('diameter', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(1)], verbose_name='Diamètre')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Créé le')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Modifié le')),
-                ('base_shape', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='shapes.beadshape', verbose_name='Forme de base')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='custom_shapes', to=settings.AUTH_USER_MODEL, verbose_name='Utilisateur')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100, verbose_name="Nom")),
+                (
+                    "shape_type",
+                    models.CharField(
+                        choices=[
+                            ("rectangle", "Rectangle"),
+                            ("square", "Carré"),
+                            ("circle", "Rond"),
+                        ],
+                        max_length=20,
+                        verbose_name="Type de forme",
+                    ),
+                ),
+                (
+                    "width",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Largeur",
+                    ),
+                ),
+                (
+                    "height",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Hauteur",
+                    ),
+                ),
+                (
+                    "size",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Taille",
+                    ),
+                ),
+                (
+                    "diameter",
+                    models.IntegerField(
+                        blank=True,
+                        null=True,
+                        validators=[django.core.validators.MinValueValidator(1)],
+                        verbose_name="Diamètre",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Créé le"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="Modifié le"),
+                ),
+                (
+                    "base_shape",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="shapes.beadshape",
+                        verbose_name="Forme de base",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="custom_shapes",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Utilisateur",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Forme personnalisée',
-                'verbose_name_plural': 'Formes personnalisées',
-                'ordering': ['-updated_at'],
-                'unique_together': {('user', 'name')},
+                "verbose_name": "Forme personnalisée",
+                "verbose_name_plural": "Formes personnalisées",
+                "ordering": ["-updated_at"],
+                "unique_together": {("user", "name")},
             },
         ),
     ]
