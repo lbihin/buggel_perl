@@ -8,7 +8,6 @@ from .pixelization_wizard import PixelizationWizard
 app_name = "beadmodels"
 
 urlpatterns = [
-    path("", views.home, name="home"),
     # Utilisation des vues basées sur des classes pour les modèles
     path("create/", views.BeadModelCreateView.as_view(), name="create_model"),
     path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="model_detail"),
@@ -38,10 +37,7 @@ urlpatterns = [
         "pixelization-wizard/", PixelizationWizard.as_view(), name="pixelization_wizard"
     ),
     # Routes utilisateur
-    path("settings/", views.user_settings, name="user_settings"),
-    path(
-        "settings/delete-shape/<int:shape_id>/", views.delete_shape, name="delete_shape"
-    ),
+    # path("settings/", views.user_settings, name="user_settings"),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
     # Routes HTMX pour les formes
 ]

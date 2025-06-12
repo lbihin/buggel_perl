@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+  <link rel="stylesheet" href="{% static 'css/user_settings.css' %}" />
+{% endblock %}
+
+{% block content %}
+  {% csrf_token %}
+  <div class="settings-container">
+    <!-- Menu latéral -->
+    <div class="settings-sidebar">
+      <nav class="settings-nav">
+        <div class="nav flex-column nav-pills">
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Compte</small>
+            <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{% url 'accounts:user_settings' %}?tab=profile"><i class="bi bi-person"></i> Profil</a>
+            <a class="nav-link {% if active_tab == 'password' %}active{% endif %}" href="{% url 'accounts:user_settings' %}?tab=password"><i class="bi bi-key"></i> Mot de passe</a>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="nav-section">
+            <small class="text-muted px-3 mb-2 d-block">Application</small>
+            <a class="nav-link {% if active_tab == 'preferences' %}active{% endif %}" href="{% url 'accounts:user_settings' %}?tab=preferences"><i class="bi bi-gear"></i> Préférences</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="settings-content">
+      <div class="settings-section">
+        {% if messages %}
+          <div class="messages">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" data-auto-dismiss="{{ message.tags }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if active_tab == 'profile' %}
+          <h2>Profil</h2>
+          <form method="post" action="?tab=profile">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+          </form>
+        {% elif active_tab == 'password' %}
+          <h2>Changer le mot de passe</h2>
+          <form method="post" action="?tab=password">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="current_password" class="form-label">Mot de passe actuel</label>
+              <input type="password" class="form-control" id="current_password" name="current_password" required />
+            </div>
+            <div class="mb-3">
+              <label for="new_password" class="form-label">Nouveau mot de passe</label>
+              <input type="password" class="form-control" id="new_password" name="new_password" required />
+            </div>
+            <div class="mb-3">
+              <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
+              <input type="password" class="form-control" id="confirm_password" name="confirm_password" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+          </form>
+        {% elif active_tab == 'preferences' %}
+          <h2>Préférences</h2>
+          <form method="post" action="?tab=preferences">
+            {% csrf_token %}
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="public_by_default" id="public_by_default" />
+                <label class="form-check-label" for="public_by_default">Rendre les modèles publics par défaut</label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Enregistrer les préférences</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if active_tab == 'shapes_new' or active_tab == 'shapes' %}
+    <template id="shapeTemplate">
+      <div class="shape-card" data-shape-id="">
+        <div class="shape-header">
+          <h4 class="shape-title"></h4>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Type de forme</label>
+          <select class="form-select shape-type" onchange="updateShapeControls(this)">
+            <option value="rectangle">Rectangle</option>
+            <option value="square">Carré</option>
+            <option value="circle">Rond</option>
+          </select>
+        </div>
+        <div class="shape-controls">
+          <!-- Les contrôles seront ajoutés dynamiquement en fonction du type -->
+        </div>
+        <div class="shape-preview">
+          <div class="shape-canvas">
+            <!-- Les points seront ajoutés dynamiquement -->
+          </div>
+        </div>
+        <div class="mt-4">
+          <button type="button" class="btn btn-primary w-100" onclick="saveShape(this)">Enregistrer la forme</button>
+        </div>
+        <input type="hidden" class="shape-name" name="shape_name" />
+      </div>
+    </template>
+
+    <!-- Suppression des toasts -->
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/user_settings.js' %}"></script>
+{% endblock %}
