@@ -39,7 +39,7 @@ def home(request):
     public_models = BeadModel.objects.filter(is_public=True).order_by("-created_at")[
         :12
     ]
-    return render(request, "beadmodels/home.html", {"models": public_models})
+    return render(request, "home.html", {"models": public_models})
 
 
 def register(request):
