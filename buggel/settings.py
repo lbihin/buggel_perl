@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "beadmodels",
     "shapes",
+    "accounts",
     "crispy_forms",
     "crispy_bootstrap5",
     "django_htmx",

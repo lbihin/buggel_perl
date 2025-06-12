@@ -1,9 +1,10 @@
 from django.shortcuts import render
 
+from beadmodels.models import BeadModel
+
 
 def home(request):
-    # If you're trying to render base.html directly
-    return render(request, "base.html")
-
-    # Or if base.html is meant to be extended by another template:
-    # return render(request, 'home.html')
+    public_models = BeadModel.objects.filter(is_public=True).order_by("-created_at")[
+        :12
+    ]
+    return render(request, "home.html", {"models": public_models})
