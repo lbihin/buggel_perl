@@ -70,10 +70,6 @@ def user_settings(request):
             pass
         elif active_tab == "preferences":
             return gerer_mise_a_jour_preferences(request)
-        elif active_tab == "beads":
-            return gerer_actions_perles(request)
-        elif active_tab == "shapes_new":
-            return gerer_creation_forme(request)
 
     remplir_contexte_pour_requete_get(active_tab, context, request)
     return render(request, "beadmodels/user/user_settings.html", context)
@@ -95,53 +91,6 @@ def gerer_mise_a_jour_preferences(request):
     return redirect("beadmodels:user_settings")
 
 
-def gerer_actions_perles(request):
-    try:
-        data = json.loads(request.body)
-        action = data.get("action")
-        bead_id = data.get("bead_id")
-        if action == "add":
-            creer_perle(request, data)
-        elif action == "update" and bead_id:
-            mettre_a_jour_perle(request, bead_id, data)
-        elif action == "delete" and bead_id:
-            supprimer_perle(request, bead_id)
-        return JsonResponse({"success": True})
-    except Exception as e:
-        return JsonResponse({"success": False, "message": str(e)})
-
-
-def creer_perle(request, data):
-    Bead.objects.create(
-        creator=request.user,
-        name=data.get("name"),
-        red=data.get("red"),
-        green=data.get("green"),
-        blue=data.get("blue"),
-        quantity=data.get("quantity"),
-        notes=data.get("notes"),
-    )
-    messages.success(request, "Perle ajoutée avec succès!")
-
-
-def mettre_a_jour_perle(request, bead_id, data):
-    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-    bead.name = data.get("name")
-    bead.red = data.get("red")
-    bead.green = data.get("green")
-    bead.blue = data.get("blue")
-    bead.quantity = data.get("quantity")
-    bead.notes = data.get("notes")
-    bead.save()
-    messages.success(request, "Perle mise à jour avec succès!")
-
-
-def supprimer_perle(request, bead_id):
-    bead = get_object_or_404(Bead, id=bead_id, creator=request.user)
-    bead.delete()
-    messages.success(request, "Perle supprimée avec succès!")
-
-
 def remplir_contexte_pour_requete_get(active_tab, context, request):
     if active_tab == "profile":
         context["form"] = UserProfileForm(instance=request.user)
@@ -153,37 +102,6 @@ def remplir_contexte_pour_requete_get(active_tab, context, request):
         context["form"] = BeadShapeForm()
     elif active_tab == "beads":
         context["beads"] = Bead.objects.filter(creator=request.user)
-
-
-def gerer_creation_forme(request):
-    form = BeadShapeForm(request.POST)
-    if form.is_valid():
-        # Vérifier si une forme avec le même nom existe déjà pour cet utilisateur
-        shape_name = form.cleaned_data.get("name")
-        existing_shape = BeadShape.objects.filter(
-            name=shape_name, creator=request.user
-        ).first()
-
-        if existing_shape:
-            # Si une forme avec ce nom existe déjà, ajouter une erreur au formulaire
-            form.add_error(
-                "name",
-                f"Une forme avec le nom '{shape_name}' existe déjà. Veuillez choisir un autre nom.",
-            )
-            context = {"active_tab": "shapes_new", "form": form}
-            return render(request, "beadmodels/user/user_settings.html", context)
-
-        # Si aucune forme existante, créer une nouvelle forme
-        shape = form.save(commit=False)
-        shape.creator = request.user
-        shape.is_shared = True
-        shape.save()
-        messages.success(request, "Votre forme a été créée avec succès!")
-        return redirect(f"{reverse('beadmodels:user_settings')}?tab=shapes")
-
-    # En cas d'erreur, rester sur la page de création avec le formulaire
-    context = {"active_tab": "shapes_new", "form": form}
-    return render(request, "beadmodels/user/user_settings.html", context)
 
 
 # Vues basées sur des classes pour la gestion des modèles
