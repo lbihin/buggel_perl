@@ -56,7 +56,8 @@
           <h2>Changer le mot de passe</h2>
           <form method="post" action="?tab=password">
             {% csrf_token %}
-            <div class="mb-3">
+            {{ form|crispy }}
+            {% comment %} <div class="mb-3">
               <label for="current_password" class="form-label">Mot de passe actuel</label>
               <input type="password" class="form-control" id="current_password" name="current_password" required />
             </div>
@@ -67,7 +68,7 @@
             <div class="mb-3">
               <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
               <input type="password" class="form-control" id="confirm_password" name="confirm_password" required />
-            </div>
+            </div> {% endcomment %}
             <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
           </form>
         {% elif active_tab == 'preferences' %}

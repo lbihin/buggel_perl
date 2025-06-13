@@ -1,9 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
-from accounts.forms import UserProfileForm, UserRegistrationForm, UserSettingsForm
+from accounts.forms import (
+    UserPasswordChangeForm,
+    UserProfileForm,
+    UserRegistrationForm,
+    UserSettingsForm,
+)
 from accounts.models import UserSettings
 
 
@@ -47,7 +53,18 @@ def user_settings(request):
             if result:
                 return result
         elif active_tab == "password":
-            # TODO: Implémenter la logique de changement de mot de passe
+            form = UserPasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                # Important: update session to prevent user from being logged out
+                update_session_auth_hash(request, user)
+                messages.success(
+                    request, "Votre mot de passe a été mis à jour avec succès!"
+                )
+                return redirect("accounts:user_settings")
+            else:
+                messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
+                context["password_form"] = form
             pass
         elif active_tab == "preferences":
             return gerer_mise_a_jour_preferences(request)
@@ -87,6 +104,8 @@ def gerer_mise_a_jour_preferences(request):
 def remplir_contexte_pour_requete_get(active_tab, context, request):
     if active_tab == "profile":
         context["form"] = UserProfileForm(instance=request.user)
+    elif active_tab == "password":
+        context["form"] = UserPasswordChangeForm(request.user)
     elif active_tab == "preferences":
         # Récupérer ou créer les paramètres utilisateur
         user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
