@@ -3,6 +3,7 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from accounts.forms import (
     UserPasswordChangeForm,
@@ -48,41 +49,51 @@ def user_settings(request):
     context = {"active_tab": active_tab}
 
     if request.method == "POST":
-        if active_tab == "profile":
-            result = gerer_mise_a_jour_profil(request, context)
-            if result:
-                return result
-        elif active_tab == "password":
-            form = UserPasswordChangeForm(request.user, request.POST)
-            if form.is_valid():
-                user = form.save()
-                # Important: update session to prevent user from being logged out
-                update_session_auth_hash(request, user)
-                messages.success(
-                    request, "Votre mot de passe a été mis à jour avec succès!"
-                )
-                return redirect("accounts:user_settings")
-            else:
-                context["form"] = form
-                # Ne pas retourner ici, laisser continuer pour afficher le formulaire avec erreurs
-        elif active_tab == "preferences":
-            return gerer_mise_a_jour_preferences(request)
+        result = traiter_formulaire_settings(request, active_tab, context)
+        if result:
+            return result
 
     remplir_contexte_pour_requete_get(active_tab, context, request)
     return render(request, "accounts/settings.html", context)
 
 
+def traiter_formulaire_settings(request, active_tab, context):
+    """Traite les formulaires selon l'onglet actif"""
+    if active_tab == "profile":
+        return gerer_mise_a_jour_profil(request, context)
+    elif active_tab == "password":
+        return gerer_mise_a_jour_mot_de_passe(request, context)
+    elif active_tab == "preferences":
+        return gerer_mise_a_jour_preferences(request, context)
+    return None
+
+
+def gerer_mise_a_jour_mot_de_passe(request, context):
+    """Gère la mise à jour du mot de passe"""
+    form = UserPasswordChangeForm(request.user, request.POST)
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, "Votre mot de passe a été mis à jour avec succès!")
+        return redirect(reverse("accounts:user_settings") + "?tab=password")
+    else:
+        context["form"] = form
+        return None
+
+
 def gerer_mise_a_jour_profil(request, context):
+    """Gère la mise à jour du profil utilisateur"""
     form = UserProfileForm(request.POST, instance=request.user)
     if form.is_valid():
         form.save()
         messages.success(request, "Votre profil a été mis à jour avec succès!")
-        return redirect("accounts:user_settings")
+        return redirect(reverse("accounts:user_settings") + "?tab=profile")
     context["form"] = form
     return None
 
 
-def gerer_mise_a_jour_preferences(request):
+def gerer_mise_a_jour_preferences(request, context=None):
+    """Gère la mise à jour des préférences utilisateur"""
     # Récupérer ou créer les paramètres utilisateur
     user_settings, created = UserSettings.objects.get_or_create(user=request.user)
 
@@ -90,22 +101,39 @@ def gerer_mise_a_jour_preferences(request):
     if form.is_valid():
         form.save()
         messages.success(request, "Vos préférences ont été mises à jour avec succès!")
-        return redirect("accounts:user_settings")
+        return redirect(reverse("accounts:user_settings") + "?tab=preferences")
     else:
-        # En cas d'erreur, retourner à la page avec le formulaire contenant les erreurs
-        context = {"active_tab": "preferences", "form": form}
-        return render(request, "accounts/settings.html", context)
+        # En cas d'erreur, retourner None et laisser le formulaire avec erreurs dans le contexte
+        if context is not None:
+            context["form"] = form
+        return None
 
 
 def remplir_contexte_pour_requete_get(active_tab, context, request):
-    if active_tab == "profile":
-        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
-            context["form"] = UserProfileForm(instance=request.user)
-    elif active_tab == "password":
-        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
-            context["form"] = UserPasswordChangeForm(request.user)
-    elif active_tab == "preferences":
-        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
-            # Récupérer ou créer les paramètres utilisateur
+    """Remplit le contexte avec le bon formulaire selon l'onglet actif"""
+
+    # Configuration des formulaires par onglet
+    form_configs = {
+        "profile": {
+            "form_class": UserProfileForm,
+            "kwargs": {"instance": request.user},
+        },
+        "password": {
+            "form_class": UserPasswordChangeForm,
+            "kwargs": {"user": request.user},
+        },
+        "preferences": {
+            "form_class": UserSettingsForm,
+            "kwargs": {"instance": None},  # Sera rempli dynamiquement
+        },
+    }
+
+    if active_tab in form_configs and "form" not in context:
+        config = form_configs[active_tab]
+
+        if active_tab == "preferences":
+            # Cas spécial pour les préférences
             user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
-            context["form"] = UserSettingsForm(instance=user_settings)
+            context["form"] = config["form_class"](instance=user_settings)
+        else:
+            context["form"] = config["form_class"](**config["kwargs"])
