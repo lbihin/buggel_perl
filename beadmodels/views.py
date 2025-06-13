@@ -64,6 +64,11 @@ class BeadModelCreateView(LoginRequiredMixin, CreateView):
     form_class = BeadModelForm
     template_name = "beadmodels/models/create_model.html"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.creator = self.request.user
         messages.success(self.request, "Votre modèle a été créé avec succès!")
@@ -205,7 +210,7 @@ class BeadDeleteView(LoginRequiredMixin, DeleteView):
 @login_required
 def create_model(request):
     if request.method == "POST":
-        form = BeadModelForm(request.POST, request.FILES)
+        form = BeadModelForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             model = form.save(commit=False)
             model.creator = request.user
@@ -213,7 +218,7 @@ def create_model(request):
             messages.success(request, "Votre modèle a été créé avec succès!")
             return redirect("beadmodels:model_detail", pk=model.pk)
     else:
-        form = BeadModelForm()
+        form = BeadModelForm(user=request.user)
     return render(request, "beadmodels/create_model.html", {"form": form})
 
 
@@ -239,13 +244,15 @@ def edit_model(request, pk):
         return redirect("beadmodels:model_detail", pk=pk)
 
     if request.method == "POST":
-        form = BeadModelForm(request.POST, request.FILES, instance=model)
+        form = BeadModelForm(
+            request.POST, request.FILES, instance=model, user=request.user
+        )
         if form.is_valid():
             form.save()
             messages.success(request, "Votre modèle a été modifié avec succès!")
             return redirect("beadmodels:model_detail", pk=model.pk)
     else:
-        form = BeadModelForm(instance=model)
+        form = BeadModelForm(instance=model, user=request.user)
     return render(request, "beadmodels/edit_model.html", {"form": form, "model": model})
 
 

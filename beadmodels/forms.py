@@ -1,7 +1,5 @@
 from django import forms
 
-from django.contrib.auth.models import User
-
 from .models import Bead, BeadBoard, BeadModel
 
 
@@ -12,6 +10,20 @@ class BeadModelForm(forms.ModelForm):
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        # Extraire l'utilisateur des kwargs s'il est fourni
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        # Si c'est un nouveau modèle (pas d'instance) et qu'on a un utilisateur
+        if not self.instance.pk and user:
+            from accounts.models import UserSettings
+
+            # Récupérer ou créer les paramètres utilisateur
+            user_settings = UserSettings.objects.for_user(user=user)
+            # Définir la valeur par défaut selon les préférences utilisateur
+            self.fields["is_public"].initial = user_settings.set_public
 
 
 class TransformModelForm(forms.Form):
@@ -36,12 +48,6 @@ class TransformModelForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
         help_text="Activer la détection des contours pour faciliter la reproduction",
     )
-
-
-
-
-
-
 
 
 class BeadForm(forms.ModelForm):
