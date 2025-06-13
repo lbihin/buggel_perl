@@ -63,9 +63,8 @@ def user_settings(request):
                 )
                 return redirect("accounts:user_settings")
             else:
-                messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
-                context["password_form"] = form
-            pass
+                context["form"] = form
+                # Ne pas retourner ici, laisser continuer pour afficher le formulaire avec erreurs
         elif active_tab == "preferences":
             return gerer_mise_a_jour_preferences(request)
 
@@ -93,20 +92,20 @@ def gerer_mise_a_jour_preferences(request):
         messages.success(request, "Vos préférences ont été mises à jour avec succès!")
         return redirect("accounts:user_settings")
     else:
-        # En cas d'erreur, rediriger avec un message d'erreur
-        messages.error(
-            request,
-            "Une erreur s'est produite lors de la mise à jour de vos préférences.",
-        )
-        return redirect("accounts:user_settings")
+        # En cas d'erreur, retourner à la page avec le formulaire contenant les erreurs
+        context = {"active_tab": "preferences", "form": form}
+        return render(request, "accounts/settings.html", context)
 
 
 def remplir_contexte_pour_requete_get(active_tab, context, request):
     if active_tab == "profile":
-        context["form"] = UserProfileForm(instance=request.user)
+        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
+            context["form"] = UserProfileForm(instance=request.user)
     elif active_tab == "password":
-        context["form"] = UserPasswordChangeForm(request.user)
+        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
+            context["form"] = UserPasswordChangeForm(request.user)
     elif active_tab == "preferences":
-        # Récupérer ou créer les paramètres utilisateur
-        user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
-        context["form"] = UserSettingsForm(instance=user_settings)
+        if "form" not in context:  # Ne pas écraser si le formulaire a déjà des erreurs
+            # Récupérer ou créer les paramètres utilisateur
+            user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
+            context["form"] = UserSettingsForm(instance=user_settings)
