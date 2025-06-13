@@ -3,7 +3,8 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
-from accounts.forms import UserProfileForm, UserRegistrationForm
+from accounts.forms import UserProfileForm, UserRegistrationForm, UserSettingsForm
+from accounts.models import UserSettings
 
 
 def logout(request):
@@ -42,7 +43,9 @@ def user_settings(request):
 
     if request.method == "POST":
         if active_tab == "profile":
-            return gerer_mise_a_jour_profil(request, context)
+            result = gerer_mise_a_jour_profil(request, context)
+            if result:
+                return result
         elif active_tab == "password":
             # TODO: Implémenter la logique de changement de mot de passe
             pass
@@ -64,19 +67,27 @@ def gerer_mise_a_jour_profil(request, context):
 
 
 def gerer_mise_a_jour_preferences(request):
-    # TODO: Sauvegarder les préférences utilisateur
-    messages.success(request, "Vos préférences ont été mises à jour avec succès!")
-    return redirect("accounts:user_settings")
+    # Récupérer ou créer les paramètres utilisateur
+    user_settings, created = UserSettings.objects.get_or_create(user=request.user)
+
+    form = UserSettingsForm(request.POST, instance=user_settings)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Vos préférences ont été mises à jour avec succès!")
+        return redirect("accounts:user_settings")
+    else:
+        # En cas d'erreur, rediriger avec un message d'erreur
+        messages.error(
+            request,
+            "Une erreur s'est produite lors de la mise à jour de vos préférences.",
+        )
+        return redirect("accounts:user_settings")
 
 
 def remplir_contexte_pour_requete_get(active_tab, context, request):
     if active_tab == "profile":
         context["form"] = UserProfileForm(instance=request.user)
-    # elif active_tab == "shapes":
-    #     context["saved_shapes"] = BeadShape.objects.filter(
-    #         creator=request.user
-    #     ).order_by("-created_at")
-    # elif active_tab == "shapes_new":
-    #     context["form"] = BeadShapeForm()
-    # elif active_tab == "beads":
-    #     context["beads"] = Bead.objects.filter(creator=request.user)
+    elif active_tab == "preferences":
+        # Récupérer ou créer les paramètres utilisateur
+        user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
+        context["form"] = UserSettingsForm(instance=user_settings)
