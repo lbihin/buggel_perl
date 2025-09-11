@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Bead, BeadBoard, BeadModel
+from .models import AppPreference, Bead, BeadBoard, BeadModel
 
 
 class BeadModelForm(forms.ModelForm):
@@ -154,3 +154,16 @@ class PixelizationWizardForm(forms.Form):
             )
 
         return cleaned_data
+
+
+class AppPreferenceForm(forms.ModelForm):
+    """Formulaire pour les préférences de l'application."""
+
+    class Meta:
+        model = AppPreference
+        fields = ["bead_low_quantity_threshold"]
+        widgets = {
+            "bead_low_quantity_threshold": forms.NumberInput(
+                attrs={"class": "form-control", "min": "1", "max": "1000"}
+            ),
+        }

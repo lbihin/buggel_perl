@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Bead, BeadBoard, BeadModel
+from .models import AppPreference, Bead, BeadBoard, BeadModel
 
 
 @admin.register(BeadBoard)
@@ -36,3 +36,26 @@ class BeadModelAdmin(admin.ModelAdmin):
     search_fields = ("name", "description", "creator__username")
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "created_at"
+
+
+@admin.register(AppPreference)
+class AppPreferenceAdmin(admin.ModelAdmin):
+    """Interface d'administration pour les préférences de l'application."""
+
+    fieldsets = (
+        (
+            "Préférences des perles",
+            {
+                "fields": ("bead_low_quantity_threshold",),
+                "description": "Configuration des seuils d'alerte pour les perles",
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        # Ne permet d'ajouter une instance que s'il n'en existe pas déjà une active
+        return not AppPreference.objects.filter(is_active=True).exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # Empêche la suppression des préférences
+        return False

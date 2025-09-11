@@ -63,7 +63,20 @@
           <h2>Préférences</h2>
           <form method="post" action="?tab=preferences">
             {% csrf_token %}
-            {{ form|crispy }}
+            <h4>Préférences utilisateur</h4>
+            <div class="mb-4">
+              {{ form|crispy }}
+            </div>
+            
+            {% if request.user.is_staff and app_preference_form %}
+              <hr class="my-4">
+              <h4>Préférences de l'application</h4>
+              <p class="text-muted">Ces paramètres s'appliquent à tous les utilisateurs de l'application.</p>
+              <div class="mb-4">
+                {{ app_preference_form|crispy }}
+              </div>
+            {% endif %}
+            
             <button type="submit" class="btn btn-primary">Enregistrer les préférences</button>
           </form>
         {% endif %}

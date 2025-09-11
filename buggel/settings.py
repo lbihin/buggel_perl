@@ -55,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    "beadmodels.middleware.AppPreferencesMiddleware",  # Notre middleware pour les préférences de l'application
 ]
 
 ROOT_URLCONF = "buggel.urls"

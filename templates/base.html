@@ -54,8 +54,9 @@
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">{{ user.username }}</a>
                 <ul class="dropdown-menu dropdown-menu-end">
                   <li>
-                    <a class="dropdown-item" href="{% url 'accounts:user_settings' %}">Paramètres</a>
+                    <a class="dropdown-item" href="{% url 'accounts:user_settings' %}">Paramètres du compte</a>
                   </li>
+                  {% comment %}Menu préférences app supprimé - intégré dans les paramètres utilisateur{% endcomment %}
                   <li>
                     <hr class="dropdown-divider" />
                   </li>

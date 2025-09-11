@@ -12,6 +12,8 @@ from accounts.forms import (
     UserSettingsForm,
 )
 from accounts.models import UserSettings
+from beadmodels.forms import AppPreferenceForm
+from beadmodels.models import AppPreference
 
 
 def logout(request):
@@ -97,10 +99,34 @@ def gerer_mise_a_jour_preferences(request, context=None):
     # Récupérer ou créer les paramètres utilisateur
     user_settings, created = UserSettings.objects.get_or_create(user=request.user)
 
+    # Traiter le formulaire des préférences utilisateur
     form = UserSettingsForm(request.POST, instance=user_settings)
+
+    # Traiter le formulaire des préférences de l'application si présent et si l'utilisateur est staff
+    app_preferences_updated = False
+    if request.user.is_staff and "bead_low_quantity_threshold" in request.POST:
+        app_preferences = AppPreference.get_instance()
+        app_preference_form = AppPreferenceForm(request.POST, instance=app_preferences)
+        if app_preference_form.is_valid():
+            app_preference_form.save()
+            app_preferences_updated = True
+        elif context is not None:
+            context["app_preference_form"] = app_preference_form
+
+    # Vérifier si le formulaire utilisateur est valide
     if form.is_valid():
         form.save()
-        messages.success(request, "Vos préférences ont été mises à jour avec succès!")
+
+        if app_preferences_updated:
+            messages.success(
+                request,
+                "Vos préférences et les préférences de l'application ont été mises à jour avec succès!",
+            )
+        else:
+            messages.success(
+                request, "Vos préférences ont été mises à jour avec succès!"
+            )
+
         return redirect(reverse("accounts:user_settings") + "?tab=preferences")
     else:
         # En cas d'erreur, retourner None et laisser le formulaire avec erreurs dans le contexte
@@ -135,5 +161,12 @@ def remplir_contexte_pour_requete_get(active_tab, context, request):
             # Cas spécial pour les préférences
             user_settings, _ = UserSettings.objects.get_or_create(user=request.user)
             context["form"] = config["form_class"](instance=user_settings)
+
+            # Ajouter les préférences de l'application si l'utilisateur est staff
+            if request.user.is_staff:
+                app_preferences = AppPreference.get_instance()
+                context["app_preference_form"] = AppPreferenceForm(
+                    instance=app_preferences
+                )
         else:
             context["form"] = config["form_class"](**config["kwargs"])
