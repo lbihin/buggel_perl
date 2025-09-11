@@ -155,7 +155,9 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
 # Vues basées sur des classes pour la gestion des perles
 class BeadListView(LoginRequiredMixin, ListView):
     model = Bead
-    template_name = "beadmodels/beads/bead_list.html"
+    template_name = (
+        "beadmodels/beads/bead_table.html"  # Utiliser notre nouveau template tabulaire
+    )
     context_object_name = "beads"
 
     def get_queryset(self):
@@ -163,15 +165,29 @@ class BeadListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = BeadForm()
+
+        # Ajouter le seuil d'alerte au contexte
+        from django.conf import settings
+
+        context["threshold"] = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
+
+        # Identifier les perles sous le seuil
+        threshold = context["threshold"]
+        context["low_quantity_beads"] = [
+            bead
+            for bead in context["beads"]
+            if bead.quantity is not None and bead.quantity <= threshold
+        ]
+
         return context
 
 
 class BeadCreateView(LoginRequiredMixin, CreateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/beads/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
+
+    # Supprimer la référence à template_name pour utiliser le formulaire intégré dans la page de tableau
 
     def form_valid(self, form):
         form.instance.creator = self.request.user
@@ -195,8 +211,13 @@ class BeadUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadDeleteView(LoginRequiredMixin, DeleteView):
     model = Bead
-    template_name = "beadmodels/beads/bead_confirm_delete.html"
     success_url = reverse_lazy("beadmodels:bead_list")
+
+    # Supprimer la référence à template_name car nous utilisons directement la confirmation JavaScript
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Perle supprimée avec succès!")
+        return super().delete(request, *args, **kwargs)
 
     def get_queryset(self):
         return Bead.objects.filter(creator=self.request.user)

@@ -147,3 +147,6 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "login"
+
+# Paramètres spécifiques à l'application
+BEAD_LOW_QUANTITY_THRESHOLD = 20  # Seuil d'alerte pour les perles en quantité faible
