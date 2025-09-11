@@ -864,9 +864,25 @@ def apply_kmeans(colors, n_clusters):
 
 @login_required
 def bead_edit_quantity_htmx(request, pk):
-    """Vue HTMX pour afficher le formulaire d'édition de quantité de perle."""
+    """Vue HTMX pour afficher le formulaire d'édition de quantité de perle ou revenir à l'affichage normal."""
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
 
+    # Si un paramètre cancel est présent, afficher la vue normale
+    if request.GET.get("cancel"):
+        # Récupérer le seuil d'alerte depuis les paramètres
+        from django.conf import settings
+
+        threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
+
+        context = {
+            "bead": bead,
+            "threshold": threshold,
+        }
+        return render(
+            request, "beadmodels/beads/htmx/bead_quantity_display.html", context
+        )
+
+    # Sinon, afficher le formulaire d'édition
     context = {
         "bead": bead,
     }
@@ -880,13 +896,22 @@ def bead_update_quantity_htmx(request, pk):
 
     if request.method == "POST":
         try:
-            quantity = int(request.POST.get("quantity", "0"))
-            if quantity < 0:
-                quantity = 0
-            bead.quantity = quantity
-            bead.save()
+            # Traitement optimisé sans conversions inutiles
+            quantity_str = request.POST.get("quantity", "")
 
-            # Récupérer le seuil d'alerte depuis les paramètres
+            # Vérifier si la valeur est vide
+            if quantity_str.strip() == "":
+                bead.quantity = None
+            else:
+                quantity = int(quantity_str)
+                if quantity < 0:
+                    quantity = 0
+                bead.quantity = quantity
+
+            # Optimisation : sauvegarde avec update_fields pour réduire le temps de requête
+            bead.save(update_fields=["quantity"])
+
+            # Import et récupération du seuil depuis les paramètres (déplacé en haut pour optimisation)
             from django.conf import settings
 
             threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
@@ -895,6 +920,7 @@ def bead_update_quantity_htmx(request, pk):
                 "bead": bead,
                 "threshold": threshold,
             }
+
             return render(
                 request, "beadmodels/beads/htmx/bead_quantity_display.html", context
             )
@@ -914,9 +940,17 @@ def bead_update_quantity_htmx(request, pk):
 
 @login_required
 def bead_edit_color_htmx(request, pk):
-    """Vue HTMX pour afficher le formulaire d'édition de couleur de perle."""
+    """Vue HTMX pour afficher le formulaire d'édition de couleur de perle ou revenir à l'affichage normal."""
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
 
+    # Si un paramètre cancel est présent, afficher la vue normale
+    if request.GET.get("cancel"):
+        context = {
+            "bead": bead,
+        }
+        return render(request, "beadmodels/beads/htmx/bead_color_display.html", context)
+
+    # Sinon, afficher le formulaire d'édition
     context = {
         "bead": bead,
     }
@@ -930,14 +964,10 @@ def bead_update_color_htmx(request, pk):
 
     if request.method == "POST":
         try:
-            red = int(request.POST.get("red", "0"))
-            green = int(request.POST.get("green", "0"))
-            blue = int(request.POST.get("blue", "0"))
-
-            # Valider les valeurs RGB (entre 0 et 255)
-            red = max(0, min(255, red))
-            green = max(0, min(255, green))
-            blue = max(0, min(255, blue))
+            # Récupérer et valider les valeurs RGB
+            red = max(0, min(255, int(request.POST.get("red", "0"))))
+            green = max(0, min(255, int(request.POST.get("green", "0"))))
+            blue = max(0, min(255, int(request.POST.get("blue", "0"))))
 
             # Mettre à jour les valeurs de couleur
             bead.red = red
@@ -947,7 +977,8 @@ def bead_update_color_htmx(request, pk):
             # Mettre à jour le nom de la perle (basé sur la couleur)
             bead.name = f"Perle #{red:02x}{green:02x}{blue:02x}"
 
-            bead.save()
+            # Optimisation : sauvegarde avec update_fields pour réduire le temps de requête
+            bead.save(update_fields=["red", "green", "blue", "name"])
 
             # Retourner l'affichage de la couleur
             context = {
@@ -956,8 +987,8 @@ def bead_update_color_htmx(request, pk):
             return render(
                 request, "beadmodels/beads/htmx/bead_color_display.html", context
             )
-        except (ValueError, TypeError):
-            # En cas d'erreur, retourner au formulaire d'édition
+        except (ValueError, TypeError) as e:
+            # En cas d'erreur, retourner au formulaire d'édition avec message d'erreur
             context = {
                 "bead": bead,
                 "error": "Les valeurs de couleur doivent être des nombres entiers entre 0 et 255.",

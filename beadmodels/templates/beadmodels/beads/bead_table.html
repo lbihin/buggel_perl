@@ -114,6 +114,29 @@
       opacity: 1;
       transform: scale(1.2);
     }
+    /* Styles pour les indicateurs de chargement */
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline-block;
+    }
+    .htmx-request.htmx-indicator {
+      display: inline-block;
+    }
+    /* Animations de transition pour les échanges HTMX */
+    .htmx-swapping {
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+    }
+    .htmx-settling {
+      opacity: 1;
+      transition: opacity 0.2s ease-in;
+    }
+    /* Style pour désactiver temporairement les interactions utilisateur pendant les requêtes HTMX */
+    .htmx-request {
+      pointer-events: none;
+    }
     .edit-quantity-form, .edit-color-form {
       margin-top: 5px;
       margin-bottom: 5px;
@@ -309,7 +332,24 @@
     
     // Initialiser les interactions HTMX
     document.addEventListener('DOMContentLoaded', function() {
-      // Afficher un message après les mises à jour réussies
+      // Amélioration des événements HTMX
+      
+      // Avant d'envoyer une requête
+      document.body.addEventListener('htmx:beforeRequest', function(event) {
+        // Désactiver les boutons pendant la requête pour éviter les clics multiples
+        const buttons = event.detail.elt.querySelectorAll('button');
+        buttons.forEach(button => {
+          button.setAttribute('disabled', 'disabled');
+        });
+      });
+      
+      // En cas d'erreur de requête
+      document.body.addEventListener('htmx:responseError', function(event) {
+        console.error('Erreur HTMX:', event);
+        showToast("Erreur lors de la mise à jour", "danger");
+      });
+      
+      // Après une mise à jour réussie
       document.body.addEventListener('htmx:afterSwap', function(event) {
         // Si la cible est une cellule de quantité et que le contenu n'est pas un formulaire
         if (event.detail.target.closest('.quantity-display') && 
@@ -325,6 +365,7 @@
       });
       
       // Animation d'aide visuelle pour montrer que les éléments sont cliquables
+      // Réduire la fréquence pour améliorer les performances
       setInterval(function() {
         const editIcons = document.querySelectorAll('.edit-icon');
         editIcons.forEach(icon => {
@@ -333,7 +374,7 @@
             icon.classList.remove('animate__animated', 'animate__heartBeat');
           }, 1500);
         });
-      }, 10000); // Répéter toutes les 10 secondes
+      }, 30000); // Répéter toutes les 30 secondes au lieu de 10 secondes
     });
     
     // Afficher un toast de notification

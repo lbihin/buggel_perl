@@ -1,7 +1,10 @@
 <!-- Formulaire d'édition de couleur -->
 <form hx-post="{% url 'beadmodels:bead_update_color_htmx' bead.pk %}" 
       hx-target="closest .color-display" 
-      class="edit-color-form">
+      class="edit-color-form"
+      hx-indicator="#color-indicator-{{ bead.pk }}"
+      hx-swap="outerHTML transition:true"
+      hx-disabled-elt="find button">
   {% csrf_token %}
   <div class="edit-color-container mb-2">
     <div class="color-preview-edit mb-2" 
@@ -102,13 +105,17 @@
   </div>
   <div class="mt-2 d-flex justify-content-end">
     <button class="btn btn-sm btn-secondary me-1" 
-            hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}" 
-            hx-target="closest .color-display" 
+            id="cancel-color-btn-{{ bead.pk }}"
+            onclick="cancelColorEdit({{ bead.pk }})"
             type="button">
-      Annuler
+      <span class="bi bi-x me-1"></span>Annuler
     </button>
-    <button class="btn btn-sm btn-primary" type="submit">
-      Enregistrer
+    <button class="btn btn-sm btn-primary" 
+            id="save-color-btn-{{ bead.pk }}"
+            type="submit"
+            hx-disable>
+      <span class="bi bi-check me-1"></span>Enregistrer
+      <span class="spinner-border spinner-border-sm htmx-indicator" id="color-indicator-{{ bead.pk }}" role="status" aria-hidden="true"></span>
     </button>
   </div>
   {% if error %}
@@ -204,11 +211,47 @@
     });
   });
   
+  // Fonction pour annuler l'édition de couleur
+  function cancelColorEdit(beadId) {
+    // Effectuer une requête HTMX manuelle pour afficher la vue normale
+    htmx.ajax('GET', 
+              '{% url "beadmodels:bead_edit_color_htmx" bead.pk %}?cancel=true', 
+              {target: document.querySelector(`#cancel-color-btn-${beadId}`).closest('.color-display'),
+               swap: 'outerHTML transition:true'});
+  }
+  
   // Événement pour permettre la touche Entrée sur le champ hex
   document.getElementById(`hexColor-{{ bead.pk }}`).addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
       event.preventDefault();
       applyHexColor({{ bead.pk }});
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelColorEdit({{ bead.pk }});
     }
   });
+  
+  // Raccourcis clavier globaux pour le formulaire
+  const rgbInputs = [
+    document.getElementById(`red-{{ bead.pk }}`),
+    document.getElementById(`green-{{ bead.pk }}`),
+    document.getElementById(`blue-{{ bead.pk }}`)
+  ];
+  
+  rgbInputs.forEach(input => {
+    input.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        document.getElementById('save-color-btn-{{ bead.pk }}').click();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelColorEdit({{ bead.pk }});
+      }
+    });
+  });
+  
+  // Focus sur le champ hex au chargement
+  setTimeout(() => {
+    document.getElementById(`hexColor-{{ bead.pk }}`).focus();
+  }, 10);
 </script>

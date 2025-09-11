@@ -1,5 +1,10 @@
 <!-- Formulaire d'édition de quantité -->
-<form hx-post="{% url 'beadmodels:bead_update_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" class="edit-quantity-form">
+<form hx-post="{% url 'beadmodels:bead_update_quantity_htmx' bead.pk %}" 
+      hx-target="closest .quantity-display" 
+      class="edit-quantity-form"
+      hx-indicator="#quantity-indicator-{{ bead.pk }}"
+      hx-swap="outerHTML transition:true"
+      hx-disabled-elt="find button">
   {% csrf_token %}
   <div class="input-group input-group-sm">
     <input type="number" 
@@ -8,18 +13,47 @@
            class="form-control form-control-sm" 
            min="0"
            placeholder="Quantité"
+           id="quantity-input-{{ bead.pk }}"
            autofocus>
-    <button class="btn btn-sm btn-primary" type="submit">
-      <i class="bi bi-check"></i>
+    <button class="btn btn-sm btn-primary" 
+            type="submit" 
+            id="save-quantity-btn-{{ bead.pk }}"
+            hx-disable>
+      <span class="bi bi-check"></span>
+      <span class="spinner-border spinner-border-sm htmx-indicator" id="quantity-indicator-{{ bead.pk }}" role="status" aria-hidden="true"></span>
     </button>
     <button class="btn btn-sm btn-secondary" 
-            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}" 
-            hx-target="closest .quantity-display" 
-            hx-trigger="click">
-      <i class="bi bi-x"></i>
+            id="cancel-quantity-btn-{{ bead.pk }}"
+            onclick="cancelQuantityEdit({{ bead.pk }})" 
+            type="button">
+      <span class="bi bi-x"></span>
     </button>
   </div>
   {% if error %}
   <div class="text-danger mt-1 small">{{ error }}</div>
   {% endif %}
 </form>
+
+<script>
+  // Focus sur le champ de quantité
+  document.getElementById('quantity-input-{{ bead.pk }}').focus();
+  
+  // Fonction pour annuler l'édition de quantité
+  function cancelQuantityEdit(beadId) {
+    htmx.ajax('GET', 
+              '{% url "beadmodels:bead_edit_quantity_htmx" bead.pk %}?cancel=true', 
+              {target: document.querySelector(`#cancel-quantity-btn-${beadId}`).closest('.quantity-display'),
+               swap: 'outerHTML transition:true'});
+  }
+  
+  // Support de la touche Entrée et Échap pour soumission/annulation
+  document.getElementById('quantity-input-{{ bead.pk }}').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.getElementById('save-quantity-btn-{{ bead.pk }}').click();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelQuantityEdit({{ bead.pk }});
+    }
+  });
+</script>
