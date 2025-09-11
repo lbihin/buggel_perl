@@ -6,8 +6,11 @@ app_name = "shapes"
 
 urlpatterns = [
     path("", views.shape_list, name="shape_list"),
+    path("columns/", views.shape_list_columns, name="shape_list_columns"),
     path("new/", views.create_shape, name="shape_new"),
+    path("create/", views.create_shape, name="create_shape"),
     path("<int:shape_id>/edit/", views.update_shape, name="edit_shape"),
+    path("<int:shape_id>/update/", views.update_shape, name="update_shape"),
     path("<int:shape_id>/delete/", views.delete_shape, name="delete_shape"),
     # Routes HTMX pour le formulaire de création/édition
     path("create/", views.shape_form_hx_view, name="shape_create_hx"),

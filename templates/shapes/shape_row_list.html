@@ -20,10 +20,10 @@
             <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>
           </td>
 
-          <!-- Type de forme - Rendu direct avec bouton d'édition -->
+          <!-- Type de forme - Rendu direct (non modifiable) -->
           <td width="22%" id="shape-type-{{ shape.id }}" class="shape-type">
-            {% if shape.shape_type == 'rectangle' %}Rectangle{% elif shape.shape_type == 'square' %}Carré{% elif shape.shape_type == 'circle' %}Rond{% endif %}
-            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_type_edit' shape.id %}" hx-target="#shape-type-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le type"><i class="bi bi-pencil-square"></i></button>
+            {% if shape.shape_type == 'rectangle' %}Rectangle{% elif shape.shape_type == 'square' %}Carré{% elif shape.shape_type == 'circle' %}Cercle{% endif %}
+            <small class="text-muted d-block" style="font-style: italic; font-size: 0.8em;">(déterminé automatiquement)</small>
           </td>
 
           <!-- Dimensions de la forme - Rendu direct avec bouton d'édition -->

@@ -75,6 +75,45 @@ class BeadShape(models.Model):
             return {"diameter": self.diameter}
         return {}
 
+    def determine_shape_type(self):
+        """Détermine automatiquement le type de forme basé sur les dimensions définies"""
+        if self.diameter and not self.width and not self.height and not self.size:
+            return "circle"
+        elif self.size and not self.width and not self.height and not self.diameter:
+            return "square"
+        elif self.width and self.height and not self.size and not self.diameter:
+            if self.width == self.height:
+                return "square"  # C'est en fait un carré si largeur = hauteur
+            else:
+                return "rectangle"
+        # Si les dimensions ne correspondent à aucun type connu, on garde le type actuel
+        return self.shape_type
+
+    def update_from_dimensions(self):
+        """Met à jour le type en fonction des dimensions actuelles et normalise les données"""
+        new_type = self.determine_shape_type()
+
+        # Si le type a changé, mettre à jour et normaliser les données
+        if new_type != self.shape_type:
+            if (
+                new_type == "square"
+                and self.width
+                and self.height
+                and self.width == self.height
+            ):
+                # Convertir rectangle carré en carré
+                self.size = self.width
+                self.width = None
+                self.height = None
+                self.diameter = None
+            elif new_type == "circle":
+                # S'assurer que seul le diamètre est défini
+                self.width = None
+                self.height = None
+                self.size = None
+
+            self.shape_type = new_type
+
 
 class CustomShape(models.Model):
     user = models.ForeignKey(
@@ -119,7 +158,7 @@ class CustomShape(models.Model):
         ordering = ["-updated_at"]
 
     def __str__(self):
-        return f"{self.name} ({self.base_shape.get_dimensions_display()})"
+        return f"{self.name}"
 
     def get_parameters(self):
         if self.shape_type == "rectangle":

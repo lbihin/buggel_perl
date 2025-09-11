@@ -9,20 +9,25 @@
     <input type="text" name="name" required placeholder="Nom" class="form-control form-control-sm" />
   </td>
 
-  <!-- Type de forme -->
+  <!-- Type de forme (automatique) -->
   <td width="20%">
-    <select name="shape_type" class="form-select form-select-sm" id="inline-shape-type-select" onchange="toggleDimensionsFields()">
-      <option value="rectangle">Rectangle</option>
-      <option value="square">Carré</option>
-      <option value="circle">Cercle</option>
-    </select>
+    <span class="text-muted"><em>Automatique</em></span>
+    <!-- Champ caché pour compatibilité -->
+    <input type="hidden" name="shape_type" value="rectangle">
   </td>
 
   <!-- Dimensions de la forme -->
   <td width="40%">
     <div class="input-group input-group-sm">
+      <!-- Sélecteur de type de dimension -->
+      <select class="form-select form-select-sm" id="inline-dimension-type" style="width: auto; max-width: 100px;" onchange="toggleDimensionsFields(this.value)">
+        <option value="rectangle">Rectangle</option>
+        <option value="square">Carré</option>
+        <option value="circle">Cercle</option>
+      </select>
+      
       <!-- Rectangle -->
-      <div id="rectangle-fields">
+      <div id="rectangle-fields" class="ms-2">
         <div class="input-group input-group-sm">
           <input type="number" name="width" min="1" required placeholder="L" class="form-control form-control-sm" value="10" style="width: 60px" />
           <span class="input-group-text">×</span>
@@ -31,14 +36,14 @@
       </div>
       
       <!-- Carré -->
-      <div id="square-fields" style="display: none;">
+      <div id="square-fields" class="ms-2" style="display: none;">
         <div class="input-group input-group-sm">
           <input type="number" name="size" min="1" placeholder="Taille" class="form-control form-control-sm" value="10" style="width: 80px" />
         </div>
       </div>
       
       <!-- Cercle -->
-      <div id="circle-fields" style="display: none;">
+      <div id="circle-fields" class="ms-2" style="display: none;">
         <div class="input-group input-group-sm">
           <span class="input-group-text">Ø</span>
           <input type="number" name="diameter" min="1" placeholder="Diamètre" class="form-control form-control-sm" value="10" style="width: 80px" />
@@ -64,11 +69,22 @@
 </tr>
 
 <script>
-  function toggleDimensionsFields() {
-    const shapeType = document.getElementById('inline-shape-type-select').value;
+  function toggleDimensionsFields(dimensionType) {
+    // Cacher tous les champs de dimensions
+    document.getElementById('rectangle-fields').style.display = 'none';
+    document.getElementById('square-fields').style.display = 'none';
+    document.getElementById('circle-fields').style.display = 'none';
     
-    document.getElementById('rectangle-fields').style.display = shapeType === 'rectangle' ? 'block' : 'none';
-    document.getElementById('square-fields').style.display = shapeType === 'square' ? 'block' : 'none';
-    document.getElementById('circle-fields').style.display = shapeType === 'circle' ? 'block' : 'none';
+    // Afficher uniquement les champs correspondants au type sélectionné
+    document.getElementById(dimensionType + '-fields').style.display = 'block';
+    
+    // Mettre à jour le champ caché pour la compatibilité
+    document.querySelector('input[name="shape_type"]').value = dimensionType;
   }
+  
+  // Initialisation des champs au chargement
+  document.addEventListener('DOMContentLoaded', function() {
+    // S'assurer que le bon groupe de champs est affiché au départ
+    toggleDimensionsFields('rectangle');
+  });
 </script>

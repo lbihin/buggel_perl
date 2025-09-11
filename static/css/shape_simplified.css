@@ -1,0 +1,54 @@
+/* Styles pour le formulaire simplifié */
+.simple-dimensions-form {
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.dimension-fields {
+    margin-left: 25px;
+    padding: 5px;
+    border-radius: 4px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Styles pour l'édition des dimensions */
+.simple-dimensions-edit {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.edit-dimension-fields {
+    background-color: #ffffff;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.edit-dimension-fields .input-group {
+    margin-bottom: 8px;
+}
+
+.edit-dimension-fields .input-group-text {
+    background-color: #e9ecef;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+/* Style pour les boutons radio */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Message d'indication pour le type automatique */
+.auto-type-indication {
+    font-style: italic;
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 3px;
+}

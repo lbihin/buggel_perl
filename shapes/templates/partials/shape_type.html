@@ -5,4 +5,12 @@
 {% elif shape.shape_type == 'circle' %}
   Cercle
 {% endif %}
-<button class="edit-inline-btn" hx-get="{% url 'shapes:shape_type_edit' shape.id %}" hx-target="#shape-type-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le type"><i class="bi bi-pencil-square"></i></button>
+<!-- Type déterminé automatiquement par les dimensions -->
+<small class="text-muted" style="font-style: italic; font-size: 0.8em;">(Automatique)</small>
+
+<script>
+  // Ajouter un écouteur d'événement pour rafraîchir le type après mise à jour des dimensions
+  document.querySelector('#shape-type-{{ shape.id }}').addEventListener('refreshType', function() {
+    htmx.ajax('GET', '{% url "shapes:shape_type" shape.id %}', {target: '#shape-type-{{ shape.id }}', swap: 'innerHTML'});
+  });
+</script>

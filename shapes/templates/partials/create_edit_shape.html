@@ -15,47 +15,72 @@
         <label for="id_name" class="form-label">Nom</label>
         <input type="text" class="form-control" id="id_name" name="name" value="{{ shape.name|default:'' }}" required>
       </div>
+
+      <div class="mb-3">
+        <label class="form-label">Type de forme</label>
+        <div class="bg-light p-2 rounded">
+          <span id="auto_type_label" class="fw-bold">
+            {% if shape %}
+              {% if shape.shape_type == 'rectangle' %}Rectangle
+              {% elif shape.shape_type == 'square' %}Carré
+              {% elif shape.shape_type == 'circle' %}Cercle
+              {% endif %}
+            {% else %}
+              Sera déterminé automatiquement
+            {% endif %}
+          </span>
+          <small class="text-muted ms-2">(déterminé par les dimensions)</small>
+        </div>
+        <!-- Champ caché pour compatibilité -->
+        <input type="hidden" id="id_shape_type" name="shape_type" value="{{ shape.shape_type|default:'rectangle' }}">
+      </div>
       
       <div class="mb-3">
-        <label for="id_shape_type" class="form-label">Type de forme</label>
-        <select class="form-select" id="id_shape_type" name="shape_type" required>
-          <option value="rectangle" {% if shape.shape_type == 'rectangle' %}selected{% endif %}>Rectangle</option>
-          <option value="square" {% if shape.shape_type == 'square' %}selected{% endif %}>Carré</option>
-          <option value="circle" {% if shape.shape_type == 'circle' %}selected{% endif %}>Cercle</option>
-        </select>
-      </div>
-      
-      <!-- Champs spécifiques pour Rectangle -->
-      <div id="shape-rectangle" class="shape-specific-fields{% if shape.shape_type and shape.shape_type != 'rectangle' %} d-none{% endif %}">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="id_width" class="form-label">Largeur</label>
-              <input type="number" class="form-control" id="id_width" name="width" min="1" value="{{ shape.width|default:'10' }}" required>
+        <label class="form-label">Dimensions</label>
+        <div class="border rounded p-3">
+          <div class="mb-3">
+            <label class="form-check-label">
+              <input type="radio" name="dimension_type" value="rectangle" class="form-check-input dimension-selector" 
+                     {% if shape.shape_type == 'rectangle' or not shape %}checked{% endif %}>
+              Rectangle
+            </label>
+            <div class="dimension-fields rectangle-fields mt-2 ms-4 {% if shape.shape_type != 'rectangle' and shape %}d-none{% endif %}">
+              <div class="row">
+                <div class="col-md-6">
+                  <label for="id_width" class="form-label">Largeur</label>
+                  <input type="number" class="form-control" id="id_width" name="width" min="1" value="{{ shape.width|default:'10' }}">
+                </div>
+                <div class="col-md-6">
+                  <label for="id_height" class="form-label">Hauteur</label>
+                  <input type="number" class="form-control" id="id_height" name="height" min="1" value="{{ shape.height|default:'10' }}">
+                </div>
+              </div>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="id_height" class="form-label">Hauteur</label>
-              <input type="number" class="form-control" id="id_height" name="height" min="1" value="{{ shape.height|default:'10' }}" required>
+          
+          <div class="mb-3">
+            <label class="form-check-label">
+              <input type="radio" name="dimension_type" value="square" class="form-check-input dimension-selector"
+                     {% if shape.shape_type == 'square' %}checked{% endif %}>
+              Carré
+            </label>
+            <div class="dimension-fields square-fields mt-2 ms-4 {% if shape.shape_type != 'square' %}d-none{% endif %}">
+              <label for="id_size" class="form-label">Taille</label>
+              <input type="number" class="form-control" id="id_size" name="size" min="1" value="{{ shape.size|default:'10' }}">
             </div>
           </div>
-        </div>
-      </div>
-      
-      <!-- Champs spécifiques pour Carré -->
-      <div id="shape-square" class="shape-specific-fields{% if shape.shape_type != 'square' %} d-none{% endif %}">
-        <div class="mb-3">
-          <label for="id_size" class="form-label">Taille</label>
-          <input type="number" class="form-control" id="id_size" name="size" min="1" value="{{ shape.size|default:'10' }}" required>
-        </div>
-      </div>
-      
-      <!-- Champs spécifiques pour Cercle -->
-      <div id="shape-circle" class="shape-specific-fields{% if shape.shape_type != 'circle' %} d-none{% endif %}">
-        <div class="mb-3">
-          <label for="id_diameter" class="form-label">Diamètre</label>
-          <input type="number" class="form-control" id="id_diameter" name="diameter" min="1" value="{{ shape.diameter|default:'10' }}" required>
+          
+          <div>
+            <label class="form-check-label">
+              <input type="radio" name="dimension_type" value="circle" class="form-check-input dimension-selector"
+                     {% if shape.shape_type == 'circle' %}checked{% endif %}>
+              Cercle
+            </label>
+            <div class="dimension-fields circle-fields mt-2 ms-4 {% if shape.shape_type != 'circle' %}d-none{% endif %}">
+              <label for="id_diameter" class="form-label">Diamètre</label>
+              <input type="number" class="form-control" id="id_diameter" name="diameter" min="1" value="{{ shape.diameter|default:'10' }}">
+            </div>
+          </div>
         </div>
       </div>
       
@@ -86,21 +111,50 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const shapeTypeSelect = document.getElementById('id_shape_type');
-  const rectangleFields = document.getElementById('shape-rectangle');
-  const squareFields = document.getElementById('shape-square');
-  const circleFields = document.getElementById('shape-circle');
+  const shapeTypeHidden = document.getElementById('id_shape_type');
+  const dimensionSelectors = document.querySelectorAll('.dimension-selector');
+  const dimensionFields = document.querySelectorAll('.dimension-fields');
+  const autoTypeLabel = document.getElementById('auto_type_label');
   const previewCanvas = document.getElementById('previewCanvas');
+  
+  // Gestion des sélecteurs de dimension
+  dimensionSelectors.forEach(selector => {
+    selector.addEventListener('change', function() {
+      // Cacher tous les champs de dimensions
+      dimensionFields.forEach(field => field.classList.add('d-none'));
+      
+      // Afficher uniquement les champs correspondants au type sélectionné
+      const selectedType = this.value;
+      const fieldsToShow = document.querySelector(`.${selectedType}-fields`);
+      if (fieldsToShow) {
+        fieldsToShow.classList.remove('d-none');
+      }
+      
+      // Mettre à jour le type automatique
+      updateAutoTypeLabel(selectedType);
+      
+      // Mettre à jour le champ caché pour la compatibilité
+      shapeTypeHidden.value = selectedType;
+      
+      // Mettre à jour l'aperçu
+      if (previewCanvas) {
+        updateShapePreview();
+      }
+    });
+  });
+  
+  function updateAutoTypeLabel(type) {
+    let typeText = 'Sera déterminé automatiquement';
+    if (type === 'rectangle') typeText = 'Rectangle';
+    else if (type === 'square') typeText = 'Carré';
+    else if (type === 'circle') typeText = 'Cercle';
+    
+    autoTypeLabel.textContent = typeText;
+  }
   
   // Veiller à ce que le canvas existe (il pourrait ne pas être rendu dans certains cas)
   if (previewCanvas) {
     const ctx = previewCanvas.getContext('2d');
-    
-    // Mise à jour de l'aperçu lorsqu'on change de type de forme
-    shapeTypeSelect.addEventListener('change', function() {
-      updateFieldVisibility();
-      updateShapePreview();
-    });
     
     // Mise à jour lorsque les dimensions changent
     ['id_width', 'id_height', 'id_size', 'id_diameter'].forEach(fieldId => {
@@ -111,21 +165,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Mise à jour initiale
-    updateFieldVisibility();
     updateShapePreview();
     
     function updateShapePreview() {
       // ...existing code...
+      // Cette fonction devrait être remplacée par votre code d'aperçu existant
     }
-  }
-  
-  function updateFieldVisibility() {
-    const shapeType = shapeTypeSelect.value;
-    
-    // Cacher tous les champs spécifiques
-    rectangleFields.classList.toggle('d-none', shapeType !== 'rectangle');
-    squareFields.classList.toggle('d-none', shapeType !== 'square');
-    circleFields.classList.toggle('d-none', shapeType !== 'circle');
   }
 });
 </script>

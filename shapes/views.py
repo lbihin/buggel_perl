@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -9,67 +10,103 @@ from .models import BeadShape
 
 @login_required
 def shape_list(request):
-    """Affiche la liste des formes disponibles"""
-    # Optimisation : récupérer toutes les données nécessaires en une seule requête
-    shapes = BeadShape.objects.filter(creator=request.user).select_related("creator")
+    """Redirige vers la vue en colonnes"""
+    # Rediriger vers la vue en colonnes qui est maintenant l'interface principale
+    return redirect("shapes:shape_list_columns")
 
-    # Traitement pour la recherche et le filtrage si nécessaire
-    search = request.GET.get("search", "")
-    shape_type_filter = request.GET.get("shape_type_filter", "")
 
-    if search:
-        shapes = shapes.filter(name__icontains=search)
-    if shape_type_filter:
-        shapes = shapes.filter(shape_type=shape_type_filter)
+@login_required
+def shape_list_columns(request):
+    """Affiche la liste des formes disponibles en colonnes par type"""
+    # Récupérer toutes les formes de l'utilisateur
+    user_shapes = BeadShape.objects.filter(
+        Q(creator=request.user) | Q(is_shared=True)
+    ).select_related("creator")
 
-    # Déterminer si c'est une requête HTMX pour le rendu partiel
-    if request.htmx:
-        return render(request, "shapes/shape_row_list.html", {"shapes": shapes})
+    # Vérifier si on est en mode d'édition
+    edit_shape_id = request.GET.get("edit")
+    edit_shape = None
+    if edit_shape_id:
+        try:
+            edit_shape = BeadShape.objects.get(id=edit_shape_id)
+            # Vérifier que l'utilisateur peut modifier cette forme
+            if edit_shape.creator != request.user and not edit_shape.is_default:
+                messages.error(
+                    request, "Vous n'avez pas l'autorisation de modifier cette forme"
+                )
+                edit_shape = None
+        except BeadShape.DoesNotExist:
+            edit_shape = None
 
-    return render(request, "shapes/shape_list.html", {"shapes": shapes})
+    # Séparer les formes par type
+    rectangles = user_shapes.filter(shape_type="rectangle")
+    squares = user_shapes.filter(shape_type="square")
+    circles = user_shapes.filter(shape_type="circle")
+
+    # Messages de succès ou d'erreur (venant de redirections)
+    success_message = request.session.pop("success_message", None)
+    error_message = request.session.pop("error_message", None)
+
+    context = {
+        "rectangles": rectangles,
+        "squares": squares,
+        "circles": circles,
+        "edit_shape": edit_shape,
+        "success_message": success_message,
+        "error_message": error_message,
+    }
+
+    return render(request, "shapes/shape_list_columns.html", context)
 
 
 @login_required
 def create_shape(request):
     """Crée une nouvelle forme"""
     if request.method == "POST":
-        shape_type = request.POST.get("shape_type")
         name = request.POST.get("name")
+        shape_option = request.POST.get("shape_option", "rectangle")
+        share_shape = request.POST.get("share_shape") == "on"
 
-        if shape_type == "rectangle":
-            width = int(request.POST.get("width"))
-            height = int(request.POST.get("height"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                width=width,
-                height=height,
-                creator=request.user,
-            )
-        elif shape_type == "square":
-            size = int(request.POST.get("size"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                size=size,
-                creator=request.user,
-            )
-        elif shape_type == "circle":
-            diameter = int(request.POST.get("diameter"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                diameter=diameter,
-                creator=request.user,
-            )
+        # Créer une nouvelle forme avec les dimensions spécifiées
+        new_shape = BeadShape(
+            name=name,
+            creator=request.user,
+            is_shared=share_shape,
+            # Le shape_type sera déterminé automatiquement
+        )
+
+        # Définir les dimensions en fonction du type sélectionné par l'utilisateur
+        if (
+            shape_option == "rectangle"
+            and request.POST.get("width")
+            and request.POST.get("height")
+        ):
+            new_shape.width = int(request.POST.get("width"))
+            new_shape.height = int(request.POST.get("height"))
+        elif shape_option == "square" and request.POST.get("size"):
+            new_shape.size = int(request.POST.get("size"))
+        elif shape_option == "circle" and request.POST.get("diameter"):
+            new_shape.diameter = int(request.POST.get("diameter"))
         else:
-            messages.error(request, "Type de forme inconnu")
-            return redirect(reverse("shapes:shape_list"))
+            if "HTTP_HX_REQUEST" in request.META:
+                request.session["error_message"] = "Aucune dimension valide fournie"
+                return redirect(reverse("shapes:shape_list_columns"))
+            else:
+                messages.error(request, "Aucune dimension valide fournie")
+                return redirect(reverse("shapes:shape_list_columns"))
 
-        messages.success(request, f"Forme {name} créée avec succès!")
-        return redirect(reverse("shapes:shape_list"))
+        # Déterminer le type automatiquement à partir des dimensions
+        new_shape.update_from_dimensions()
+        new_shape.save()
 
-    return render(request, "partials/create_edit_shape.html")
+        if "HTTP_HX_REQUEST" in request.META:
+            request.session["success_message"] = f"Forme {name} créée avec succès!"
+            return redirect(reverse("shapes:shape_list_columns"))
+        else:
+            messages.success(request, f"Forme {name} créée avec succès!")
+            return redirect(reverse("shapes:shape_list_columns"))
+
+    return redirect(reverse("shapes:shape_list_columns"))
 
 
 @login_required
@@ -79,42 +116,66 @@ def update_shape(request, shape_id):
 
     # Vérifier que l'utilisateur peut modifier cette forme
     if shape.creator != request.user and not shape.is_default:
-        messages.error(
-            request, "Vous n'avez pas l'autorisation de modifier cette forme"
-        )
-        return redirect(reverse("shapes:shape_list"))
+        if "HTTP_HX_REQUEST" in request.META:
+            request.session["error_message"] = (
+                "Vous n'avez pas l'autorisation de modifier cette forme"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
+        else:
+            messages.error(
+                request, "Vous n'avez pas l'autorisation de modifier cette forme"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
 
     if request.method == "POST":
         shape.name = request.POST.get("name")
-        shape_type = request.POST.get("shape_type")
-        shape.shape_type = shape_type
+        shape_option = request.POST.get("shape_option", "rectangle")
+        share_shape = request.POST.get("share_shape") == "on"
+        shape.is_shared = share_shape
 
-        if shape_type == "rectangle":
+        # Mettre à jour les dimensions en fonction du type sélectionné
+        if (
+            shape_option == "rectangle"
+            and request.POST.get("width")
+            and request.POST.get("height")
+        ):
             shape.width = int(request.POST.get("width"))
             shape.height = int(request.POST.get("height"))
             shape.size = None
             shape.diameter = None
-        elif shape_type == "square":
+        elif shape_option == "square" and request.POST.get("size"):
             shape.size = int(request.POST.get("size"))
             shape.width = None
             shape.height = None
             shape.diameter = None
-        elif shape_type == "circle":
+        elif shape_option == "circle" and request.POST.get("diameter"):
             shape.diameter = int(request.POST.get("diameter"))
             shape.width = None
             shape.height = None
             shape.size = None
+        else:
+            if "HTTP_HX_REQUEST" in request.META:
+                request.session["error_message"] = "Aucune dimension valide fournie"
+                return redirect(reverse("shapes:shape_list_columns"))
+            else:
+                messages.error(request, "Aucune dimension valide fournie")
+                return redirect(reverse("shapes:shape_list_columns"))
 
-        # Option pour partager la forme
-        share_shape = request.POST.get("share_shape") == "on"
-        shape.is_shared = share_shape
-
+        # Déterminer le type automatiquement à partir des dimensions
+        shape.update_from_dimensions()
         shape.save()
-        messages.success(request, f"Forme {shape.name} mise à jour avec succès!")
-        return redirect(reverse("shapes:shape_list"))
 
-    context = {"shape": shape}
-    return render(request, "shapes/update_shape.html", context)
+        if "HTTP_HX_REQUEST" in request.META:
+            request.session["success_message"] = (
+                f"Forme {shape.name} mise à jour avec succès!"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
+        else:
+            messages.success(request, f"Forme {shape.name} mise à jour avec succès!")
+            return redirect(reverse("shapes:shape_list_columns"))
+
+    # En théorie, on ne devrait jamais arriver ici car l'édition se fait via la vue shape_list_columns
+    return redirect(reverse("shapes:shape_list_columns"))
 
 
 @login_required
@@ -124,20 +185,41 @@ def delete_shape(request, shape_id):
 
     # Vérifier que l'utilisateur peut supprimer cette forme
     if shape.creator != request.user:
-        messages.error(
-            request, "Vous n'avez pas l'autorisation de supprimer cette forme"
-        )
-        return redirect(reverse("shapes:shape_list"))
+        if "HTTP_HX_REQUEST" in request.META:
+            request.session["error_message"] = (
+                "Vous n'avez pas l'autorisation de supprimer cette forme"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
+        else:
+            messages.error(
+                request, "Vous n'avez pas l'autorisation de supprimer cette forme"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
 
     # Empêcher la suppression des formes par défaut
     if shape.is_default:
-        messages.error(request, "Les formes par défaut ne peuvent pas être supprimées")
-        return redirect(reverse("shapes:shape_list"))
+        if "HTTP_HX_REQUEST" in request.META:
+            request.session["error_message"] = (
+                "Les formes par défaut ne peuvent pas être supprimées"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
+        else:
+            messages.error(
+                request, "Les formes par défaut ne peuvent pas être supprimées"
+            )
+            return redirect(reverse("shapes:shape_list_columns"))
 
     shape_name = shape.name
     shape.delete()
-    messages.success(request, f"Forme {shape_name} supprimée avec succès!")
-    return redirect(reverse("shapes:shape_list"))
+
+    if "HTTP_HX_REQUEST" in request.META:
+        request.session["success_message"] = (
+            f"Forme {shape_name} supprimée avec succès!"
+        )
+        return redirect(reverse("shapes:shape_list_columns"))
+    else:
+        messages.success(request, f"Forme {shape_name} supprimée avec succès!")
+        return redirect(reverse("shapes:shape_list_columns"))
 
 
 @login_required
@@ -176,43 +258,36 @@ def shape_create_hx_view(request):
     if request.method != "POST":
         return HttpResponse("Méthode non autorisée", status=405)
 
-    shape_type = request.POST.get("shape_type")
     name = request.POST.get("name")
     share_shape = request.POST.get("share_shape") == "on"
+    dimension_type = request.POST.get(
+        "dimension_type", request.POST.get("shape_type", "")
+    )
 
     new_shape = None
     try:
-        if shape_type == "rectangle":
-            width = int(request.POST.get("width"))
-            height = int(request.POST.get("height"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                width=width,
-                height=height,
-                is_shared=share_shape,
-                creator=request.user,
-            )
-        elif shape_type == "square":
-            size = int(request.POST.get("size"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                size=size,
-                is_shared=share_shape,
-                creator=request.user,
-            )
-        elif shape_type == "circle":
-            diameter = int(request.POST.get("diameter"))
-            new_shape = BeadShape.objects.create(
-                name=name,
-                shape_type=shape_type,
-                diameter=diameter,
-                is_shared=share_shape,
-                creator=request.user,
-            )
+        # Créer une nouvelle forme
+        new_shape = BeadShape(name=name, is_shared=share_shape, creator=request.user)
+
+        # Définir les dimensions en fonction des champs fournis
+        if (
+            "width" in request.POST
+            and "height" in request.POST
+            and request.POST.get("width")
+            and request.POST.get("height")
+        ):
+            new_shape.width = int(request.POST.get("width"))
+            new_shape.height = int(request.POST.get("height"))
+        elif "size" in request.POST and request.POST.get("size"):
+            new_shape.size = int(request.POST.get("size"))
+        elif "diameter" in request.POST and request.POST.get("diameter"):
+            new_shape.diameter = int(request.POST.get("diameter"))
         else:
-            return HttpResponse("Type de forme inconnu", status=400)
+            return HttpResponse("Aucune dimension valide fournie", status=400)
+
+        # Déterminer le type automatiquement à partir des dimensions
+        new_shape.update_from_dimensions()
+        new_shape.save()
     except Exception as e:
         return HttpResponse(f"Erreur : {str(e)}", status=400)
 
@@ -390,6 +465,7 @@ def shape_inline_update(request, shape_id):
     try:
         shape_type = shape.shape_type
 
+        # Enregistrer les dimensions selon le type actuel
         if shape_type == "rectangle":
             shape.width = int(request.POST.get("width", 0))
             shape.height = int(request.POST.get("height", 0))
@@ -398,6 +474,10 @@ def shape_inline_update(request, shape_id):
         elif shape_type == "circle":
             shape.diameter = int(request.POST.get("diameter", 0))
 
+        # Déterminer si le type doit changer en fonction des dimensions
+        shape.update_from_dimensions()
+
+        # Sauvegarder les changements
         shape.save()
 
         # Dispatcher un événement HTMX pour mettre à jour les prévisualisations
@@ -510,6 +590,11 @@ def shape_type_update(request, shape_id):
         old_type = shape.shape_type
         new_type = request.POST.get("shape_type", "")
 
+        # Marquer le changement comme explicite
+        request.POST._mutable = True
+        request.POST["explicit_type_change"] = "true"
+        request.POST._mutable = False
+
         shape.shape_type = new_type
 
         # Réinitialiser les dimensions non pertinentes
@@ -590,60 +675,58 @@ def shape_save_or_update_hx_view(request, shape_id=None):
     try:
         # Création d'une nouvelle forme
         if is_new:
-            if shape_type == "rectangle":
-                width = int(request.POST.get("width"))
-                height = int(request.POST.get("height"))
-                shape = BeadShape.objects.create(
-                    name=name,
-                    shape_type=shape_type,
-                    width=width,
-                    height=height,
-                    is_shared=share_shape,
-                    creator=request.user,
-                )
-            elif shape_type == "square":
-                size = int(request.POST.get("size"))
-                shape = BeadShape.objects.create(
-                    name=name,
-                    shape_type=shape_type,
-                    size=size,
-                    is_shared=share_shape,
-                    creator=request.user,
-                )
-            elif shape_type == "circle":
-                diameter = int(request.POST.get("diameter"))
-                shape = BeadShape.objects.create(
-                    name=name,
-                    shape_type=shape_type,
-                    diameter=diameter,
-                    is_shared=share_shape,
-                    creator=request.user,
-                )
+            # Créer une nouvelle forme avec les valeurs de base
+            shape = BeadShape(name=name, is_shared=share_shape, creator=request.user)
+
+            # Définir les dimensions en fonction des champs fournis
+            if (
+                "width" in request.POST
+                and "height" in request.POST
+                and request.POST.get("width")
+                and request.POST.get("height")
+            ):
+                shape.width = int(request.POST.get("width"))
+                shape.height = int(request.POST.get("height"))
+            elif "size" in request.POST and request.POST.get("size"):
+                shape.size = int(request.POST.get("size"))
+            elif "diameter" in request.POST and request.POST.get("diameter"):
+                shape.diameter = int(request.POST.get("diameter"))
             else:
-                return HttpResponse("Type de forme inconnu", status=400)
+                return HttpResponse("Aucune dimension valide fournie", status=400)
+
+            # Déterminer le type automatiquement
+            shape.update_from_dimensions()
+            shape.save()
 
         # Mise à jour d'une forme existante
         else:
             shape.name = name
-            shape.shape_type = shape_type
             shape.is_shared = share_shape
 
-            if shape_type == "rectangle":
+            # Mettre à jour les dimensions selon les champs fournis
+            if (
+                "width" in request.POST
+                and "height" in request.POST
+                and request.POST.get("width")
+                and request.POST.get("height")
+            ):
                 shape.width = int(request.POST.get("width"))
                 shape.height = int(request.POST.get("height"))
                 shape.size = None
                 shape.diameter = None
-            elif shape_type == "square":
+            elif "size" in request.POST and request.POST.get("size"):
                 shape.size = int(request.POST.get("size"))
                 shape.width = None
                 shape.height = None
                 shape.diameter = None
-            elif shape_type == "circle":
+            elif "diameter" in request.POST and request.POST.get("diameter"):
                 shape.diameter = int(request.POST.get("diameter"))
                 shape.width = None
                 shape.height = None
                 shape.size = None
 
+            # Déterminer automatiquement le type en fonction des dimensions
+            shape.update_from_dimensions()
             shape.save()
 
     except Exception as e:

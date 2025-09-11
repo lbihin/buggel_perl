@@ -1,17 +1,90 @@
 {% csrf_token %}
-<form class="inline-edit-form" hx-post="{% url 'shapes:shape_inline_update' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML">
-  {% if type_changed %}
-    <div class="alert alert-warning mb-2" style="font-size: 0.9rem; padding: 0.25rem 0.5rem;">Veuillez ajuster les dimensions pour la nouvelle forme</div>
-  {% endif %}
+<form class="inline-edit-form" 
+      hx-post="{% url 'shapes:shape_inline_update' shape.id %}" 
+      hx-target="#dimensions-display-{{ shape.id }}" 
+      hx-swap="innerHTML"
+      hx-on::after-request="setTimeout(function() { document.querySelector('#shape-type-{{ shape.id }}').dispatchEvent(new Event('refreshType')); }, 100);">
+  
+  <input type="hidden" name="auto_update_type" value="true">
 
-  {% if shape.shape_type == 'rectangle' %}
-    <input type="number" name="width" value="{{ shape.width }}" min="1" required placeholder="Largeur" class="form-control form-control-sm" />
-    <input type="number" name="height" value="{{ shape.height }}" min="1" required placeholder="Hauteur" class="form-control form-control-sm" />
-  {% elif shape.shape_type == 'square' %}
-    <input type="number" name="size" value="{{ shape.size }}" min="1" required placeholder="Taille" class="form-control form-control-sm" />
-  {% elif shape.shape_type == 'circle' %}
-    <input type="number" name="diameter" value="{{ shape.diameter }}" min="1" required placeholder="Diamètre" class="form-control form-control-sm" />
-  {% endif %}
+  <div class="simple-dimensions-edit">
+    <div class="mb-2">
+      <label class="form-label fw-bold">Choisissez un type de forme:</label>
+      
+      <!-- Options de forme sous forme de boutons radio -->
+      <div>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="radio" name="edit_shape_option" id="edit_option_rectangle_{{ shape.id }}" value="rectangle" 
+                 {% if shape.shape_type == 'rectangle' %}checked{% endif %} 
+                 onchange="switchEditFields(this.value, {{ shape.id }})">
+          <label class="form-check-label" for="edit_option_rectangle_{{ shape.id }}">
+            Rectangle
+          </label>
+          
+          <!-- Champs pour rectangle -->
+          <div id="edit_rectangle_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4" 
+               {% if shape.shape_type != 'rectangle' %}style="display: none"{% endif %}>
+            <div class="input-group">
+              <span class="input-group-text">Largeur</span>
+              <input type="number" name="width" value="{{ shape.width|default:'10' }}" min="1" required class="form-control form-control-sm" />
+            </div>
+            <div class="input-group mt-1">
+              <span class="input-group-text">Hauteur</span>
+              <input type="number" name="height" value="{{ shape.height|default:'10' }}" min="1" required class="form-control form-control-sm" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="radio" name="edit_shape_option" id="edit_option_square_{{ shape.id }}" value="square" 
+                 {% if shape.shape_type == 'square' %}checked{% endif %}
+                 onchange="switchEditFields(this.value, {{ shape.id }})">
+          <label class="form-check-label" for="edit_option_square_{{ shape.id }}">
+            Carré
+          </label>
+          
+          <!-- Champs pour carré -->
+          <div id="edit_square_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4"
+               {% if shape.shape_type != 'square' %}style="display: none"{% endif %}>
+            <div class="input-group">
+              <span class="input-group-text">Côté</span>
+              <input type="number" name="size" value="{{ shape.size|default:'10' }}" min="1" required class="form-control form-control-sm" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="edit_shape_option" id="edit_option_circle_{{ shape.id }}" value="circle" 
+                 {% if shape.shape_type == 'circle' %}checked{% endif %}
+                 onchange="switchEditFields(this.value, {{ shape.id }})">
+          <label class="form-check-label" for="edit_option_circle_{{ shape.id }}">
+            Cercle
+          </label>
+          
+          <!-- Champs pour cercle -->
+          <div id="edit_circle_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4"
+               {% if shape.shape_type != 'circle' %}style="display: none"{% endif %}>
+            <div class="input-group">
+              <span class="input-group-text">Diamètre</span>
+              <input type="number" name="diameter" value="{{ shape.diameter|default:'10' }}" min="1" required class="form-control form-control-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchEditFields(type, shapeId) {
+      // Cacher tous les champs
+      document.querySelectorAll('.edit-dimension-fields').forEach(field => {
+        field.style.display = 'none';
+      });
+      
+      // Afficher uniquement le champ sélectionné
+      document.getElementById('edit_' + type + '_fields_' + shapeId).style.display = 'block';
+    }
+  </script>
 
   <div class="inline-edit-actions">
     <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
