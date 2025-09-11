@@ -7,19 +7,45 @@
     <div class="color-preview-edit mb-2" 
          id="colorPreview-{{ bead.pk }}" 
          style="background-color: {{ bead.get_rgb_color }}; height: 30px; border-radius: 4px;"></div>
+    
+    <!-- Champ pour le code hexadécimal -->
+    <div class="mb-2">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text">#</span>
+        <input type="text" 
+               id="hexColor-{{ bead.pk }}" 
+               class="form-control form-control-sm" 
+               value="{{ bead.get_hex_color|slice:'1:' }}" 
+               placeholder="000000" 
+               maxlength="6" 
+               pattern="[0-9A-Fa-f]{6}" 
+               title="Code couleur hexadécimal (sans le #)" 
+               data-bead-id="{{ bead.pk }}" 
+               oninput="updateFromHex({{ bead.pk }})"
+               autocomplete="off"
+               autofocus>
+        <button class="btn btn-outline-secondary btn-sm" 
+                type="button" 
+                onclick="applyHexColor({{ bead.pk }})">
+          Appliquer
+        </button>
+      </div>
+    </div>
+    
+    <!-- Valeurs RGB individuelles -->
     <div class="row g-2">
       <div class="col-4">
         <div class="input-group input-group-sm">
           <span class="input-group-text">R</span>
           <input type="number" 
                  name="red" 
+                 id="red-{{ bead.pk }}"
                  value="{{ bead.red }}" 
                  class="form-control form-control-sm" 
                  min="0" 
                  max="255" 
                  data-bead-id="{{ bead.pk }}" 
-                 oninput="updateColorPreviewEdit({{ bead.pk }})"
-                 autofocus>
+                 oninput="updateColorPreviewEdit({{ bead.pk }})">
         </div>
       </div>
       <div class="col-4">
@@ -27,6 +53,7 @@
           <span class="input-group-text">G</span>
           <input type="number" 
                  name="green" 
+                 id="green-{{ bead.pk }}"
                  value="{{ bead.green }}" 
                  class="form-control form-control-sm" 
                  min="0" 
@@ -40,6 +67,7 @@
           <span class="input-group-text">B</span>
           <input type="number" 
                  name="blue" 
+                 id="blue-{{ bead.pk }}"
                  value="{{ bead.blue }}" 
                  class="form-control form-control-sm" 
                  min="0" 
@@ -91,11 +119,73 @@
 <script>
   // Fonction pour mettre à jour l'aperçu de couleur lors de l'édition
   function updateColorPreviewEdit(beadId) {
-    const red = document.querySelector(`input[name="red"][data-bead-id="${beadId}"]`).value;
-    const green = document.querySelector(`input[name="green"][data-bead-id="${beadId}"]`).value;
-    const blue = document.querySelector(`input[name="blue"][data-bead-id="${beadId}"]`).value;
+    const red = document.getElementById(`red-${beadId}`).value;
+    const green = document.getElementById(`green-${beadId}`).value;
+    const blue = document.getElementById(`blue-${beadId}`).value;
     
     document.getElementById(`colorPreview-${beadId}`).style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+    
+    // Mettre à jour la valeur hexadécimale correspondante
+    const hexColor = rgbToHex(parseInt(red), parseInt(green), parseInt(blue));
+    document.getElementById(`hexColor-${beadId}`).value = hexColor.replace('#', '');
+  }
+  
+  // Fonction pour appliquer la valeur hexadécimale
+  function applyHexColor(beadId) {
+    const hexInput = document.getElementById(`hexColor-${beadId}`).value;
+    if (/^[0-9A-Fa-f]{6}$/.test(hexInput)) {
+      // Conversion de la valeur hex en RGB
+      const rgb = hexToRgb(`#${hexInput}`);
+      
+      // Mise à jour des champs RGB
+      document.getElementById(`red-${beadId}`).value = rgb.r;
+      document.getElementById(`green-${beadId}`).value = rgb.g;
+      document.getElementById(`blue-${beadId}`).value = rgb.b;
+      
+      // Mise à jour de l'aperçu
+      updateColorPreviewEdit(beadId);
+    } else {
+      alert('Format de couleur hexadécimal invalide. Veuillez entrer 6 caractères (ex: FF0000 pour rouge).');
+    }
+  }
+  
+  // Fonction pour mettre à jour les valeurs RGB lorsque le code hex est modifié
+  function updateFromHex(beadId) {
+    const hexInput = document.getElementById(`hexColor-${beadId}`).value;
+    if (/^[0-9A-Fa-f]{6}$/.test(hexInput)) {
+      // Conversion de la valeur hex en RGB
+      const rgb = hexToRgb(`#${hexInput}`);
+      
+      // Mise à jour des champs RGB
+      document.getElementById(`red-${beadId}`).value = rgb.r;
+      document.getElementById(`green-${beadId}`).value = rgb.g;
+      document.getElementById(`blue-${beadId}`).value = rgb.b;
+      
+      // Mise à jour de l'aperçu
+      document.getElementById(`colorPreview-${beadId}`).style.backgroundColor = `#${hexInput}`;
+    }
+  }
+  
+  // Fonction pour convertir RGB en hex
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
+  
+  // Fonction pour convertir hex en RGB
+  function hexToRgb(hex) {
+    // Suppression du # si présent
+    hex = hex.replace(/^#/, '');
+    
+    // Parsing des composantes RGB
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    
+    return { r, g, b };
   }
   
   // Attacher les gestionnaires d'événements aux boutons de couleur prédéfinis
@@ -106,11 +196,19 @@
       const g = this.getAttribute('data-g');
       const b = this.getAttribute('data-b');
       
-      document.querySelector(`input[name="red"][data-bead-id="${beadId}"]`).value = r;
-      document.querySelector(`input[name="green"][data-bead-id="${beadId}"]`).value = g;
-      document.querySelector(`input[name="blue"][data-bead-id="${beadId}"]`).value = b;
+      document.getElementById(`red-${beadId}`).value = r;
+      document.getElementById(`green-${beadId}`).value = g;
+      document.getElementById(`blue-${beadId}`).value = b;
       
       updateColorPreviewEdit(beadId);
     });
+  });
+  
+  // Événement pour permettre la touche Entrée sur le champ hex
+  document.getElementById(`hexColor-{{ bead.pk }}`).addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyHexColor({{ bead.pk }});
+    }
   });
 </script>

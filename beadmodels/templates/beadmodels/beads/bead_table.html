@@ -183,6 +183,17 @@
                   </div>
                   <div class="card-body">
                     <div id="colorPreview" class="mb-3" style="height: 80px; background-color: rgb(0, 0, 0); border-radius: 5px;"></div>
+                    
+                    <!-- Champ pour le code hexadécimal -->
+                    <div class="mb-3">
+                      <label for="hexColor" class="form-label">Code Hexadécimal</label>
+                      <div class="input-group">
+                        <span class="input-group-text">#</span>
+                        <input type="text" class="form-control" id="hexColor" placeholder="000000" maxlength="6" pattern="[0-9A-Fa-f]{6}" title="Code couleur hexadécimal (sans le #)">
+                        <button class="btn btn-outline-secondary" type="button" onclick="applyHexColor()">Appliquer</button>
+                      </div>
+                    </div>
+                    
                     <div class="row">
                       <div class="col-md-4 mb-2">
                         <label for="red">Rouge</label>
@@ -372,8 +383,11 @@
       // Mettre à jour l'aperçu de couleur
       document.getElementById('colorPreview').style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
       
-      // Générer un nom basé sur la couleur hex
+      // Mettre à jour le champ hexadécimal
       const hexColor = rgbToHex(parseInt(red), parseInt(green), parseInt(blue));
+      document.getElementById('hexColor').value = hexColor.replace('#', '');
+      
+      // Générer un nom basé sur la couleur hex
       document.getElementById('name').value = `Perle ${hexColor}`;
     }
     
@@ -383,6 +397,40 @@
         const hex = x.toString(16);
         return hex.length === 1 ? '0' + hex : hex;
       }).join('');
+    }
+    
+    // Fonction pour appliquer la couleur à partir du code hexadécimal
+    function applyHexColor() {
+      const hexInput = document.getElementById('hexColor').value;
+      
+      if (/^[0-9A-Fa-f]{6}$/.test(hexInput)) {
+        // Conversion de la valeur hex en RGB
+        const rgb = hexToRgb(`#${hexInput}`);
+        
+        // Mise à jour des champs RGB
+        document.getElementById('red').value = rgb.r;
+        document.getElementById('green').value = rgb.g;
+        document.getElementById('blue').value = rgb.b;
+        
+        // Mise à jour de l'aperçu
+        updateColorPreview();
+      } else {
+        alert('Format de couleur hexadécimal invalide. Veuillez entrer 6 caractères (ex: FF0000 pour rouge).');
+      }
+    }
+    
+    // Fonction pour convertir hex en RGB
+    function hexToRgb(hex) {
+      // Suppression du # si présent
+      hex = hex.replace(/^#/, '');
+      
+      // Parsing des composantes RGB
+      const bigint = parseInt(hex, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      
+      return { r, g, b };
     }
     
     // Gestion des boutons de couleurs prédéfinies
@@ -401,6 +449,14 @@
           
           updateColorPreview();
         });
+      });
+      
+      // Gestionnaire d'événement pour la touche Entrée sur le champ hexadécimal
+      document.getElementById('hexColor').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          applyHexColor();
+        }
       });
     });
   </script>
