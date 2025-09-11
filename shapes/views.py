@@ -63,17 +63,11 @@ def shape_list_columns(request):
 def create_shape(request):
     """Crée une nouvelle forme"""
     if request.method == "POST":
-        name = request.POST.get("name")
         shape_option = request.POST.get("shape_option", "rectangle")
         share_shape = request.POST.get("share_shape") == "on"
 
-        # Créer une nouvelle forme avec les dimensions spécifiées
-        new_shape = BeadShape(
-            name=name,
-            creator=request.user,
-            is_shared=share_shape,
-            # Le shape_type sera déterminé automatiquement
-        )
+        # Générer un nom automatiquement basé sur les dimensions
+        name = "Forme"
 
         # Définir les dimensions en fonction du type sélectionné par l'utilisateur
         if (
@@ -81,12 +75,37 @@ def create_shape(request):
             and request.POST.get("width")
             and request.POST.get("height")
         ):
-            new_shape.width = int(request.POST.get("width"))
-            new_shape.height = int(request.POST.get("height"))
+            width = int(request.POST.get("width"))
+            height = int(request.POST.get("height"))
+            name = f"Rectangle {width}×{height}"
+
+            new_shape = BeadShape(
+                name=name,
+                creator=request.user,
+                is_shared=share_shape,
+                width=width,
+                height=height,
+            )
+
         elif shape_option == "square" and request.POST.get("size"):
-            new_shape.size = int(request.POST.get("size"))
+            size = int(request.POST.get("size"))
+            name = f"Carré {size}×{size}"
+
+            new_shape = BeadShape(
+                name=name, creator=request.user, is_shared=share_shape, size=size
+            )
+
         elif shape_option == "circle" and request.POST.get("diameter"):
-            new_shape.diameter = int(request.POST.get("diameter"))
+            diameter = int(request.POST.get("diameter"))
+            name = f"Cercle Ø{diameter}"
+
+            new_shape = BeadShape(
+                name=name,
+                creator=request.user,
+                is_shared=share_shape,
+                diameter=diameter,
+            )
+
         else:
             if "HTTP_HX_REQUEST" in request.META:
                 request.session["error_message"] = "Aucune dimension valide fournie"
@@ -100,10 +119,10 @@ def create_shape(request):
         new_shape.save()
 
         if "HTTP_HX_REQUEST" in request.META:
-            request.session["success_message"] = f"Forme {name} créée avec succès!"
+            request.session["success_message"] = "Forme créée avec succès!"
             return redirect(reverse("shapes:shape_list_columns"))
         else:
-            messages.success(request, f"Forme {name} créée avec succès!")
+            messages.success(request, "Forme créée avec succès!")
             return redirect(reverse("shapes:shape_list_columns"))
 
     return redirect(reverse("shapes:shape_list_columns"))
@@ -128,28 +147,34 @@ def update_shape(request, shape_id):
             return redirect(reverse("shapes:shape_list_columns"))
 
     if request.method == "POST":
-        shape.name = request.POST.get("name")
         shape_option = request.POST.get("shape_option", "rectangle")
         share_shape = request.POST.get("share_shape") == "on"
         shape.is_shared = share_shape
 
-        # Mettre à jour les dimensions en fonction du type sélectionné
+        # Mettre à jour les dimensions et générer un nouveau nom en fonction du type
         if (
             shape_option == "rectangle"
             and request.POST.get("width")
             and request.POST.get("height")
         ):
-            shape.width = int(request.POST.get("width"))
-            shape.height = int(request.POST.get("height"))
+            width = int(request.POST.get("width"))
+            height = int(request.POST.get("height"))
+            shape.name = f"Rectangle {width}×{height}"
+            shape.width = width
+            shape.height = height
             shape.size = None
             shape.diameter = None
         elif shape_option == "square" and request.POST.get("size"):
-            shape.size = int(request.POST.get("size"))
+            size = int(request.POST.get("size"))
+            shape.name = f"Carré {size}×{size}"
+            shape.size = size
             shape.width = None
             shape.height = None
             shape.diameter = None
         elif shape_option == "circle" and request.POST.get("diameter"):
-            shape.diameter = int(request.POST.get("diameter"))
+            diameter = int(request.POST.get("diameter"))
+            shape.name = f"Cercle Ø{diameter}"
+            shape.diameter = diameter
             shape.width = None
             shape.height = None
             shape.size = None
@@ -166,12 +191,10 @@ def update_shape(request, shape_id):
         shape.save()
 
         if "HTTP_HX_REQUEST" in request.META:
-            request.session["success_message"] = (
-                f"Forme {shape.name} mise à jour avec succès!"
-            )
+            request.session["success_message"] = "Forme mise à jour avec succès!"
             return redirect(reverse("shapes:shape_list_columns"))
         else:
-            messages.success(request, f"Forme {shape.name} mise à jour avec succès!")
+            messages.success(request, "Forme mise à jour avec succès!")
             return redirect(reverse("shapes:shape_list_columns"))
 
     # En théorie, on ne devrait jamais arriver ici car l'édition se fait via la vue shape_list_columns
