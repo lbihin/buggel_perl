@@ -857,3 +857,114 @@ def apply_kmeans(colors, n_clusters):
     centers = np.clip(centers, 0, 255).astype(np.uint8)
 
     return centers
+
+
+# HTMX views pour l'édition inline des perles
+
+
+@login_required
+def bead_edit_quantity_htmx(request, pk):
+    """Vue HTMX pour afficher le formulaire d'édition de quantité de perle."""
+    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
+
+    context = {
+        "bead": bead,
+    }
+    return render(request, "beadmodels/beads/htmx/bead_edit_quantity.html", context)
+
+
+@login_required
+def bead_update_quantity_htmx(request, pk):
+    """Vue HTMX pour mettre à jour la quantité d'une perle."""
+    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
+
+    if request.method == "POST":
+        try:
+            quantity = int(request.POST.get("quantity", "0"))
+            if quantity < 0:
+                quantity = 0
+            bead.quantity = quantity
+            bead.save()
+
+            # Récupérer le seuil d'alerte depuis les paramètres
+            from django.conf import settings
+
+            threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
+
+            context = {
+                "bead": bead,
+                "threshold": threshold,
+            }
+            return render(
+                request, "beadmodels/beads/htmx/bead_quantity_display.html", context
+            )
+        except (ValueError, TypeError):
+            # En cas d'erreur, retourner au formulaire d'édition
+            context = {
+                "bead": bead,
+                "error": "La quantité doit être un nombre entier positif.",
+            }
+            return render(
+                request, "beadmodels/beads/htmx/bead_edit_quantity.html", context
+            )
+
+    # Si la méthode n'est pas POST, retourner la vue de formulaire
+    return bead_edit_quantity_htmx(request, pk)
+
+
+@login_required
+def bead_edit_color_htmx(request, pk):
+    """Vue HTMX pour afficher le formulaire d'édition de couleur de perle."""
+    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
+
+    context = {
+        "bead": bead,
+    }
+    return render(request, "beadmodels/beads/htmx/bead_edit_color.html", context)
+
+
+@login_required
+def bead_update_color_htmx(request, pk):
+    """Vue HTMX pour mettre à jour la couleur d'une perle."""
+    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
+
+    if request.method == "POST":
+        try:
+            red = int(request.POST.get("red", "0"))
+            green = int(request.POST.get("green", "0"))
+            blue = int(request.POST.get("blue", "0"))
+
+            # Valider les valeurs RGB (entre 0 et 255)
+            red = max(0, min(255, red))
+            green = max(0, min(255, green))
+            blue = max(0, min(255, blue))
+
+            # Mettre à jour les valeurs de couleur
+            bead.red = red
+            bead.green = green
+            bead.blue = blue
+
+            # Mettre à jour le nom de la perle (basé sur la couleur)
+            bead.name = f"Perle #{red:02x}{green:02x}{blue:02x}"
+
+            bead.save()
+
+            # Retourner l'affichage de la couleur
+            context = {
+                "bead": bead,
+            }
+            return render(
+                request, "beadmodels/beads/htmx/bead_color_display.html", context
+            )
+        except (ValueError, TypeError):
+            # En cas d'erreur, retourner au formulaire d'édition
+            context = {
+                "bead": bead,
+                "error": "Les valeurs de couleur doivent être des nombres entiers entre 0 et 255.",
+            }
+            return render(
+                request, "beadmodels/beads/htmx/bead_edit_color.html", context
+            )
+
+    # Si la méthode n'est pas POST, retourner la vue de formulaire
+    return bead_edit_color_htmx(request, pk)

@@ -1,0 +1,25 @@
+<!-- Formulaire d'édition de quantité -->
+<form hx-post="{% url 'beadmodels:bead_update_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" class="edit-quantity-form">
+  {% csrf_token %}
+  <div class="input-group input-group-sm">
+    <input type="number" 
+           name="quantity" 
+           value="{{ bead.quantity|default_if_none:'' }}" 
+           class="form-control form-control-sm" 
+           min="0"
+           placeholder="Quantité"
+           autofocus>
+    <button class="btn btn-sm btn-primary" type="submit">
+      <i class="bi bi-check"></i>
+    </button>
+    <button class="btn btn-sm btn-secondary" 
+            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}" 
+            hx-target="closest .quantity-display" 
+            hx-trigger="click">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+  {% if error %}
+  <div class="text-danger mt-1 small">{{ error }}</div>
+  {% endif %}
+</form>

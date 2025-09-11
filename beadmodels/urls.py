@@ -39,6 +39,27 @@ urlpatterns = [
     # Routes utilisateur
     # path("settings/", views.user_settings, name="user_settings"),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
+    # Routes HTMX pour les perles
+    path(
+        "beads/<int:pk>/edit-quantity/",
+        views.bead_edit_quantity_htmx,
+        name="bead_edit_quantity_htmx",
+    ),
+    path(
+        "beads/<int:pk>/update-quantity/",
+        views.bead_update_quantity_htmx,
+        name="bead_update_quantity_htmx",
+    ),
+    path(
+        "beads/<int:pk>/edit-color/",
+        views.bead_edit_color_htmx,
+        name="bead_edit_color_htmx",
+    ),
+    path(
+        "beads/<int:pk>/update-color/",
+        views.bead_update_color_htmx,
+        name="bead_update_color_htmx",
+    ),
     # Routes HTMX pour les formes
 ]
 

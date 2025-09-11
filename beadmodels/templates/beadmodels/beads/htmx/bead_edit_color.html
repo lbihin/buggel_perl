@@ -1,0 +1,116 @@
+<!-- Formulaire d'édition de couleur -->
+<form hx-post="{% url 'beadmodels:bead_update_color_htmx' bead.pk %}" 
+      hx-target="closest .color-display" 
+      class="edit-color-form">
+  {% csrf_token %}
+  <div class="edit-color-container mb-2">
+    <div class="color-preview-edit mb-2" 
+         id="colorPreview-{{ bead.pk }}" 
+         style="background-color: {{ bead.get_rgb_color }}; height: 30px; border-radius: 4px;"></div>
+    <div class="row g-2">
+      <div class="col-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">R</span>
+          <input type="number" 
+                 name="red" 
+                 value="{{ bead.red }}" 
+                 class="form-control form-control-sm" 
+                 min="0" 
+                 max="255" 
+                 data-bead-id="{{ bead.pk }}" 
+                 oninput="updateColorPreviewEdit({{ bead.pk }})"
+                 autofocus>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">G</span>
+          <input type="number" 
+                 name="green" 
+                 value="{{ bead.green }}" 
+                 class="form-control form-control-sm" 
+                 min="0" 
+                 max="255" 
+                 data-bead-id="{{ bead.pk }}" 
+                 oninput="updateColorPreviewEdit({{ bead.pk }})">
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">B</span>
+          <input type="number" 
+                 name="blue" 
+                 value="{{ bead.blue }}" 
+                 class="form-control form-control-sm" 
+                 min="0" 
+                 max="255" 
+                 data-bead-id="{{ bead.pk }}" 
+                 oninput="updateColorPreviewEdit({{ bead.pk }})">
+        </div>
+      </div>
+    </div>
+    <div class="mt-2">
+      <div class="d-flex flex-wrap gap-1 mt-1">
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #ff0000;" 
+                data-bead-id="{{ bead.pk }}" data-r="255" data-g="0" data-b="0"></button>
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #00ff00;" 
+                data-bead-id="{{ bead.pk }}" data-r="0" data-g="255" data-b="0"></button>
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #0000ff;" 
+                data-bead-id="{{ bead.pk }}" data-r="0" data-g="0" data-b="255"></button>
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #ffff00;" 
+                data-bead-id="{{ bead.pk }}" data-r="255" data-g="255" data-b="0"></button>
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #000000;" 
+                data-bead-id="{{ bead.pk }}" data-r="0" data-g="0" data-b="0"></button>
+        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
+                style="background-color: #ffffff;" 
+                data-bead-id="{{ bead.pk }}" data-r="255" data-g="255" data-b="255"></button>
+      </div>
+    </div>
+  </div>
+  <div class="mt-2 d-flex justify-content-end">
+    <button class="btn btn-sm btn-secondary me-1" 
+            hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}" 
+            hx-target="closest .color-display" 
+            type="button">
+      Annuler
+    </button>
+    <button class="btn btn-sm btn-primary" type="submit">
+      Enregistrer
+    </button>
+  </div>
+  {% if error %}
+  <div class="text-danger mt-1 small">{{ error }}</div>
+  {% endif %}
+</form>
+
+<script>
+  // Fonction pour mettre à jour l'aperçu de couleur lors de l'édition
+  function updateColorPreviewEdit(beadId) {
+    const red = document.querySelector(`input[name="red"][data-bead-id="${beadId}"]`).value;
+    const green = document.querySelector(`input[name="green"][data-bead-id="${beadId}"]`).value;
+    const blue = document.querySelector(`input[name="blue"][data-bead-id="${beadId}"]`).value;
+    
+    document.getElementById(`colorPreview-${beadId}`).style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+  }
+  
+  // Attacher les gestionnaires d'événements aux boutons de couleur prédéfinis
+  document.querySelectorAll('.color-btn-edit').forEach(button => {
+    button.addEventListener('click', function() {
+      const beadId = this.getAttribute('data-bead-id');
+      const r = this.getAttribute('data-r');
+      const g = this.getAttribute('data-g');
+      const b = this.getAttribute('data-b');
+      
+      document.querySelector(`input[name="red"][data-bead-id="${beadId}"]`).value = r;
+      document.querySelector(`input[name="green"][data-bead-id="${beadId}"]`).value = g;
+      document.querySelector(`input[name="blue"][data-bead-id="${beadId}"]`).value = b;
+      
+      updateColorPreviewEdit(beadId);
+    });
+  });
+</script>

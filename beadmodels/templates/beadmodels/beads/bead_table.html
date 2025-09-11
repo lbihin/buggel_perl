@@ -80,6 +80,50 @@
       width: 3px;
       background-color: #ffc107;
     }
+    /* Styles pour l'édition inline */
+    .quantity-value, .hex-code {
+      cursor: pointer;
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .quantity-value:hover, .hex-code:hover {
+      border-color: #007bff;
+      background-color: rgba(0, 123, 255, 0.1);
+      color: #007bff;
+    }
+    .color-preview {
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .color-preview:hover {
+      border-color: #007bff;
+      transform: scale(1.1);
+    }
+    .color-display, .quantity-display {
+      width: 100%;
+    }
+    .edit-icon {
+      cursor: pointer;
+      opacity: 0.7;
+      transition: all 0.2s;
+    }
+    .edit-icon:hover {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+    .edit-quantity-form, .edit-color-form {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+    .color-btn-edit {
+      width: 20px;
+      height: 20px;
+      padding: 0 !important;
+      border-radius: 3px;
+    }
   </style>
 {% endblock %}
 
@@ -179,6 +223,12 @@
       </div>
     </div>
 
+    <!-- Message d'aide pour l'édition -->
+    <div class="alert alert-info mb-4" role="alert">
+      <i class="bi bi-info-circle me-2"></i>
+      <strong>Astuce :</strong> Cliquez sur la couleur ou la quantité d'une perle pour les modifier directement.
+    </div>
+    
     <!-- Liste des perles -->
     <div class="table-responsive">
       <table class="beads-table">
@@ -194,15 +244,12 @@
             <tr class="bead-row {% cycle 'odd-row' 'even-row' %} {% if bead.quantity is not None and bead.quantity <= threshold %}low-quantity{% endif %}">
               <!-- Aperçu de la couleur -->
               <td width="50%">
-                <div class="d-flex align-items-center">
-                  <span class="color-preview" style="background-color: {{ bead.get_rgb_color }};"></span>
-                  <span>{{ bead.get_hex_color }}</span>
-                </div>
+                {% include "beadmodels/beads/htmx/bead_color_display.html" %}
               </td>
               
               <!-- Quantité -->
-              <td width="40%" {% if bead.quantity is not None and bead.quantity <= threshold %}class="text-warning fw-bold"{% endif %}>
-                {{ bead.quantity|default_if_none:"Non spécifié" }}
+              <td width="40%">
+                {% include "beadmodels/beads/htmx/bead_quantity_display.html" %}
               </td>
               
               <!-- Action -->
@@ -247,6 +294,73 @@
     // Masquer le formulaire d'ajout de perle
     function hideBeadForm() {
       document.getElementById('bead-form-container').style.display = 'none';
+    }
+    
+    // Initialiser les interactions HTMX
+    document.addEventListener('DOMContentLoaded', function() {
+      // Afficher un message après les mises à jour réussies
+      document.body.addEventListener('htmx:afterSwap', function(event) {
+        // Si la cible est une cellule de quantité et que le contenu n'est pas un formulaire
+        if (event.detail.target.closest('.quantity-display') && 
+            !event.detail.target.querySelector('form')) {
+          showToast("Quantité mise à jour", "success");
+        }
+        
+        // Si la cible est une cellule de couleur et que le contenu n'est pas un formulaire
+        if (event.detail.target.closest('.color-display') && 
+            !event.detail.target.querySelector('form')) {
+          showToast("Couleur mise à jour", "success");
+        }
+      });
+      
+      // Animation d'aide visuelle pour montrer que les éléments sont cliquables
+      setInterval(function() {
+        const editIcons = document.querySelectorAll('.edit-icon');
+        editIcons.forEach(icon => {
+          icon.classList.add('animate__animated', 'animate__heartBeat');
+          setTimeout(() => {
+            icon.classList.remove('animate__animated', 'animate__heartBeat');
+          }, 1500);
+        });
+      }, 10000); // Répéter toutes les 10 secondes
+    });
+    
+    // Afficher un toast de notification
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toast-container') || createToastContainer();
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-white bg-${type} border-0 show`;
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      // Supprimer automatiquement après 3 secondes
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          toastContainer.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+    
+    // Créer un conteneur pour les toasts s'il n'existe pas
+    function createToastContainer() {
+      const container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+      document.body.appendChild(container);
+      return container;
     }
     
     // Mettre à jour l'aperçu de couleur

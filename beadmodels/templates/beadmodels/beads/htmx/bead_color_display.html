@@ -1,0 +1,21 @@
+<!-- Affichage de la couleur avec possibilité d'édition inline -->
+<div class="color-display d-flex align-items-center">
+  <span class="color-preview" 
+        style="background-color: {{ bead.get_rgb_color }};"
+        hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}"
+        hx-target="closest .color-display"
+        hx-trigger="click"
+        role="button"
+        title="Cliquez pour modifier la couleur"></span>
+  <span class="hex-code"
+        hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}"
+        hx-target="closest .color-display"
+        hx-trigger="click"
+        role="button"
+        title="Cliquez pour modifier la couleur">{{ bead.get_hex_color }}</span>
+  <i class="bi bi-palette-fill ms-2 text-primary edit-icon" 
+     hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}"
+     hx-target="closest .color-display"
+     hx-trigger="click"
+     role="button"></i>
+</div>
