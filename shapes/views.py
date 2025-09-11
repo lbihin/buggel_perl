@@ -7,32 +7,11 @@ from django.urls import reverse
 from .models import BeadShape
 
 
+@login_required
 def shape_list(request):
     """Affiche la liste des formes disponibles"""
-    # Récupération des formes par défaut (partagées) et des formes personnalisées de l'utilisateur
-    default_shapes = BeadShape.objects.filter(is_default=True)
-
-    if request.user.is_authenticated:
-        custom_shapes = BeadShape.objects.filter(creator=request.user, is_default=False)
-    else:
-        custom_shapes = BeadShape.objects.none()
-
-    shared_shapes = BeadShape.objects.filter(is_shared=True).exclude(is_default=True)
-
-    if request.user.is_authenticated:
-        shared_shapes = shared_shapes.exclude(creator=request.user)
-
-    # Regrouper toutes les formes pour l'affichage dans le template
-    all_shapes = list(default_shapes) + list(custom_shapes) + list(shared_shapes)
-
-    context = {
-        "default_shapes": default_shapes,
-        "custom_shapes": custom_shapes,
-        "shared_shapes": shared_shapes,
-        "shapes": all_shapes,  # Ajout de toutes les formes sous la clé 'shapes'
-    }
-
-    return render(request, "shape_list.html", context)
+    shapes = BeadShape.objects.filter(creator=request.user)
+    return render(request, "shapes/shape_list.html", {"shapes": shapes})
 
 
 @login_required

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+  <link rel="stylesheet" href="{% static 'css/shape.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h2 mb-0">Gestion des formes</h1>
+    </div>
+
+    <!-- Messages de succès/erreur -->
+    <div id="messages-container">
+      {% if success_message %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ success_message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Formulaire de forme (ajout/édition) -->
+    <div id="shape-form-container" class="shape-form-container mb-4"></div>
+
+    <div class="d-flex justify-content-end align-items-center mb-3">
+      <div class="input-group search-container">
+        <input type="text" id="shapeSearch" class="form-control" placeholder="Rechercher..." hx-trigger="keyup changed delay:500ms" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-list-container" hx-include="[name='shape_type_filter']" name="search" />
+        <select class="form-select" name="shape_type_filter" hx-trigger="change" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-list-container" hx-include="[name='search']">
+          <option value="">Tous types</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="square">Carré</option>
+          <option value="circle">Cercle</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Liste des formes -->
+    <div id="shape-list-container">
+      {% include 'shapes/shape_row_list.html' %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/shapes.js' %}"></script>
+{% endblock %}

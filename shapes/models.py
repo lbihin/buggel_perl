@@ -31,8 +31,6 @@ class BeadShape(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Modifié le")
-    is_default = models.BooleanField(default=False, verbose_name="Forme par défaut")
-    is_shared = models.BooleanField(default=False, verbose_name="Forme partagée")
     creator = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,

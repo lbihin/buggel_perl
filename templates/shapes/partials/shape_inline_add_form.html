@@ -1,0 +1,71 @@
+<tr id="inline-add-shape-form" class="shape-row new-shape-row">
+
+
+  <!-- Nom de la forme -->
+  <td width="30%">
+    <input type="text" name="name" required placeholder="Nom" class="form-control form-control-sm" />
+  </td>
+
+  <!-- Type de forme -->
+  <td width="20%">
+    <select name="shape_type" class="form-select form-select-sm" id="inline-shape-type-select" onchange="toggleDimensionsFields()">
+      <option value="rectangle">Rectangle</option>
+      <option value="square">Carré</option>
+      <option value="circle">Cercle</option>
+    </select>
+  </td>
+
+  <!-- Dimensions de la forme -->
+  <td width="40%">
+    <div class="input-group input-group-sm">
+      <!-- Rectangle -->
+      <div id="rectangle-fields">
+        <div class="input-group input-group-sm">
+          <input type="number" name="width" min="1" required placeholder="L" class="form-control form-control-sm" value="10" style="width: 60px" />
+          <span class="input-group-text">×</span>
+          <input type="number" name="height" min="1" required placeholder="H" class="form-control form-control-sm" value="10" style="width: 60px" />
+        </div>
+      </div>
+      
+      <!-- Carré -->
+      <div id="square-fields" style="display: none;">
+        <div class="input-group input-group-sm">
+          <input type="number" name="size" min="1" placeholder="Taille" class="form-control form-control-sm" value="10" style="width: 80px" />
+        </div>
+      </div>
+      
+      <!-- Cercle -->
+      <div id="circle-fields" style="display: none;">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">Ø</span>
+          <input type="number" name="diameter" min="1" placeholder="Diamètre" class="form-control form-control-sm" value="10" style="width: 80px" />
+        </div>
+      </div>
+      
+      <div class="ms-2">
+        <button type="button" class="btn btn-sm btn-success" hx-post="{% url 'shapes:shape_save_new' %}" 
+            hx-include="#inline-add-shape-form" 
+            hx-target="#shape-list-container"
+            hx-swap="innerHTML">
+          <i class="bi bi-check"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="cancelInlineAdd()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+  </td>
+
+  <!-- Cellule vide pour l'alignement avec le bouton de suppression -->
+  <td width="0"></td>
+</tr>
+
+<script>
+  function toggleDimensionsFields() {
+    const shapeType = document.getElementById('inline-shape-type-select').value;
+    
+    document.getElementById('rectangle-fields').style.display = shapeType === 'rectangle' ? 'block' : 'none';
+    document.getElementById('square-fields').style.display = shapeType === 'square' ? 'block' : 'none';
+    document.getElementById('circle-fields').style.display = shapeType === 'circle' ? 'block' : 'none';
+  }
+</script>
