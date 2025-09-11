@@ -14,19 +14,22 @@
       </tr>
       {% for shape in shapes %}
         <tr class="shape-row {% cycle 'odd-row' 'even-row' %}" id="shape-{{ shape.id }}">
-          <!-- Nom de la forme - Rendu direct -->
-          <td width="35%" id="shape-name-{{ shape.id }}" class="shape-name editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-trigger="click" hx-target="#shape-name-{{ shape.id }}">
+          <!-- Nom de la forme - Rendu direct avec bouton d'édition -->
+          <td width="35%" id="shape-name-{{ shape.id }}" class="shape-name">
             {{ shape.name }}
+            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>
           </td>
 
-          <!-- Type de forme - Rendu direct -->
-          <td width="22%" id="shape-type-{{ shape.id }}" class="shape-type editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_type_edit' shape.id %}" hx-trigger="click" hx-target="#shape-type-{{ shape.id }}">
+          <!-- Type de forme - Rendu direct avec bouton d'édition -->
+          <td width="22%" id="shape-type-{{ shape.id }}" class="shape-type">
             {% if shape.shape_type == 'rectangle' %}Rectangle{% elif shape.shape_type == 'square' %}Carré{% elif shape.shape_type == 'circle' %}Rond{% endif %}
+            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_type_edit' shape.id %}" hx-target="#shape-type-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le type"><i class="bi bi-pencil-square"></i></button>
           </td>
 
-          <!-- Dimensions de la forme - Rendu direct -->
-          <td width="28%" id="dimensions-display-{{ shape.id }}" class="dimensions-display editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-trigger="click" hx-target="#dimensions-display-{{ shape.id }}">
+          <!-- Dimensions de la forme - Rendu direct avec bouton d'édition -->
+          <td width="28%" id="dimensions-display-{{ shape.id }}" class="dimensions-display">
             {{ shape.get_dimensions_display }}
+            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
           </td>
 
           <!-- Bouton de suppression flottant -->
