@@ -39,12 +39,20 @@ class BeadShape(models.Model):
         related_name="created_shapes",
         verbose_name="Créateur",
     )
+    is_default = models.BooleanField(default=False, verbose_name="Forme par défaut")
+    is_shared = models.BooleanField(default=False, verbose_name="Forme partagée")
 
     class Meta:
         verbose_name = "Forme de perles"
         verbose_name_plural = "Formes de perles"
         ordering = ["name"]
         unique_together = ["name", "creator"]
+        indexes = [
+            models.Index(fields=["creator"]),
+            models.Index(fields=["shape_type"]),
+            models.Index(fields=["is_default"]),
+            models.Index(fields=["is_shared"]),
+        ]
 
     def __str__(self):
         return self.name

@@ -14,14 +14,20 @@
       </tr>
       {% for shape in shapes %}
         <tr class="shape-row {% cycle 'odd-row' 'even-row' %}" id="shape-{{ shape.id }}">
-          <!-- Nom de la forme -->
-          <td width="35%" id="shape-name-{{ shape.id }}" hx-get="{% url 'shapes:shape_name' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <!-- Nom de la forme - Rendu direct -->
+          <td width="35%" id="shape-name-{{ shape.id }}" class="shape-name editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-trigger="click" hx-target="#shape-name-{{ shape.id }}">
+            {{ shape.name }}
+          </td>
 
-          <!-- Type de forme -->
-          <td width="22%" id="shape-type-{{ shape.id }}" hx-get="{% url 'shapes:shape_type' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <!-- Type de forme - Rendu direct -->
+          <td width="22%" id="shape-type-{{ shape.id }}" class="shape-type editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_type_edit' shape.id %}" hx-trigger="click" hx-target="#shape-type-{{ shape.id }}">
+            {% if shape.shape_type == 'rectangle' %}Rectangle{% elif shape.shape_type == 'square' %}Carré{% elif shape.shape_type == 'circle' %}Rond{% endif %}
+          </td>
 
-          <!-- Dimensions de la forme -->
-          <td width="28%" id="dimensions-display-{{ shape.id }}" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-trigger="load" hx-swap="innerHTML"></td>
+          <!-- Dimensions de la forme - Rendu direct -->
+          <td width="28%" id="dimensions-display-{{ shape.id }}" class="dimensions-display editable" data-shape-id="{{ shape.id }}" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-trigger="click" hx-target="#dimensions-display-{{ shape.id }}">
+            {{ shape.get_dimensions_display }}
+          </td>
 
           <!-- Bouton de suppression flottant -->
           <td width="7%" style="padding: 0; position: relative;">

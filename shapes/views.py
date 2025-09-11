@@ -10,7 +10,22 @@ from .models import BeadShape
 @login_required
 def shape_list(request):
     """Affiche la liste des formes disponibles"""
-    shapes = BeadShape.objects.filter(creator=request.user)
+    # Optimisation : récupérer toutes les données nécessaires en une seule requête
+    shapes = BeadShape.objects.filter(creator=request.user).select_related("creator")
+
+    # Traitement pour la recherche et le filtrage si nécessaire
+    search = request.GET.get("search", "")
+    shape_type_filter = request.GET.get("shape_type_filter", "")
+
+    if search:
+        shapes = shapes.filter(name__icontains=search)
+    if shape_type_filter:
+        shapes = shapes.filter(shape_type=shape_type_filter)
+
+    # Déterminer si c'est une requête HTMX pour le rendu partiel
+    if request.htmx:
+        return render(request, "shapes/shape_row_list.html", {"shapes": shapes})
+
     return render(request, "shapes/shape_list.html", {"shapes": shapes})
 
 
