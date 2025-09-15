@@ -22,6 +22,7 @@ Buggel is a Django web application for creating iron-on bead patterns from image
    - Pixelization algorithm using OpenCV and scikit-learn
    - Color reduction through k-means clustering
    - Custom palette matching for available beads
+   - Implementation in `beadmodels/pixelization_wizard.py`
 
 ## Development Workflows
 
@@ -52,6 +53,12 @@ poetry run pytest beadmodels/tests.py
 poetry run pytest -m "not slow"
 ```
 
+### Data Utilities
+```bash
+# Check beads in the database
+poetry run python check_beads.py
+```
+
 ## Key Patterns & Conventions
 
 ### Frontend Structure
@@ -59,6 +66,7 @@ poetry run pytest -m "not slow"
 - Static assets organized by component in `beadmodels/static/`
 - HTMX used for dynamic UI updates
 - Bootstrap 5 with crispy forms for form rendering
+- French is the primary language for UI elements and comments
 
 ### Wizard Pattern
 When implementing new wizards:
@@ -101,3 +109,6 @@ The shapes app defines custom grid layouts that integrate with the pixelization 
 
 ### Media Files
 Original images stored in `media/originals/` with processed patterns in `media/patterns/`.
+
+### Experimentation
+Jupyter notebooks in the `notebooks/` directory contain experimental image processing algorithms that can be tested before integration into the main application.
