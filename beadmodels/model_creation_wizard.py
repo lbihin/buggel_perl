@@ -318,65 +318,123 @@ class ConfigurationStep(WizardStep):
                     "Forme non trouvée, utilisation des dimensions par défaut",
                 )
 
-        # Préserver le ratio de l'image originale
-        orig_width, orig_height = img.size
-        orig_ratio = orig_width / orig_height
+        # Stratégie de redimensionnement en fonction de la forme
+        if use_circle_mask:
+            # Pour les cercles, on utilise une approche différente:
+            # On redimensionne l'image pour remplir entièrement le cercle
+            # puis on appliquera un masque après
 
-        # Calculer les nouvelles dimensions qui préservent le ratio
-        target_width = grid_width
-        target_height = grid_height
+            # Déterminer la dimension la plus petite de l'image source
+            orig_width, orig_height = img.size
+            orig_min_dim = min(orig_width, orig_height)
 
-        if orig_width > orig_height:
-            # Image horizontale
-            target_height = int(grid_width / orig_ratio)
-            if target_height > grid_height:
-                target_height = grid_height
-                target_width = int(target_height * orig_ratio)
+            # Calculer le facteur de redimensionnement pour que la plus petite dimension
+            # corresponde au diamètre du cercle
+            scale_factor = circle_diameter / orig_min_dim
+
+            # Redimensionner l'image en préservant le ratio pour qu'elle couvre le cercle
+            new_width = int(orig_width * scale_factor)
+            new_height = int(orig_height * scale_factor)
+
+            # Créer une image carrée de la taille du cercle
+            grid_img = Image.new("RGB", (grid_width, grid_height), (255, 255, 255))
+
+            # Redimensionner l'image source
+            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Calculer les offsets pour centrer l'image redimensionnée
+            offset_x = (grid_width - new_width) // 2
+            offset_y = (grid_height - new_height) // 2
+
+            # Coller l'image redimensionnée au centre
+            grid_img.paste(img_resized, (offset_x, offset_y))
+
+            # Message pour le débogage
+            messages.info(
+                self.wizard.request,
+                f"Redimensionnement circulaire: {new_width}×{new_height}, offset: {offset_x},{offset_y}",
+            )
         else:
-            # Image verticale ou carrée
-            target_width = int(grid_height * orig_ratio)
-            if target_width > grid_width:
+            # Pour les formes rectangulaires, on préserve le ratio de l'image
+            # mais on s'assure de ne pas dépasser les dimensions de la grille
+            orig_width, orig_height = img.size
+            orig_ratio = orig_width / orig_height
+
+            # Approche intelligente pour le redimensionnement
+            # On calcule les dimensions optimales pour remplir au maximum la forme
+            # tout en préservant le ratio d'aspect
+
+            # Calculer le ratio de la grille
+            grid_ratio = grid_width / grid_height
+
+            if orig_ratio > grid_ratio:
+                # L'image est proportionnellement plus large que la grille
+                # On ajuste sur la largeur
                 target_width = grid_width
-                target_height = int(target_width / orig_ratio)
+                target_height = int(grid_width / orig_ratio)
+            else:
+                # L'image est proportionnellement plus haute ou égale à la grille
+                # On ajuste sur la hauteur
+                target_height = grid_height
+                target_width = int(grid_height * orig_ratio)
 
-        # S'assurer que les dimensions sont au moins 1
-        target_width = max(1, target_width)
-        target_height = max(1, target_height)
+            # S'assurer que les dimensions sont au moins 1
+            target_width = max(1, min(target_width, grid_width))
+            target_height = max(1, min(target_height, grid_height))
 
-        # Centrer l'image dans la grille
-        offset_x = (grid_width - target_width) // 2
-        offset_y = (grid_height - target_height) // 2
+            # Centrer l'image dans la grille
+            offset_x = (grid_width - target_width) // 2
+            offset_y = (grid_height - target_height) // 2
 
-        # Redimensionner l'image
-        img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            # Redimensionner l'image
+            img_resized = img.resize(
+                (target_width, target_height), Image.Resampling.LANCZOS
+            )
 
-        # Créer une nouvelle image avec les dimensions de la grille
-        grid_img = Image.new("RGB", (grid_width, grid_height), (255, 255, 255))
+            # Créer une nouvelle image avec les dimensions de la grille
+            grid_img = Image.new("RGB", (grid_width, grid_height), (255, 255, 255))
 
-        # Coller l'image redimensionnée au centre
-        grid_img.paste(img, (offset_x, offset_y))
+            # Coller l'image redimensionnée au centre
+            grid_img.paste(img_resized, (offset_x, offset_y))
+
+            # Message pour le débogage
+            messages.info(
+                self.wizard.request,
+                f"Redimensionnement standard: {target_width}×{target_height}, offset: {offset_x},{offset_y}",
+            )
 
         # Appliquer un masque circulaire si nécessaire
         if use_circle_mask and circle_diameter > 0:
-            # Créer un masque circulaire
-            mask_array = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
-            center_x = grid_width // 2
-            center_y = grid_height // 2
+            # Créer un masque circulaire plus efficace avec NumPy
+            y, x = np.ogrid[:grid_height, :grid_width]
+            center_x, center_y = grid_width // 2, grid_height // 2
+            # Calculer la distance au carré par rapport au centre pour chaque pixel
+            # Légèrement plus rapide que de calculer la racine carrée
+            dist_squared = (x - center_x) ** 2 + (y - center_y) ** 2
             radius = circle_diameter // 2
 
-            for y in range(grid_height):
-                for x in range(grid_width):
-                    # Calculer la distance au centre
-                    dist = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
-                    if dist > radius:
-                        # Mettre en blanc les pixels en dehors du cercle
-                        mask_array[y, x] = [255, 255, 255]
+            # Créer un masque binaire (True pour les pixels dans le cercle, False pour les autres)
+            circle_mask = dist_squared <= radius**2
+
+            # Créer une image blanche pour le fond
+            white_bg = np.ones((grid_height, grid_width, 3), dtype=np.uint8) * 255
+
+            # Convertir en tableau 3D pour les opérations sur RGB
+            mask_3d = np.stack([circle_mask] * 3, axis=2)
+
+            # Créer le tableau final en utilisant le masque:
+            # - Pour les pixels dans le cercle (True), prendre l'image originale
+            # - Pour les pixels hors du cercle (False), utiliser le fond blanc
+            masked_array = np.where(mask_3d, np.array(grid_img), white_bg)
 
             # Convertir en image PIL
-            mask_img = Image.fromarray(mask_array)
+            grid_img = Image.fromarray(masked_array.astype(np.uint8))
 
-            # Appliquer le masque à l'image redimensionnée
-            grid_img = Image.composite(grid_img, mask_img, mask_img.convert("L"))
+            # Message pour le débogage
+            messages.info(
+                self.wizard.request,
+                f"Masque circulaire appliqué avec rayon {radius}",
+            )
 
         # Assurons-nous que l'image est exactement de la taille de la grille pour le clustering
         img_resized = grid_img.resize(
@@ -450,37 +508,81 @@ class ConfigurationStep(WizardStep):
             reduced_pixels = np.array(reduced_img_resized)
 
         # Maintenant dessiner les perles
-        for y in range(grid_height):
-            for x in range(grid_width):
-                try:
-                    color = reduced_pixels[y, x]
+        # Si c'est une forme circulaire, nous devons aussi masquer les perles hors du cercle
+        if use_circle_mask:
+            # Créer un masque pour déterminer quelles perles sont dans le cercle
+            center_x, center_y = grid_width // 2, grid_height // 2
+            radius = circle_diameter // 2
 
-                    # Dessin normal pour une grille carrée
-                    for py in range(cell_size):
-                        for px in range(cell_size):
-                            if (
-                                px == 0
-                                or px == cell_size - 1
-                                or py == 0
-                                or py == cell_size - 1
-                            ):
-                                # Bordure de la grille (gris clair)
-                                draw_pixels[y * cell_size + py, x * cell_size + px] = (
-                                    200,
-                                    200,
-                                    200,
-                                )
-                            else:
-                                # Pixel de couleur
-                                draw_pixels[y * cell_size + py, x * cell_size + px] = (
-                                    color
-                                )
-                except IndexError as e:
-                    # En cas d'erreur d'index, afficher un message et continuer
-                    messages.error(
-                        self.wizard.request,
-                        f"Erreur d'accès à l'index [{y},{x}] dans une image de dimensions {reduced_pixels.shape[:2]}",
-                    )
+            # Pour chaque position de perle, vérifier si elle est dans le cercle
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    # Calculer la distance au centre
+                    dist = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+
+                    # Si la perle est dans le cercle, la dessiner
+                    if dist <= radius:
+                        try:
+                            color = reduced_pixels[y, x]
+
+                            # Dessiner la perle avec une bordure
+                            for py in range(cell_size):
+                                for px in range(cell_size):
+                                    cell_x = x * cell_size + px
+                                    cell_y = y * cell_size + py
+
+                                    if (
+                                        px == 0
+                                        or px == cell_size - 1
+                                        or py == 0
+                                        or py == cell_size - 1
+                                    ):
+                                        # Bordure de la grille (gris clair)
+                                        draw_pixels[cell_y, cell_x] = (200, 200, 200)
+                                    else:
+                                        # Pixel de couleur
+                                        draw_pixels[cell_y, cell_x] = color
+                        except IndexError as e:
+                            # En cas d'erreur d'index, afficher un message et continuer
+                            messages.error(
+                                self.wizard.request,
+                                f"Erreur d'accès à l'index [{y},{x}] dans une image de dimensions {reduced_pixels.shape[:2]}",
+                            )
+        else:
+            # Dessin standard pour les formes rectangulaires
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    try:
+                        color = reduced_pixels[y, x]
+
+                        # Dessin normal pour une grille carrée
+                        for py in range(cell_size):
+                            for px in range(cell_size):
+                                if (
+                                    px == 0
+                                    or px == cell_size - 1
+                                    or py == 0
+                                    or py == cell_size - 1
+                                ):
+                                    # Bordure de la grille (gris clair)
+                                    draw_pixels[
+                                        y * cell_size + py, x * cell_size + px
+                                    ] = (
+                                        200,
+                                        200,
+                                        200,
+                                    )
+                                else:
+                                    # Pixel de couleur
+                                    draw_pixels[
+                                        y * cell_size + py, x * cell_size + px
+                                    ] = color
+                    except IndexError as e:
+                        # En cas d'erreur d'index, afficher un message et continuer
+                        messages.error(
+                            self.wizard.request,
+                            f"Erreur d'accès à l'index [{y},{x}] dans une image de dimensions {reduced_pixels.shape[:2]}",
+                        )
 
         # Convertir l'array en image PIL
         grid_img = Image.fromarray(draw_pixels)
@@ -543,11 +645,28 @@ class ConfigurationStep(WizardStep):
             shape_id
             and BeadShape.objects.filter(pk=shape_id, shape_type="circle").exists()
         ):
-            # Approximation du nombre de perles dans un cercle: π × r²
+            # Pour un cercle, le nombre de perles est approximativement π × r²
             shape = BeadShape.objects.get(pk=shape_id)
             radius = shape.diameter / 2 if shape.diameter else 0
-            total_beads = int(3.14159 * radius * radius)
+
+            # Méthode plus précise: compter le nombre de points dans le cercle
+            # en utilisant l'équation du cercle x² + y² ≤ r²
+            bead_count = 0
+            center_x, center_y = grid_width // 2, grid_height // 2
+
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    # Vérifier si ce point est dans le cercle
+                    if ((x - center_x) ** 2 + (y - center_y) ** 2) <= (radius**2):
+                        bead_count += 1
+
+            total_beads = bead_count
+            messages.info(
+                self.wizard.request,
+                f"Nombre de perles dans le cercle: {total_beads} (rayon {radius})",
+            )
         else:
+            # Pour les rectangles et carrés, c'est simplement largeur × hauteur
             total_beads = grid_width * grid_height
 
         # Calculer la palette de couleurs
