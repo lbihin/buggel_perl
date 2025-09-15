@@ -74,6 +74,23 @@
                     <td>{{ grid_width }} x {{ grid_height }} perles</td>
                   </tr>
                   <tr>
+                    <th>Forme</th>
+                    <td>
+                      {% if shape_id %}
+                        {{ shape_name }} 
+                        {% if shape_type == "rectangle" %}
+                          (Rectangle)
+                        {% elif shape_type == "square" %}
+                          (Carré)
+                        {% elif shape_type == "circle" %}
+                          (Cercle)
+                        {% endif %}
+                      {% else %}
+                        Standard
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
                     <th>Total de perles</th>
                     <td>{{ total_beads }} perles</td>
                   </tr>

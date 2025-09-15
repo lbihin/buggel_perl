@@ -15,49 +15,15 @@ class ImageUploadForm(forms.Form):
 
 
 class ModelConfigurationForm(forms.Form):
-    """Formulaire pour l'étape 2: Configuration du modèle."""
+    """Formulaire pour configurer un modèle de perles."""
 
-    grid_width = forms.IntegerField(
-        label="Largeur de la grille (en perles)",
-        min_value=5,
-        max_value=100,
-        initial=29,
-        widget=forms.NumberInput(
-            attrs={
-                "class": "form-control",
-                "hx-post": "",
-                "hx-trigger": "input changed delay:500ms",
-                "hx-target": "#preview-container",
-            }
-        ),
-    )
-    grid_height = forms.IntegerField(
-        label="Hauteur de la grille (en perles)",
-        min_value=5,
-        max_value=100,
-        initial=29,
-        widget=forms.NumberInput(
-            attrs={
-                "class": "form-control",
-                "hx-post": "",
-                "hx-trigger": "input changed delay:500ms",
-                "hx-target": "#preview-container",
-            }
-        ),
-    )
     color_reduction = forms.IntegerField(
         label="Nombre de couleurs",
         min_value=2,
         max_value=64,
         initial=16,
-        widget=forms.NumberInput(
-            attrs={
-                "class": "form-control",
-                "hx-post": "",
-                "hx-trigger": "input changed delay:500ms",
-                "hx-target": "#preview-container",
-            }
-        ),
+        required=False,  # Sera géré via les boutons radio
+        widget=forms.HiddenInput(),  # Caché car géré par les boutons
         help_text="Nombre de couleurs à utiliser dans le modèle final",
     )
     use_available_colors = forms.BooleanField(
@@ -72,7 +38,6 @@ class ModelConfigurationForm(forms.Form):
                 "hx-target": "#preview-container",
             }
         ),
-        help_text="Utiliser uniquement les couleurs de perles que vous avez enregistrées",
     )
 
 

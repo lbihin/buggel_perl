@@ -135,8 +135,6 @@ class ConfigurationStep(WizardStep):
 
         # Initialiser le formulaire avec les données existantes ou valeurs par défaut
         initial_data = {
-            "grid_width": wizard_data.get("grid_width", 29),
-            "grid_height": wizard_data.get("grid_height", 29),
             "color_reduction": wizard_data.get("color_reduction", 16),
             "use_available_colors": wizard_data.get("use_available_colors", False),
         }
@@ -145,6 +143,16 @@ class ConfigurationStep(WizardStep):
 
         # Récupérer les boards disponibles
         boards = BeadBoard.objects.all()
+
+        # Récupérer les formes de l'utilisateur
+        from shapes.models import BeadShape
+
+        user_shapes = BeadShape.objects.filter(
+            creator=self.wizard.request.user
+        ).order_by("name")
+
+        # Définir les valeurs de couleurs disponibles
+        color_values = [2, 4, 6, 8, 16, 24, 32]
 
         # Générer une prévisualisation avec les paramètres par défaut
         preview_image_base64 = self.generate_preview(wizard_data)
@@ -155,6 +163,10 @@ class ConfigurationStep(WizardStep):
             "image_base64": image_data.get("image_base64", ""),
             "preview_image_base64": preview_image_base64,
             "boards": boards,
+            "user_shapes": user_shapes,
+            "has_grid_options": bool(user_shapes.exists()),
+            "selected_shape_id": wizard_data.get("shape_id"),
+            "color_values": color_values,
             "wizard_step": self.position,
             "total_steps": 3,
         }
@@ -173,8 +185,7 @@ class ConfigurationStep(WizardStep):
         # Vérifier si c'est une requête HTMX pour une prévisualisation
         if self.wizard.request.headers.get("HX-Request") == "true":
             # Mise à jour des paramètres
-            grid_width = int(self.wizard.request.POST.get("grid_width", 29))
-            grid_height = int(self.wizard.request.POST.get("grid_height", 29))
+            shape_id = self.wizard.request.POST.get("shape_id", "")
             color_reduction = int(self.wizard.request.POST.get("color_reduction", 16))
             use_available_colors = (
                 self.wizard.request.POST.get("use_available_colors") == "on"
@@ -183,8 +194,7 @@ class ConfigurationStep(WizardStep):
             # Mettre à jour les données du wizard
             self.wizard.update_data(
                 {
-                    "grid_width": grid_width,
-                    "grid_height": grid_height,
+                    "shape_id": shape_id,
                     "color_reduction": color_reduction,
                     "use_available_colors": use_available_colors,
                 }
@@ -205,11 +215,13 @@ class ConfigurationStep(WizardStep):
         form = self.form_class(self.wizard.request.POST)
 
         if form.is_valid():
+            # Récupérer l'ID de la forme sélectionnée
+            shape_id = self.wizard.request.POST.get("shape_id", "")
+
             # Mettre à jour les données du wizard
             self.wizard.update_data(
                 {
-                    "grid_width": form.cleaned_data["grid_width"],
-                    "grid_height": form.cleaned_data["grid_height"],
+                    "shape_id": shape_id,
                     "color_reduction": form.cleaned_data["color_reduction"],
                     "use_available_colors": form.cleaned_data["use_available_colors"],
                 }
@@ -236,19 +248,18 @@ class ConfigurationStep(WizardStep):
             }
             return self.render_template(context)
 
-    def generate_preview(self, wizard_data):
-        """Génère une prévisualisation du modèle."""
-        image_data = wizard_data.get("image_data", {})
+    def generate_preview(self, data):
+        """Génère une prévisualisation pixelisée de l'image."""
+        image_data = data.get("image_data", {})
         image_base64 = image_data.get("image_base64", "")
 
         if not image_base64:
             return ""
 
-        # Récupérer les paramètres
-        grid_width = wizard_data.get("grid_width", 29)
-        grid_height = wizard_data.get("grid_height", 29)
-        color_reduction = wizard_data.get("color_reduction", 16)
-        use_available_colors = wizard_data.get("use_available_colors", False)
+        # Paramètres de configuration
+        shape_id = data.get("shape_id", "")
+        color_reduction = data.get("color_reduction", 16)
+        use_available_colors = data.get("use_available_colors", False)
 
         # Décoder l'image base64
         image_bytes = base64.b64decode(image_base64)
@@ -258,11 +269,120 @@ class ConfigurationStep(WizardStep):
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        # Redimensionner l'image
-        img = img.resize((grid_width, grid_height), Image.Resampling.LANCZOS)
+        # Taille par défaut pour le modèle
+        default_width = 29
+        default_height = 29
 
-        # Convertir en array numpy pour le traitement
-        img_array = np.array(img)  # Aplatir l'image pour le clustering
+        # Déterminer les dimensions de la grille en fonction de la forme choisie
+        from shapes.models import BeadShape
+
+        grid_width = 29  # Valeur par défaut
+        grid_height = 29  # Valeur par défaut
+        use_circle_mask = False
+        circle_diameter = 0
+
+        if shape_id:
+            try:
+                shape = BeadShape.objects.get(pk=shape_id)
+                shape_type = shape.shape_type
+
+                # Déterminer dimensions en fonction du type de forme
+                if (
+                    shape_type == "rectangle"
+                    and shape.width is not None
+                    and shape.height is not None
+                ):
+                    grid_width = shape.width
+                    grid_height = shape.height
+                    messages.info(
+                        self.wizard.request,
+                        f"Forme rectangle {grid_width}×{grid_height}",
+                    )
+                elif shape_type == "square" and shape.size is not None:
+                    grid_width = shape.size
+                    grid_height = shape.size
+                    messages.info(
+                        self.wizard.request, f"Forme carrée {grid_width}×{grid_height}"
+                    )
+                elif shape_type == "circle" and shape.diameter is not None:
+                    grid_width = shape.diameter
+                    grid_height = shape.diameter
+                    use_circle_mask = True
+                    circle_diameter = shape.diameter
+                    messages.info(
+                        self.wizard.request, f"Forme ronde diamètre {circle_diameter}"
+                    )
+            except BeadShape.DoesNotExist:
+                messages.warning(
+                    self.wizard.request,
+                    "Forme non trouvée, utilisation des dimensions par défaut",
+                )
+
+        # Préserver le ratio de l'image originale
+        orig_width, orig_height = img.size
+        orig_ratio = orig_width / orig_height
+
+        # Calculer les nouvelles dimensions qui préservent le ratio
+        target_width = grid_width
+        target_height = grid_height
+
+        if orig_width > orig_height:
+            # Image horizontale
+            target_height = int(grid_width / orig_ratio)
+            if target_height > grid_height:
+                target_height = grid_height
+                target_width = int(target_height * orig_ratio)
+        else:
+            # Image verticale ou carrée
+            target_width = int(grid_height * orig_ratio)
+            if target_width > grid_width:
+                target_width = grid_width
+                target_height = int(target_width / orig_ratio)
+
+        # S'assurer que les dimensions sont au moins 1
+        target_width = max(1, target_width)
+        target_height = max(1, target_height)
+
+        # Centrer l'image dans la grille
+        offset_x = (grid_width - target_width) // 2
+        offset_y = (grid_height - target_height) // 2
+
+        # Redimensionner l'image
+        img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+        # Créer une nouvelle image avec les dimensions de la grille
+        grid_img = Image.new("RGB", (grid_width, grid_height), (255, 255, 255))
+
+        # Coller l'image redimensionnée au centre
+        grid_img.paste(img, (offset_x, offset_y))
+
+        # Appliquer un masque circulaire si nécessaire
+        if use_circle_mask and circle_diameter > 0:
+            # Créer un masque circulaire
+            mask_array = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
+            center_x = grid_width // 2
+            center_y = grid_height // 2
+            radius = circle_diameter // 2
+
+            for y in range(grid_height):
+                for x in range(grid_width):
+                    # Calculer la distance au centre
+                    dist = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+                    if dist > radius:
+                        # Mettre en blanc les pixels en dehors du cercle
+                        mask_array[y, x] = [255, 255, 255]
+
+            # Convertir en image PIL
+            mask_img = Image.fromarray(mask_array)
+
+            # Appliquer le masque à l'image redimensionnée
+            grid_img = Image.composite(grid_img, mask_img, mask_img.convert("L"))
+
+        # Assurons-nous que l'image est exactement de la taille de la grille pour le clustering
+        img_resized = grid_img.resize(
+            (grid_width, grid_height), Image.Resampling.LANCZOS
+        )
+        img_array = np.array(img_resized)
         pixels = img_array.reshape(-1, 3)
 
         # Réduction de couleurs avec K-means
@@ -302,29 +422,65 @@ class ConfigurationStep(WizardStep):
         grid_img_height = grid_height * cell_size
         grid_img = Image.new("RGB", (grid_img_width, grid_img_height), (255, 255, 255))
 
+        # Récupérer la forme personnalisée si spécifiée
+        shape_mask = None
+        if shape_id:
+            try:
+                from shapes.models import BeadShape
+
+                shape = BeadShape.objects.get(pk=shape_id)
+                # Ici, on pourrait utiliser la forme pour créer un masque
+                # Pour l'instant, on se contente de noter la forme utilisée
+                messages.info(self.wizard.request, f"Forme utilisée : {shape.name}")
+            except Exception as e:
+                messages.error(
+                    self.wizard.request, f"Erreur lors du chargement de la forme: {e}"
+                )
+
         # Dessiner chaque perle avec une bordure
         draw_pixels = np.array(grid_img)
+
+        # Assurons-nous que reduced_pixels a bien les dimensions attendues
+        if reduced_pixels.shape[:2] != (grid_height, grid_width):
+            # Si les dimensions ne correspondent pas, redimensionner l'image réduite
+            reduced_img = Image.fromarray(reduced_pixels.astype("uint8"))
+            reduced_img_resized = reduced_img.resize(
+                (grid_width, grid_height), Image.Resampling.LANCZOS
+            )
+            reduced_pixels = np.array(reduced_img_resized)
+
+        # Maintenant dessiner les perles
         for y in range(grid_height):
             for x in range(grid_width):
-                color = reduced_pixels[y, x]
-                # Remplir la cellule avec la couleur de la perle
-                for py in range(cell_size):
-                    for px in range(cell_size):
-                        if (
-                            px == 0
-                            or px == cell_size - 1
-                            or py == 0
-                            or py == cell_size - 1
-                        ):
-                            # Bordure de la grille (gris clair)
-                            draw_pixels[y * cell_size + py, x * cell_size + px] = (
-                                200,
-                                200,
-                                200,
-                            )
-                        else:
-                            # Pixel de couleur
-                            draw_pixels[y * cell_size + py, x * cell_size + px] = color
+                try:
+                    color = reduced_pixels[y, x]
+
+                    # Dessin normal pour une grille carrée
+                    for py in range(cell_size):
+                        for px in range(cell_size):
+                            if (
+                                px == 0
+                                or px == cell_size - 1
+                                or py == 0
+                                or py == cell_size - 1
+                            ):
+                                # Bordure de la grille (gris clair)
+                                draw_pixels[y * cell_size + py, x * cell_size + px] = (
+                                    200,
+                                    200,
+                                    200,
+                                )
+                            else:
+                                # Pixel de couleur
+                                draw_pixels[y * cell_size + py, x * cell_size + px] = (
+                                    color
+                                )
+                except IndexError as e:
+                    # En cas d'erreur d'index, afficher un message et continuer
+                    messages.error(
+                        self.wizard.request,
+                        f"Erreur d'accès à l'index [{y},{x}] dans une image de dimensions {reduced_pixels.shape[:2]}",
+                    )
 
         # Convertir l'array en image PIL
         grid_img = Image.fromarray(draw_pixels)
@@ -344,11 +500,55 @@ class ConfigurationStep(WizardStep):
 
         # Extraire les informations supplémentaires nécessaires
         color_reduction = wizard_data.get("color_reduction", 16)
-        grid_width = wizard_data.get("grid_width", 29)
-        grid_height = wizard_data.get("grid_height", 29)
+
+        # Déterminer les dimensions de la forme
+        shape_id = wizard_data.get("shape_id", "")
+        grid_width = 29  # Valeur par défaut
+        grid_height = 29  # Valeur par défaut
+
+        # Récupérer les dimensions de la forme si une forme est sélectionnée
+        if shape_id:
+            from shapes.models import BeadShape
+
+            try:
+                shape = BeadShape.objects.get(pk=shape_id)
+                if (
+                    shape.shape_type == "rectangle"
+                    and shape.width is not None
+                    and shape.height is not None
+                ):
+                    grid_width = shape.width
+                    grid_height = shape.height
+                elif shape.shape_type == "square" and shape.size is not None:
+                    grid_width = shape.size
+                    grid_height = shape.size
+                elif shape.shape_type == "circle" and shape.diameter is not None:
+                    grid_width = shape.diameter
+                    grid_height = shape.diameter
+
+                # Logguer les dimensions utilisées
+                messages.info(
+                    self.wizard.request,
+                    f"Modèle final créé avec dimensions: {grid_width}×{grid_height} (forme: {shape.name})",
+                )
+            except BeadShape.DoesNotExist:
+                messages.warning(
+                    self.wizard.request,
+                    "Forme non trouvée, utilisation des dimensions par défaut",
+                )
 
         # Calculer le nombre total de perles
-        total_beads = grid_width * grid_height
+        # Pour les cercles, ajuster pour ne compter que les perles dans le cercle
+        if (
+            shape_id
+            and BeadShape.objects.filter(pk=shape_id, shape_type="circle").exists()
+        ):
+            # Approximation du nombre de perles dans un cercle: π × r²
+            shape = BeadShape.objects.get(pk=shape_id)
+            radius = shape.diameter / 2 if shape.diameter else 0
+            total_beads = int(3.14159 * radius * radius)
+        else:
+            total_beads = grid_width * grid_height
 
         # Calculer la palette de couleurs
         image_bytes = base64.b64decode(preview_base64)
@@ -388,6 +588,7 @@ class ConfigurationStep(WizardStep):
             "image_base64": preview_base64,
             "grid_width": grid_width,
             "grid_height": grid_height,
+            "shape_id": wizard_data.get("shape_id"),
             "color_reduction": color_reduction,
             "total_beads": total_beads,
             "palette": palette,
@@ -410,11 +611,27 @@ class ResultStep(WizardStep):
             messages.error(self.wizard.request, "Veuillez configurer votre modèle.")
             return redirect("beadmodels:model_creation_wizard")
 
+        # Récupérer les informations de la forme si applicable
+        shape_name = "Standard"
+        shape_type = "rectangle"
+        if final_model.get("shape_id"):
+            from shapes.models import BeadShape
+
+            try:
+                shape = BeadShape.objects.get(pk=final_model.get("shape_id"))
+                shape_name = shape.name
+                shape_type = shape.shape_type
+            except BeadShape.DoesNotExist:
+                pass
+
         # Construire le contexte
         context = {
             "image_base64": final_model.get("image_base64", ""),
             "grid_width": final_model.get("grid_width", 29),
             "grid_height": final_model.get("grid_height", 29),
+            "shape_id": final_model.get("shape_id"),
+            "shape_name": shape_name,
+            "shape_type": shape_type,
             "total_beads": final_model.get("total_beads", 0),
             "palette": final_model.get("palette", []),
             "wizard_step": self.position,
