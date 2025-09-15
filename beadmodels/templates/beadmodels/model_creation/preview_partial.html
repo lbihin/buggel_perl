@@ -1,5 +1,7 @@
 {% if preview_image_base64 %}
-  <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="Prévisualisation du modèle" class="img-fluid border rounded" style="max-height: 300px;" />
+  <div class="preview-image-container">
+    <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="Prévisualisation du modèle" class="img-fluid border rounded" style="min-height: 300px; width: 100%;" />
+  </div>
 {% else %}
   <div class="alert alert-info">
     Ajustez les paramètres pour voir la prévisualisation.

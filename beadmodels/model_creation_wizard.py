@@ -429,6 +429,12 @@ class ModelCreationWizard(LoginRequiredWizard):
             return {"model_id": model_id}
         return {}
 
+    def dispatch(self, request, *args, **kwargs):
+        """Vérifie si une réinitialisation du wizard est demandée."""
+        if "reset" in request.GET and request.GET.get("reset") == "true":
+            self.reset_wizard()
+        return super().dispatch(request, *args, **kwargs)
+
     def finish_wizard(self):
         """Action finale lorsque le wizard est terminé."""
         self.reset_wizard()

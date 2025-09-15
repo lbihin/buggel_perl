@@ -30,10 +30,10 @@
             <div class="image-actions-container">
               <div class="image-container text-center mb-4">
                 {% if image_base64 %}
-                  <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle final" class="img-fluid border rounded" />
+                  <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle final" class="img-fluid border rounded" style="min-height: 400px; width: 100%;" />
                 {% else %}
                   <div class="alert alert-warning">
-                    Aucune image générée. <a href="{% url 'beadmodels:model_creation_wizard' %}">Retour à l'étape 1</a>.
+                    Aucune image générée. <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true">Retour à l'étape 1</a>.
                   </div>
                 {% endif %}
               </div>
@@ -41,10 +41,13 @@
               <form method="post" class="mt-4">
                 {% csrf_token %}
                 <div class="d-grid gap-2">
-                  <button type="submit" name="download" class="btn btn-primary">
+                  <button type="submit" name="download" class="btn btn-lg btn-primary">
                     <i class="bi bi-download"></i> Télécharger le modèle
                   </button>
-                  <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-outline-secondary">
+                  <a href="javascript:history.back();" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Retour à la configuration
+                  </a>
+                  <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-outline-info">
                     <i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle
                   </a>
                 </div>

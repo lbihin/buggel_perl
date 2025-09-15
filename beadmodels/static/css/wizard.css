@@ -54,3 +54,33 @@
   border-radius: 3px;
   vertical-align: middle;
 }
+
+/* Styles améliorés pour les images de prévisualisation */
+.preview-image-container {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.preview-image-container img {
+  max-width: 100%;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 3px;
+  background: #fff;
+  transition: transform 0.3s ease;
+}
+
+.image-container img {
+  max-width: 100%;
+  border: 2px solid #ddd;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  background: #fff;
+  transition: transform 0.3s ease;
+}
+
+.image-container img:hover,
+.preview-image-container img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
