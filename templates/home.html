@@ -10,7 +10,7 @@
       <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}" role="button">S'inscrire</a>
     {% else %}
       <div class="btn-group">
-        <a class="btn btn-primary btn-lg" href="{% url 'beadmodels:model_creation_wizard' %}" role="button">
+        <a class="btn btn-primary btn-lg" href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" role="button">
           <i class="bi bi-magic"></i> Nouvel assistant de création
         </a>
         <a class="btn btn-outline-primary btn-lg" href="{% url 'beadmodels:create_model' %}" role="button">

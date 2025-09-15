@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.urls import reverse
 from PIL import Image
 from sklearn.cluster import KMeans
 
@@ -59,12 +60,19 @@ class ImageUploadStep(WizardStep):
 
         wizard_data = self.wizard.get_data()
 
-        # Réinitialiser les données si on revient à la première étape depuis une étape suivante
-        if self.wizard.get_current_step_number() > 1 and not reset_wizard:
+        # Si on est explicitement à l'étape 1, on réinitialise les données
+        # sauf si on vient de faire un reset explicite
+        current_step = self.wizard.get_current_step_number()
+        if current_step == 1 and not reset_wizard:
+            # Sauvegarder l'ID du modèle avant de réinitialiser
+            model_id_to_keep = wizard_data.get("model_id")
+
+            # Réinitialiser le wizard
             self.wizard.reset_wizard()
-            # Mais conserver l'ID du modèle si présent
-            if model_id:
-                self.wizard.update_data({"model_id": model_id})
+
+            # Restaurer l'ID du modèle si nécessaire
+            if model_id_to_keep or model_id:
+                self.wizard.update_data({"model_id": model_id or model_id_to_keep})
 
         # Initialiser le formulaire
         form = self.form_class()
@@ -156,6 +164,11 @@ class ConfigurationStep(WizardStep):
     def handle_post(self, **kwargs):
         """Traite le formulaire de configuration."""
         wizard_data = self.wizard.get_data()
+
+        # Vérifier si l'utilisateur a cliqué sur le bouton "Retour"
+        if "previous_step" in self.wizard.request.POST:
+            # Déléguer à la classe parente qui sait comment gérer la navigation
+            return self.wizard.go_to_previous_step()
 
         # Vérifier si c'est une requête HTMX pour une prévisualisation
         if self.wizard.request.headers.get("HX-Request") == "true":
@@ -464,8 +477,18 @@ class ModelCreationWizard(LoginRequiredWizard):
 
     def dispatch(self, request, *args, **kwargs):
         """Vérifie si une réinitialisation du wizard est demandée."""
+        # Réinitialiser le wizard seulement si demandé explicitement
         if "reset" in request.GET and request.GET.get("reset") == "true":
             self.reset_wizard()
+            # Forcer le retour à l'étape 1
+            request.session[f"{self.session_key}_step"] = 1
+            messages.info(
+                request,
+                "Assistant réinitialisé. Vous pouvez commencer un nouveau modèle.",
+            )
+            return redirect(reverse(self.get_url_name()))
+
+        # Laisser la classe parente gérer la requête normalement
         return super().dispatch(request, *args, **kwargs)
 
     def finish_wizard(self):

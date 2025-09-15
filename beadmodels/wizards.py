@@ -187,6 +187,18 @@ class BaseWizard(View):
             self.reset_wizard()
             return self.handle_reset()
 
+        # Vérification de la disponibilité des données
+        data = self.get_data()
+        current_step = self.get_current_step_number()
+
+        # Si on est à une étape > 1 mais qu'on n'a pas de données d'image, on revient à l'étape 1
+        if current_step > 1 and (
+            "image_data" not in data or not data.get("image_data")
+        ):
+            messages.warning(request, "Veuillez d'abord charger une image.")
+            self.set_current_step_number(1)
+            return redirect(reverse(self.get_url_name()))
+
         # Gestion des boutons précédent/suivant
         if request.method == "POST":
             if "previous_step" in request.POST:
