@@ -1,9 +1,24 @@
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
 from django.urls import path
 
 from . import views
-from .pixelization_wizard import PixelizationWizard
+from .model_creation_wizard import ModelCreationWizard
+
+# Importation conditionnelle pour permettre la migration progressive
+# from .pixelization_wizard import PixelizationWizard
+
+
+# Redirection temporaire pour forcer l'utilisation du nouveau wizard
+def redirect_to_new_wizard(request):
+    return redirect("beadmodels:model_creation_wizard")
+
+
+# Redirection vers la page d'accueil principale
+def redirect_to_home(request):
+    return redirect("home")
+
 
 app_name = "beadmodels"
 
@@ -20,6 +35,8 @@ urlpatterns = [
         name="delete_model",
     ),
     path("my-models/", views.BeadModelListView.as_view(), name="my_models"),
+    # Route d'accueil locale
+    path("home/", redirect_to_home, name="home"),
     # Gestion des perles avec des vues basées sur des classes
     path("beads/", views.BeadListView.as_view(), name="bead_list"),
     path("beads/add/", views.BeadCreateView.as_view(), name="bead_create"),
@@ -32,9 +49,11 @@ urlpatterns = [
         views.save_transformation,
         name="save_transformation",
     ),
-    # Wizard de pixelisation (nouveau, basé sur des classes)
+    # Redirection de l'ancien wizard vers le nouveau
+    path("pixelization-wizard/", redirect_to_new_wizard, name="pixelization_wizard"),
+    # Nouveau wizard de création de modèle (à 3 étapes)
     path(
-        "pixelization-wizard/", PixelizationWizard.as_view(), name="pixelization_wizard"
+        "model-creation/", ModelCreationWizard.as_view(), name="model_creation_wizard"
     ),
     # Routes utilisateur
     # path("settings/", views.user_settings, name="user_settings"),

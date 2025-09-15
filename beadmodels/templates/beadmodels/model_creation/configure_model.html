@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <!-- Overlay de chargement -->
+  <div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Traitement en cours...</div>
+  </div>
+
+  <div class="container mt-3 wizard-container">
+    <h1 class="h3">{{ wizard.name }}</h1>
+    
+    <div class="progress mb-4">
+      <div class="progress-bar" role="progressbar" style="width: {% widthratio wizard_step total_steps 100 %}%;" 
+          aria-valuenow="{{ wizard_step }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">
+        Étape {{ wizard_step }} sur {{ total_steps }}
+      </div>
+    </div>
+    
+    <div class="card wizard-card">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Étape {{ wizard_step }} : {{ current_step.name }}</h5>
+          <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur {{ total_steps }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- Colonne de gauche: Image originale -->
+          <div class="col-md-6 mb-3">
+            <h6>Image originale</h6>
+            <div class="image-container text-center">
+              {% if image_base64 %}
+                <img src="data:image/png;base64,{{ image_base64 }}" alt="Image originale" class="img-fluid border rounded" style="max-height: 300px;" />
+              {% else %}
+                <div class="alert alert-warning">
+                  Aucune image n'a été chargée. <a href="{% url 'beadmodels:model_creation_wizard' %}">Retour à l'étape 1</a>.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Colonne de droite: Formulaire et prévisualisation -->
+          <div class="col-md-6">
+            <form method="post" class="needs-validation" hx-boost="true" novalidate>
+              {% csrf_token %}
+              
+              {% if form.errors %}
+                <div class="alert alert-danger">
+                  <i class="bi bi-exclamation-triangle"></i> Veuillez corriger les erreurs ci-dessous et réessayer.
+                  {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              <!-- Dimensions de la grille -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.grid_width.id_for_label }}" class="form-label">{{ form.grid_width.label }}</label>
+                  {{ form.grid_width }}
+                  {% if form.grid_width.errors %}
+                    <div class="invalid-feedback d-block">
+                      {% for error in form.grid_width.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.grid_height.id_for_label }}" class="form-label">{{ form.grid_height.label }}</label>
+                  {{ form.grid_height }}
+                  {% if form.grid_height.errors %}
+                    <div class="invalid-feedback d-block">
+                      {% for error in form.grid_height.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- Nombre de couleurs -->
+              <div class="mb-3">
+                <label for="{{ form.color_reduction.id_for_label }}" class="form-label">{{ form.color_reduction.label }}</label>
+                {{ form.color_reduction }}
+                {% if form.color_reduction.help_text %}
+                  <small class="form-text text-muted">{{ form.color_reduction.help_text }}</small>
+                {% endif %}
+                {% if form.color_reduction.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.color_reduction.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <!-- Option d'utilisation des couleurs disponibles -->
+              <div class="mb-3 form-check">
+                {{ form.use_available_colors }}
+                <label for="{{ form.use_available_colors.id_for_label }}" class="form-check-label">
+                  {{ form.use_available_colors.label }}
+                </label>
+                {% if form.use_available_colors.help_text %}
+                  <small class="d-block form-text text-muted">{{ form.use_available_colors.help_text }}</small>
+                {% endif %}
+              </div>
+              
+              <!-- Prévisualisation du modèle -->
+              <h6 class="mt-4">Prévisualisation du modèle</h6>
+              <div id="preview-container" class="text-center mb-4">
+                {% include 'beadmodels/model_creation/preview_partial.html' %}
+              </div>
+              
+              <!-- Boutons de navigation -->
+              <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <button type="button" class="btn btn-outline-secondary me-md-2" onclick="window.history.back();">
+                  <i class="bi bi-arrow-left-circle"></i> Retour
+                </button>
+                <button type="submit" name="generate" class="btn btn-primary">
+                  <i class="bi bi-palette"></i> Générer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Afficher l'overlay de chargement pendant les requêtes HTMX
+      document.body.addEventListener('htmx:beforeSend', function(event) {
+        document.getElementById('loadingOverlay').classList.remove('d-none');
+      });
+      
+      document.body.addEventListener('htmx:afterOnLoad', function(event) {
+        document.getElementById('loadingOverlay').classList.add('d-none');
+      });
+    });
+  </script>
+{% endblock %}

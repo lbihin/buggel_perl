@@ -3,6 +3,79 @@ from django import forms
 from .models import AppPreference, Bead, BeadBoard, BeadModel
 
 
+# Formulaires pour le nouveau wizard de création de modèle
+class ImageUploadForm(forms.Form):
+    """Formulaire pour l'étape 1: Chargement de l'image."""
+
+    image = forms.ImageField(
+        label="Image à transformer",
+        help_text="Téléchargez une image pour créer un modèle de perles à repasser",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
+    )
+
+
+class ModelConfigurationForm(forms.Form):
+    """Formulaire pour l'étape 2: Configuration du modèle."""
+
+    grid_width = forms.IntegerField(
+        label="Largeur de la grille (en perles)",
+        min_value=5,
+        max_value=100,
+        initial=29,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "hx-post": "",
+                "hx-trigger": "input changed delay:500ms",
+                "hx-target": "#preview-container",
+            }
+        ),
+    )
+    grid_height = forms.IntegerField(
+        label="Hauteur de la grille (en perles)",
+        min_value=5,
+        max_value=100,
+        initial=29,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "hx-post": "",
+                "hx-trigger": "input changed delay:500ms",
+                "hx-target": "#preview-container",
+            }
+        ),
+    )
+    color_reduction = forms.IntegerField(
+        label="Nombre de couleurs",
+        min_value=2,
+        max_value=64,
+        initial=16,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "hx-post": "",
+                "hx-trigger": "input changed delay:500ms",
+                "hx-target": "#preview-container",
+            }
+        ),
+        help_text="Nombre de couleurs à utiliser dans le modèle final",
+    )
+    use_available_colors = forms.BooleanField(
+        label="Utiliser mes couleurs disponibles",
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "hx-post": "",
+                "hx-trigger": "change",
+                "hx-target": "#preview-container",
+            }
+        ),
+        help_text="Utiliser uniquement les couleurs de perles que vous avez enregistrées",
+    )
+
+
 class BeadModelForm(forms.ModelForm):
     class Meta:
         model = BeadModel

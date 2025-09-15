@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-3 wizard-container">
+    <h1 class="h3">{{ wizard.name }}</h1>
+    
+    <div class="progress mb-4">
+      <div class="progress-bar" role="progressbar" style="width: {% widthratio wizard_step total_steps 100 %}%;" 
+          aria-valuenow="{{ wizard_step }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">
+        Étape {{ wizard_step }} sur {{ total_steps }}
+      </div>
+    </div>
+    
+    <div class="card wizard-card">
+      <div class="card-header bg-success text-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Étape {{ wizard_step }} : {{ current_step.name }}</h5>
+          <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur {{ total_steps }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- Colonne de gauche avec l'image et les actions -->
+          <div class="col-md-6">
+            <div class="image-actions-container">
+              <div class="image-container text-center mb-4">
+                {% if image_base64 %}
+                  <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle final" class="img-fluid border rounded" />
+                {% else %}
+                  <div class="alert alert-warning">
+                    Aucune image générée. <a href="{% url 'beadmodels:model_creation_wizard' %}">Retour à l'étape 1</a>.
+                  </div>
+                {% endif %}
+              </div>
+              
+              <form method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="d-grid gap-2">
+                  <button type="submit" name="download" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Télécharger le modèle
+                  </button>
+                  <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle
+                  </a>
+                </div>
+              </form>
+            </div>
+          </div>
+          
+          <!-- Colonne de droite avec les détails et la palette -->
+          <div class="col-md-6">
+            <div class="details-container">
+              <h5>Détails du modèle</h5>
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <th>Dimensions</th>
+                    <td>{{ grid_width }} x {{ grid_height }} perles</td>
+                  </tr>
+                  <tr>
+                    <th>Total de perles</th>
+                    <td>{{ total_beads }} perles</td>
+                  </tr>
+                  <tr>
+                    <th>Couleurs utilisées</th>
+                    <td>{{ palette|length }} couleurs</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <h5 class="mt-4">Palette de couleurs</h5>
+              <div class="palette-container">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Couleur</th>
+                      <th>Quantité</th>
+                      <th>%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for color in palette %}
+                      <tr>
+                        <td>
+                          <span class="color-sample" style="background-color: {{ color.color }}; display: inline-block; width: 20px; height: 20px; border: 1px solid #ddd;"></span>
+                          <small>{{ color.hex }}</small>
+                        </td>
+                        <td>{{ color.count }}</td>
+                        <td>{{ color.percentage }}%</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
