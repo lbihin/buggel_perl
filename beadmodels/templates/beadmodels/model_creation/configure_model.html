@@ -3,6 +3,7 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/custom_wizard.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -112,9 +113,9 @@
                 {% endif %}
               </div>
               
-              <!-- Prévisualisation du modèle -->
-              <h6 class="mt-4">Prévisualisation du modèle</h6>
-              <div id="preview-container" class="text-center mb-4">
+              <!-- Prévisualisation du modèle pixelisé -->
+              <h6 class="mt-4">Modèle pixelisé</h6>
+              <div id="preview-container" class="mb-4">
                 {% include 'beadmodels/model_creation/preview_partial.html' %}
               </div>
               

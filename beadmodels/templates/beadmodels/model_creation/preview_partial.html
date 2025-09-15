@@ -1,6 +1,11 @@
 {% if preview_image_base64 %}
-  <div class="preview-image-container">
-    <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="Prévisualisation du modèle" class="img-fluid border rounded" style="min-height: 300px; width: 100%;" />
+  <div class="pixelized-preview-container">
+    <div class="grid-view">
+      <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="Prévisualisation du modèle pixelisé" class="pixelized-image" />
+    </div>
+    <div class="beads-info">
+      <small>Chaque case représente une perle à repasser</small>
+    </div>
   </div>
 {% else %}
   <div class="alert alert-info">

@@ -70,6 +70,30 @@
   transition: transform 0.3s ease;
 }
 
+/* Styles spécifiques pour la prévisualisation pixelisée */
+.pixelized-preview-container {
+  text-align: center;
+  padding: 0;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pixelized-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  /* Effet pixelisé visible */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* Taille adaptée à la grille */
+  width: 100%;
+  border: 1px solid #ddd;
+}
+
 .image-container img {
   max-width: 100%;
   border: 2px solid #ddd;

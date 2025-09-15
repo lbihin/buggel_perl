@@ -283,9 +283,42 @@ class ConfigurationStep(WizardStep):
         # Convertir en image PIL
         reduced_img = Image.fromarray(reduced_pixels.astype("uint8"))
 
+        # Créer une image agrandie avec une grille
+        cell_size = 10  # Taille de chaque cellule (perle)
+        grid_img_width = grid_width * cell_size
+        grid_img_height = grid_height * cell_size
+        grid_img = Image.new("RGB", (grid_img_width, grid_img_height), (255, 255, 255))
+
+        # Dessiner chaque perle avec une bordure
+        draw_pixels = np.array(grid_img)
+        for y in range(grid_height):
+            for x in range(grid_width):
+                color = reduced_pixels[y, x]
+                # Remplir la cellule avec la couleur de la perle
+                for py in range(cell_size):
+                    for px in range(cell_size):
+                        if (
+                            px == 0
+                            or px == cell_size - 1
+                            or py == 0
+                            or py == cell_size - 1
+                        ):
+                            # Bordure de la grille (gris clair)
+                            draw_pixels[y * cell_size + py, x * cell_size + px] = (
+                                200,
+                                200,
+                                200,
+                            )
+                        else:
+                            # Pixel de couleur
+                            draw_pixels[y * cell_size + py, x * cell_size + px] = color
+
+        # Convertir l'array en image PIL
+        grid_img = Image.fromarray(draw_pixels)
+
         # Convertir en base64
         preview_bytes = io.BytesIO()
-        reduced_img.save(preview_bytes, format="PNG")
+        grid_img.save(preview_bytes, format="PNG")
         preview_bytes.seek(0)
         preview_base64 = base64.b64encode(preview_bytes.read()).decode("utf-8")
 

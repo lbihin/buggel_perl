@@ -3,6 +3,7 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/custom_wizard.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -30,7 +31,14 @@
             <div class="image-actions-container">
               <div class="image-container text-center mb-4">
                 {% if image_base64 %}
-                  <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle final" class="img-fluid border rounded" style="min-height: 400px; width: 100%;" />
+                  <div class="pixelized-preview-container">
+                    <div class="grid-view">
+                      <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle final" class="pixelized-image" />
+                    </div>
+                    <div class="beads-info">
+                      <small>Grille de {{ grid_width }}x{{ grid_height }} perles à repasser</small>
+                    </div>
+                  </div>
                 {% else %}
                   <div class="alert alert-warning">
                     Aucune image générée. <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true">Retour à l'étape 1</a>.
