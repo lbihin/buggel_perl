@@ -1239,6 +1239,21 @@ class ModelCreationWizard(LoginRequiredWizard):
             )
             return redirect(reverse(self.get_url_name()))
 
+        # Auto-reset: détecter arrivée externe (pas une redirection interne du wizard)
+        # Une redirection interne porte le referer du wizard lui-même
+        if request.method == "GET" and self.get_current_step_number() > 1:
+            referer = request.META.get("HTTP_REFERER", "")
+            wizard_url_path = reverse(self.get_url_name())
+
+            # Si pas de referer OU referer ne vient pas du wizard → arrivée externe
+            # ET pas de paramètre continue explicite → reset
+            if referer and wizard_url_path not in referer:
+                # Arrivée depuis un autre URL (ex: my_models)
+                if not request.GET.get("continue"):
+                    self.reset_wizard()
+                    request.session[f"{self.session_key}_step"] = 1
+                    return redirect(reverse(self.get_url_name()))
+
         # Laisser la classe parente gérer la requête normalement
         return super().dispatch(request, *args, **kwargs)
 
