@@ -7,9 +7,13 @@ la création de modèles de perles à repasser.
 
 import base64
 import io
+import logging
 import uuid
+from datetime import datetime
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 from django import forms
 from django.contrib import messages
 from django.http import HttpResponse
@@ -17,7 +21,6 @@ from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from PIL import Image
-from sklearn.cluster import KMeans
 
 from .forms import ImageUploadForm, ModelConfigurationForm
 from .models import Bead, BeadBoard
@@ -184,8 +187,8 @@ class ConfigurationStep(WizardStep):
             # Déléguer à la classe parente qui sait comment gérer la navigation
             return self.wizard.go_to_previous_step()
 
-        # Vérifier si c'est une requête HTMX pour une prévisualisation
-        if self.wizard.request.headers.get("HX-Request") == "true":
+        # Prévisualisation déclenchée via HTMX
+        if getattr(self.wizard.request, "htmx", False):
             # Mise à jour des paramètres
             shape_id = self.wizard.request.POST.get("shape_id", "")
             color_reduction = int(self.wizard.request.POST.get("color_reduction", 16))
@@ -352,9 +355,8 @@ class ConfigurationStep(WizardStep):
             grid_img.paste(img_resized, (offset_x, offset_y))
 
             # Message pour le débogage
-            messages.info(
-                self.wizard.request,
-                f"Redimensionnement circulaire: {new_width}×{new_height}, offset: {offset_x},{offset_y}",
+            logger.debug(
+                f"Redimensionnement circulaire: {new_width}x{new_height} offset=({offset_x},{offset_y})"
             )
         else:
             # Pour les formes rectangulaires, on préserve le ratio de l'image
@@ -400,9 +402,8 @@ class ConfigurationStep(WizardStep):
             grid_img.paste(img_resized, (offset_x, offset_y))
 
             # Message pour le débogage
-            messages.info(
-                self.wizard.request,
-                f"Redimensionnement standard: {target_width}×{target_height}, offset: {offset_x},{offset_y}",
+            logger.debug(
+                f"Redimensionnement standard: {target_width}x{target_height} offset=({offset_x},{offset_y})"
             )
 
         # Appliquer un masque circulaire si nécessaire
@@ -433,10 +434,7 @@ class ConfigurationStep(WizardStep):
             grid_img = Image.fromarray(masked_array.astype(np.uint8))
 
             # Message pour le débogage
-            messages.info(
-                self.wizard.request,
-                f"Masque circulaire appliqué avec rayon {radius}",
-            )
+            logger.debug(f"Masque circulaire appliqué rayon={radius}")
 
         # Assurons-nous que l'image est exactement de la taille de la grille pour le clustering
         img_resized = grid_img.resize(
@@ -445,33 +443,17 @@ class ConfigurationStep(WizardStep):
         img_array = np.array(img_resized)
         pixels = img_array.reshape(-1, 3)
 
-        # Réduction de couleurs avec K-means
-        kmeans = KMeans(n_clusters=color_reduction, random_state=0, n_init="auto")
-        kmeans.fit(pixels)
+        # Réduction de couleurs via service partagé
+        from .services.image_processing import reduce_colors
 
-        # Remplacer chaque pixel par la couleur du centroïde
-        new_colors = kmeans.cluster_centers_.astype(int)
-        labels = kmeans.labels_
-        reduced_pixels = new_colors[labels].reshape(img_array.shape)
-
-        # Si on utilise les couleurs disponibles
+        user_colors = None
         if use_available_colors:
-            # Récupérer les couleurs disponibles pour l'utilisateur
             user_beads = Bead.objects.filter(creator=self.wizard.request.user)
             if user_beads.exists():
                 user_colors = np.array(
                     [[bead.red, bead.green, bead.blue] for bead in user_beads]
                 )
-
-                # Pour chaque couleur réduite, trouver la couleur disponible la plus proche
-                for i, color in enumerate(new_colors):
-                    # Calculer la distance euclidienne entre cette couleur et les couleurs disponibles
-                    distances = np.sqrt(np.sum((user_colors - color) ** 2, axis=1))
-                    closest_color_idx = np.argmin(distances)
-                    new_colors[i] = user_colors[closest_color_idx]
-
-                # Recréer l'image avec les couleurs disponibles
-                reduced_pixels = new_colors[labels].reshape(img_array.shape)
+        reduced_pixels = reduce_colors(img_array, color_reduction, user_colors)
 
         # Convertir en image PIL
         reduced_img = Image.fromarray(reduced_pixels.astype("uint8"))
@@ -671,39 +653,10 @@ class ConfigurationStep(WizardStep):
             # Pour les rectangles et carrés, c'est simplement largeur × hauteur
             total_beads = grid_width * grid_height
 
-        # Calculer la palette de couleurs
-        image_bytes = base64.b64decode(preview_base64)
-        img = Image.open(io.BytesIO(image_bytes))
+        # Palette via service
+        from .services.image_processing import compute_palette
 
-        # S'assurer que l'image est en mode RGB
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-
-        img_array = np.array(img)
-
-        # Aplatir l'image pour identifier les couleurs uniques
-        pixels = img_array.reshape(-1, 3)
-        unique_colors, counts = np.unique(
-            pixels.reshape(-1, 3), axis=0, return_counts=True
-        )
-
-        # Créer la palette sous forme de liste de dictionnaires
-        palette = []
-        for i, color in enumerate(unique_colors):
-            r, g, b = color
-            count = counts[i]
-            percentage = (count / total_beads) * 100
-            palette.append(
-                {
-                    "color": f"rgb({r}, {g}, {b})",
-                    "hex": f"#{r:02x}{g:02x}{b:02x}",
-                    "count": int(count),
-                    "percentage": round(percentage, 1),
-                }
-            )
-
-        # Trier par nombre de perles
-        palette = sorted(palette, key=lambda x: x["count"], reverse=True)
+        palette = compute_palette(preview_base64, total_beads)
 
         return {
             "image_base64": preview_base64,
@@ -816,7 +769,6 @@ class SaveStep(WizardStep):
 
         # Obtenir la date actuelle formatée en français pour le nom par défaut
         import locale
-        from datetime import datetime
 
         try:
             locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")

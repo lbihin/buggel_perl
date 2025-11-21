@@ -107,7 +107,7 @@ def create_shape(request):
             )
 
         else:
-            if "HTTP_HX_REQUEST" in request.META:
+            if request.htmx:
                 request.session["error_message"] = "Aucune dimension valide fournie"
                 return redirect(reverse("shapes:shape_list_columns"))
             else:
@@ -118,7 +118,7 @@ def create_shape(request):
         new_shape.update_from_dimensions()
         new_shape.save()
 
-        if "HTTP_HX_REQUEST" in request.META:
+        if request.htmx:
             request.session["success_message"] = "Forme créée avec succès!"
             return redirect(reverse("shapes:shape_list_columns"))
         else:
@@ -135,7 +135,7 @@ def update_shape(request, shape_id):
 
     # Vérifier que l'utilisateur peut modifier cette forme
     if shape.creator != request.user and not shape.is_default:
-        if "HTTP_HX_REQUEST" in request.META:
+        if request.htmx:
             request.session["error_message"] = (
                 "Vous n'avez pas l'autorisation de modifier cette forme"
             )
@@ -179,7 +179,7 @@ def update_shape(request, shape_id):
             shape.height = None
             shape.size = None
         else:
-            if "HTTP_HX_REQUEST" in request.META:
+            if request.htmx:
                 request.session["error_message"] = "Aucune dimension valide fournie"
                 return redirect(reverse("shapes:shape_list_columns"))
             else:
@@ -190,7 +190,7 @@ def update_shape(request, shape_id):
         shape.update_from_dimensions()
         shape.save()
 
-        if "HTTP_HX_REQUEST" in request.META:
+        if request.htmx:
             request.session["success_message"] = "Forme mise à jour avec succès!"
             return redirect(reverse("shapes:shape_list_columns"))
         else:
@@ -208,7 +208,7 @@ def delete_shape(request, shape_id):
 
     # Vérifier que l'utilisateur peut supprimer cette forme
     if shape.creator != request.user:
-        if "HTTP_HX_REQUEST" in request.META:
+        if request.htmx:
             request.session["error_message"] = (
                 "Vous n'avez pas l'autorisation de supprimer cette forme"
             )
@@ -221,7 +221,7 @@ def delete_shape(request, shape_id):
 
     # Empêcher la suppression des formes par défaut
     if shape.is_default:
-        if "HTTP_HX_REQUEST" in request.META:
+        if request.htmx:
             request.session["error_message"] = (
                 "Les formes par défaut ne peuvent pas être supprimées"
             )
@@ -235,7 +235,7 @@ def delete_shape(request, shape_id):
     shape_name = shape.name
     shape.delete()
 
-    if "HTTP_HX_REQUEST" in request.META:
+    if request.htmx:
         request.session["success_message"] = (
             f"Forme {shape_name} supprimée avec succès!"
         )

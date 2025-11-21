@@ -1,0 +1,71 @@
+import base64
+import io
+from typing import List, Optional
+
+import numpy as np
+from PIL import Image
+from sklearn.cluster import KMeans
+
+
+def reduce_colors(
+    image_array: np.ndarray, n_colors: int, user_colors: Optional[np.ndarray] = None
+) -> np.ndarray:
+    """Reduce colors of an RGB image array using KMeans and optionally map
+    cluster centroids to nearest user-provided colors.
+
+    Args:
+        image_array: H×W×3 uint8 array.
+        n_colors: Number of color clusters.
+        user_colors: Optional N×3 array of RGB bead colors.
+    Returns:
+        Reduced H×W×3 uint8 array.
+    """
+    pixels = image_array.reshape(-1, 3)
+    kmeans = KMeans(n_clusters=n_colors, random_state=0, n_init="auto")
+    kmeans.fit(pixels)
+    centroids = kmeans.cluster_centers_.astype(int)
+
+    if user_colors is not None and len(user_colors):
+        # Map each centroid to closest user color
+        for i, c in enumerate(centroids):
+            distances = np.sqrt(np.sum((user_colors - c) ** 2, axis=1))
+            centroids[i] = user_colors[int(np.argmin(distances))]
+
+    labels = kmeans.labels_
+    reduced_pixels = centroids[labels].reshape(image_array.shape)
+    return reduced_pixels.astype("uint8")
+
+
+def compute_palette(image_base64: str, total_beads: int) -> List[dict]:
+    """Compute palette (unique colors with counts and percentages) from a base64 PNG image.
+
+    Args:
+        image_base64: Base64-encoded PNG image string.
+        total_beads: Total bead count for percentage calculation.
+    Returns:
+        Sorted list of palette entries dict(color, hex, count, percentage).
+    """
+    if not image_base64:
+        return []
+    img_bytes = base64.b64decode(image_base64)
+    img = Image.open(io.BytesIO(img_bytes))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    arr = np.array(img)
+    pixels = arr.reshape(-1, 3)
+    unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
+    palette = []
+    safe_total = total_beads if total_beads > 0 else pixels.shape[0]
+    for color, count in zip(unique_colors, counts):
+        r, g, b = color
+        percentage = (count / safe_total) * 100
+        palette.append(
+            {
+                "color": f"rgb({r}, {g}, {b})",
+                "hex": f"#{r:02x}{g:02x}{b:02x}",
+                "count": int(count),
+                "percentage": round(percentage, 1),
+            }
+        )
+    palette.sort(key=lambda x: x["count"], reverse=True)
+    return palette
