@@ -1,4 +1,7 @@
+import os
+import time
 import uuid
+from typing import Iterable
 
 from django.core.files.storage import default_storage
 
@@ -10,6 +13,35 @@ def save_temp_image(uploaded_file) -> str:
     ext = (uploaded_file.name.split(".")[-1] or "png").lower()
     filename = f"temp_wizard/{uuid.uuid4()}.{ext}"
     return default_storage.save(filename, uploaded_file)
+
+
+def cleanup_temp_images(max_age_seconds: int = 3600) -> Iterable[str]:
+    """Delete temp wizard images older than max_age_seconds.
+
+    Returns an iterable of deleted paths for optional logging.
+    Safe: ignores errors if file was already removed.
+    """
+    base_dir = "temp_wizard"
+    deleted = []
+    try:
+        if not default_storage.exists(base_dir):
+            return deleted
+        # List files in temp_wizard
+        _, files = default_storage.listdir(base_dir)
+        for entry in files:  # files only
+            rel_path = f"{base_dir}/{entry}"
+            try:
+                # Get modification time via storage path
+                absolute_path = default_storage.path(rel_path)
+                mtime = os.path.getmtime(absolute_path)
+                if (time.time() - mtime) > max_age_seconds:
+                    default_storage.delete(rel_path)
+                    deleted.append(rel_path)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return deleted
 
 
 def file_to_base64(path: str) -> str:

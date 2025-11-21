@@ -11,10 +11,7 @@
     {% else %}
       <div class="btn-group">
         <a class="btn btn-primary btn-lg" href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" role="button">
-          <i class="bi bi-magic"></i> Nouvel assistant de création
-        </a>
-        <a class="btn btn-outline-primary btn-lg" href="{% url 'beadmodels:create_model' %}" role="button">
-          <i class="bi bi-plus-circle"></i> Créer modèle manuellement
+          <i class="bi bi-magic"></i> Assistant de création
         </a>
       </div>
     {% endif %}

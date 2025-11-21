@@ -36,10 +36,13 @@ class ImageUploadStep(WizardStep):
 
     def handle_get(self, **kwargs):
         """Gère l'affichage du formulaire de chargement d'image."""
-        # Message de débogage pour vérifier si ce wizard est exécuté
-        messages.info(
-            self.wizard.request, "Démarrage du nouveau wizard de création de modèle"
-        )
+        # Nettoyage silencieux des anciens fichiers temporaires (pas de message utilisateur)
+        try:
+            from .services.image_processing import cleanup_temp_images
+
+            cleanup_temp_images(max_age_seconds=3600)
+        except Exception:
+            pass
 
         # Vérifier si un model_id est fourni dans la requête
         model_id = self.wizard.request.GET.get("model_id")
@@ -410,24 +413,17 @@ class ConfigurationStep(WizardStep):
                 ):
                     grid_width = shape.width
                     grid_height = shape.height
-                    messages.info(
-                        self.wizard.request,
-                        f"Forme rectangle {grid_width}×{grid_height}",
-                    )
+                    # rectangle dimensions applied
                 elif shape_type == "square" and shape.size is not None:
                     grid_width = shape.size
                     grid_height = shape.size
-                    messages.info(
-                        self.wizard.request, f"Forme carrée {grid_width}×{grid_height}"
-                    )
+                    # square dimensions applied
                 elif shape_type == "circle" and shape.diameter is not None:
                     grid_width = shape.diameter
                     grid_height = shape.diameter
                     use_circle_mask = True
                     circle_diameter = shape.diameter
-                    messages.info(
-                        self.wizard.request, f"Forme ronde diamètre {circle_diameter}"
-                    )
+                    # circle dimensions applied
             except BeadShape.DoesNotExist:
                 messages.warning(
                     self.wizard.request,
