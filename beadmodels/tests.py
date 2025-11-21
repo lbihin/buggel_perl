@@ -116,6 +116,9 @@ class TestModels:
         assert bead_model.creator.username == "testuser"
         assert bead_model.is_public is True
         assert str(bead_model) == "Modèle Test"
+        # Champ metadata par défaut
+        assert isinstance(bead_model.metadata, dict)
+        assert bead_model.metadata == {}
 
     def test_bead_shape_creation(self, bead_shape):
         """Test la création d'une forme de perles."""
@@ -465,6 +468,8 @@ class TestIntegration:
 
         # Vérifier que le modèle a été supprimé
         assert not BeadModel.objects.filter(pk=model_id).exists()
+        # Vérifier metadata initiale
+        assert model.metadata == {}
 
     def test_beads_management_workflow(self, user, authenticated_client):
         """Test du workflow de gestion des perles (création, visualisation, édition, suppression)."""

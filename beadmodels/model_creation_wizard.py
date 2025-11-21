@@ -953,21 +953,18 @@ class SaveStep(WizardStep):
                     )
 
                 # Conserver les métadonnées du modèle
-                metadata = {}
+                metadata = {
+                    "grid_width": final_model.get("grid_width", 29),
+                    "grid_height": final_model.get("grid_height", 29),
+                    "shape_id": final_model.get("shape_id"),
+                    "color_reduction": final_model.get("color_reduction", 16),
+                    "total_beads": final_model.get("total_beads", 0),
+                    "palette": final_model.get("palette", []),
+                }
 
-                # Sauvegarder les dimensions et la forme utilisées
-                metadata["grid_width"] = final_model.get("grid_width", 29)
-                metadata["grid_height"] = final_model.get("grid_height", 29)
-                metadata["shape_id"] = final_model.get("shape_id")
-                metadata["color_reduction"] = final_model.get("color_reduction", 16)
-                metadata["total_beads"] = final_model.get("total_beads", 0)
-
-                # Sauvegarder la palette
-                metadata["palette"] = final_model.get("palette", [])
-
-                # Stocker les métadonnées dans un champ JSON si disponible, sinon dans un autre champ
-                # Note: Cette fonctionnalité nécessiterait d'ajouter un champ 'metadata' au modèle BeadModel
-                # Pour l'instant, on passe cette étape
+                # Stocker les métadonnées si le champ existe
+                if hasattr(new_model, "metadata"):
+                    new_model.metadata = metadata
 
                 # Traiter les tags (si le modèle BeadModel supporte cette fonctionnalité)
                 # tags = form.cleaned_data.get("tags", "")

@@ -27,6 +27,12 @@ class BeadModel(models.Model):
         blank=True,
         verbose_name="Support de perles",
     )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Métadonnées",
+        help_text="Paramètres de génération (palette, dimensions, etc.)",
+    )
 
     def __str__(self):
         return self.name
