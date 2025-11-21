@@ -91,23 +91,40 @@ def reduce_colors(
     return reduced_pixels.astype("uint8")
 
 
-def compute_palette(image_base64: str, total_beads: int) -> List[dict]:
-    """Compute palette (unique colors with counts and percentages) from a base64 PNG image.
+def compute_palette(
+    image_base64: Optional[str] = None,
+    total_beads: int = 0,
+    reduced_pixels: Optional[np.ndarray] = None,
+    content_mask: Optional[np.ndarray] = None,
+) -> List[dict]:
+    """Compute palette (unique colors with counts and percentages) from reduced pixel array or base64 image.
 
     Args:
-        image_base64: Base64-encoded PNG image string.
+        image_base64: Base64-encoded PNG image string (optional if reduced_pixels provided).
         total_beads: Total bead count for percentage calculation.
+        reduced_pixels: H×W×3 numpy array of reduced colors (preferred source).
+        content_mask: H×W boolean array indicating which pixels are actual content (True) vs padding (False).
     Returns:
         Sorted list of palette entries dict(color, hex, count, percentage).
     """
-    if not image_base64:
+    if reduced_pixels is not None:
+        # Use reduced pixels directly (excludes grid borders)
+        if content_mask is not None:
+            # Filter pixels to only count content areas (exclude white padding)
+            pixels = reduced_pixels[content_mask]
+        else:
+            pixels = reduced_pixels.reshape(-1, 3)
+    elif image_base64:
+        # Fallback to base64 image
+        img_bytes = base64.b64decode(image_base64)
+        img = Image.open(io.BytesIO(img_bytes))
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        arr = np.array(img)
+        pixels = arr.reshape(-1, 3)
+    else:
         return []
-    img_bytes = base64.b64decode(image_base64)
-    img = Image.open(io.BytesIO(img_bytes))
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    arr = np.array(img)
-    pixels = arr.reshape(-1, 3)
+
     unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
     palette = []
     safe_total = total_beads if total_beads > 0 else pixels.shape[0]

@@ -354,13 +354,21 @@ class ConfigurationStep(WizardStep):
             }
             return self.render_template(context)
 
-    def generate_preview(self, data):
-        """Génère une prévisualisation pixelisée de l'image."""
+    def generate_preview(self, data, return_reduced_pixels=False):
+        """Génère une prévisualisation pixelisée de l'image.
+
+        Args:
+            data: Wizard data dictionary
+            return_reduced_pixels: If True, returns tuple (base64_image, reduced_pixels_array, content_mask)
+
+        Returns:
+            base64 string or tuple (base64_image, reduced_pixels, content_mask) if return_reduced_pixels=True
+        """
         image_data = data.get("image_data", {})
         image_base64 = image_data.get("image_base64")
         image_path = image_data.get("image_path")
         if not image_base64 and not image_path:
-            return ""
+            return ("", None, None) if return_reduced_pixels else ""
 
         # Paramètres de configuration
         shape_id = data.get("shape_id", "")
@@ -399,6 +407,8 @@ class ConfigurationStep(WizardStep):
         grid_height = 29  # Valeur par défaut
         use_circle_mask = False
         circle_diameter = 0
+        # Initialiser le masque de contenu par défaut (tout est contenu)
+        image_content_mask = None
 
         if shape_id:
             try:
@@ -461,6 +471,18 @@ class ConfigurationStep(WizardStep):
             # Coller l'image redimensionnée au centre
             grid_img.paste(img_resized, (offset_x, offset_y))
 
+            # Pour les cercles aussi, créer un masque du contenu réel
+            # Le masque sera True pour les pixels de l'image source, False pour le fond blanc
+            image_content_mask = np.zeros((grid_height, grid_width), dtype=bool)
+            # Pour un cercle, marquer tous les pixels dans le rayon
+            center_x_circle, center_y_circle = grid_width // 2, grid_height // 2
+            radius_mask = circle_diameter // 2
+            y_circle, x_circle = np.ogrid[:grid_height, :grid_width]
+            dist_squared_mask = (x_circle - center_x_circle) ** 2 + (
+                y_circle - center_y_circle
+            ) ** 2
+            image_content_mask = dist_squared_mask <= radius_mask**2
+
             # Message pour le débogage
             logger.debug(
                 f"Redimensionnement circulaire: {new_width}x{new_height} offset=({offset_x},{offset_y})"
@@ -507,6 +529,13 @@ class ConfigurationStep(WizardStep):
 
             # Coller l'image redimensionnée au centre
             grid_img.paste(img_resized, (offset_x, offset_y))
+
+            # Créer un masque pour identifier les zones d'image réelle (non-blanc de remplissage)
+            # Le masque sera True pour les pixels de l'image source, False pour le fond blanc
+            image_content_mask = np.zeros((grid_height, grid_width), dtype=bool)
+            image_content_mask[
+                offset_y : offset_y + target_height, offset_x : offset_x + target_width
+            ] = True
 
             # Message pour le débogage
             logger.debug(
@@ -684,12 +713,17 @@ class ConfigurationStep(WizardStep):
         preview_bytes.seek(0)
         preview_base64 = base64.b64encode(preview_bytes.read()).decode("utf-8")
 
+        if return_reduced_pixels:
+            # Retourner aussi le masque du contenu pour exclure les zones de remplissage blanc
+            return preview_base64, reduced_pixels, image_content_mask
         return preview_base64
 
     def generate_model(self, wizard_data):
         """Génère le modèle final."""
-        # Cette méthode est similaire à generate_preview mais avec la taille finale
-        preview_base64 = self.generate_preview(wizard_data)
+        # Générer l'image ET récupérer les pixels réduits + masque pour palette précise
+        preview_base64, reduced_pixels, content_mask = self.generate_preview(
+            wizard_data, return_reduced_pixels=True
+        )
 
         # Extraire les informations supplémentaires nécessaires
         color_reduction = wizard_data.get("color_reduction", 16)
@@ -760,10 +794,14 @@ class ConfigurationStep(WizardStep):
             # Pour les rectangles et carrés, c'est simplement largeur × hauteur
             total_beads = grid_width * grid_height
 
-        # Palette via service
+        # Palette via service - utiliser les pixels réduits pour précision
         from .services.image_processing import compute_palette
 
-        palette = compute_palette(preview_base64, total_beads)
+        palette = compute_palette(
+            reduced_pixels=reduced_pixels,
+            total_beads=total_beads,
+            content_mask=content_mask,
+        )
 
         return {
             "image_base64": preview_base64,
