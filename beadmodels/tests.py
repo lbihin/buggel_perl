@@ -772,3 +772,59 @@ class TestIntegration:
         assert not BeadModel.objects.filter(name="Projet Complet").exists()
         assert not BeadShape.objects.filter(name="Rectangle Spécial").exists()
         assert not Bead.objects.filter(creator=user).exists()
+
+
+# ------------------- Tests du nouveau wizard (étape finalisation) -------------------
+
+@pytest.mark.django_db
+class TestFinalizeStep:
+    def test_finalize_step_template_and_form(self, authenticated_client, test_image, bead_board):
+        """Vérifie que l'étape 3 affiche le nouveau template avec le formulaire de finalisation."""
+        url = reverse("beadmodels:model_creation_wizard")
+
+        # Étape 1: upload image
+        response1 = authenticated_client.post(url, {"image": test_image}, follow=True)
+        assert response1.status_code == 200
+
+        # Étape 2: configuration (soumission classique)
+        response2 = authenticated_client.post(url, {
+            "color_reduction": 8,
+            "use_available_colors": "on"
+        }, follow=True)
+        assert response2.status_code == 200
+
+        # Forcer la session sur l'étape 3 si nécessaire
+        session = authenticated_client.session
+        session["model_creation_wizard_step"] = 3
+        session.save()
+
+        response3 = authenticated_client.get(url)
+        assert response3.status_code == 200
+        # Vérifie que le nouveau template contient le champ nom et le bouton d'enregistrement
+        assert b"Finalisation" in response3.content
+        assert b"Nom du modèle" in response3.content
+        assert b"Enregistrer le modèle" in response3.content
+
+    def test_finalize_step_save_model(self, authenticated_client, test_image, bead_board):
+        """Teste qu'un modèle est correctement sauvegardé via l'étape de finalisation."""
+        url = reverse("beadmodels:model_creation_wizard")
+        authenticated_client.post(url, {"image": test_image}, follow=True)
+        authenticated_client.post(url, {"color_reduction": 8}, follow=True)
+        session = authenticated_client.session
+        session["model_creation_wizard_step"] = 3
+        session.save()
+        # Soumettre le formulaire final
+        post_data = {
+            "name": "Modèle Finalisé",
+            "description": "Créé via wizard finalisé",
+            "board": bead_board.pk,
+            "is_public": "on",
+            "tags": "test,final",
+        }
+        response = authenticated_client.post(url, post_data, follow=True)
+        assert response.status_code == 200
+        # Vérifier création
+        assert BeadModel.objects.filter(name="Modèle Finalisé").exists()
+        model = BeadModel.objects.get(name="Modèle Finalisé")
+        assert model.metadata.get("final_color_reduction") is not None
+        assert "palette" in model.metadata

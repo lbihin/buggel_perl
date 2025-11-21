@@ -41,6 +41,67 @@ class ModelConfigurationForm(forms.Form):
     )
 
 
+class BeadModelFinalizeForm(forms.ModelForm):
+    """Formulaire de finalisation du modèle (étape 3)."""
+
+    tags = forms.CharField(
+        required=False,
+        label="Tags",
+        help_text="Séparez les tags par des virgules",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "ex: animaux, mario, cadeau",
+            }
+        ),
+    )
+
+    class Meta:
+        model = BeadModel
+        fields = ["name", "description", "board", "is_public"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Nom du modèle",
+                    "hx-trigger": "keyup changed delay:300ms",
+                    "hx-target": "#model-preview-title",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Description (optionnelle)",
+                }
+            ),
+            "board": forms.Select(
+                attrs={
+                    "class": "form-select",
+                    "hx-trigger": "change",
+                    "hx-target": "#board-preview",
+                }
+            ),
+            "is_public": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        labels = {
+            "name": "Nom du modèle",
+            "description": "Description",
+            "board": "Support",
+            "is_public": "Rendre public",
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        # Pré-remplir is_public selon les préférences utilisateur si disponible
+        if user and not self.instance.pk:
+            from accounts.models import UserSettings
+
+            settings = UserSettings.objects.for_user(user=user)
+            self.fields["is_public"].initial = settings.set_public
+
+
 class BeadModelForm(forms.ModelForm):
     class Meta:
         model = BeadModel

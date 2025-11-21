@@ -49,7 +49,7 @@
           
           <!-- Colonne de droite: Formulaire et prévisualisation -->
           <div class="col-md-6">
-            <form method="post" class="needs-validation" hx-boost="true" novalidate>
+            <form method="post" class="needs-validation" novalidate>
               {% csrf_token %}
               
               {% if form.errors %}
@@ -163,9 +163,9 @@
               
               <!-- Boutons de navigation -->
               <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-outline-secondary me-md-2">
+                <button type="submit" name="previous_step" class="btn btn-outline-secondary me-md-2">
                   <i class="bi bi-arrow-left-circle"></i> Retour
-                </a>
+                </button>
                 <button type="submit" name="generate" class="btn btn-primary">
                   <i class="bi bi-palette"></i> Générer
                 </button>

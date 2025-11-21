@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Finalisation du modèle{% endblock %}
+{% block content %}
+<div class="row" data-finalize-step="true">
+  <div class="col-md-7">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong id="model-preview-title">{{ form.name.value|default:'Nouveau modèle' }}</strong>
+        <span class="badge bg-secondary">Étape {{ wizard_step }} / {{ total_steps }}</span>
+      </div>
+      <div class="card-body">
+        {% if image_base64 %}
+          <img src="data:image/png;base64,{{ image_base64 }}" alt="Prévisualisation finale" class="img-fluid border" />
+        {% else %}
+          <div class="alert alert-warning">Image finale introuvable.</div>
+        {% endif %}
+        <hr />
+        <div class="d-flex flex-wrap gap-3">
+          <div><strong>Dimensions:</strong> {{ grid_width }} × {{ grid_height }}</div>
+          <div><strong>Total perles:</strong> {{ total_beads }}</div>
+          <div><strong>Forme:</strong> {{ shape_name }} ({{ shape_type }})</div>
+          <div><strong>Couleurs:</strong> {{ beads_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header">Palette finale</div>
+      <div class="card-body" id="palette-container">
+        {% if palette %}
+          <div class="row">
+            {% for c in palette %}
+              <div class="col-6 col-lg-4 mb-2">
+                <div class="border rounded p-2 h-100">
+                  <div class="d-flex align-items-center mb-1">
+                    <span class="rounded me-2" style="display:inline-block;width:24px;height:24px;background:{{ c.color }};"></span>
+                    <strong>{{ c.count }} perles</strong>
+                  </div>
+                  {% if c.matches %}
+                    <small class="text-muted">Correspondances:</small>
+                    <ul class="list-unstyled mb-1">
+                      {% for m in c.matches %}
+                        <li><span style="background:{{ m.color }};display:inline-block;width:12px;height:12px;border:1px solid #ccc;"></span> {{ m.name }} ({{ m.quantity|default:'-' }})</li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                  {% if forloop.counter0 not in excluded_colors %}
+                    <form method="post" hx-post="" hx-target="#palette-container" hx-swap="outerHTML">
+                      {% csrf_token %}
+                      <input type="hidden" name="exclude_color_index" value="{{ forloop.counter0 }}" />
+                      <button class="btn btn-sm btn-outline-danger w-100">Exclure</button>
+                    </form>
+                  {% else %}
+                    <span class="badge bg-danger">Exclue</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">Aucune palette disponible.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-header">Finalisation</div>
+      <div class="card-body">
+        {{ form.non_field_errors }}
+        <div class="mb-3">{{ form.name.label_tag }} {{ form.name }} {{ form.name.errors }}</div>
+        <div class="mb-3">{{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}</div>
+        <div class="mb-3">{{ form.board.label_tag }} {{ form.board }} {{ form.board.errors }}</div>
+        <div class="form-check mb-3">
+          {{ form.is_public }} {{ form.is_public.label_tag }}
+          <small class="form-text text-muted">Rendre visible aux autres utilisateurs</small>
+        </div>
+        <div class="mb-3">{{ form.tags.label_tag }} {{ form.tags }} {{ form.tags.errors }}</div>
+        <hr />
+        <div class="d-grid gap-2">
+          <button type="submit" name="save" class="btn btn-success">Enregistrer le modèle</button>
+          <button type="submit" name="download" value="png" class="btn btn-outline-primary">Télécharger PNG</button>
+          <button type="submit" name="download_instructions" class="btn btn-outline-secondary">Instructions</button>
+          <button type="submit" name="previous_step" class="btn btn-outline-dark">Retour étape 2</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

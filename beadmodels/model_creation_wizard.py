@@ -14,7 +14,6 @@ from datetime import datetime
 import numpy as np
 
 logger = logging.getLogger(__name__)
-from django import forms
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -68,14 +67,10 @@ class ImageUploadStep(WizardStep):
         # Si on est explicitement à l'étape 1, on réinitialise les données
         # sauf si on vient de faire un reset explicite
         current_step = self.wizard.get_current_step_number()
+        # Nouveau comportement: toute arrivée sur l'étape 1 démarre un wizard frais
         if current_step == 1 and not reset_wizard:
-            # Sauvegarder l'ID du modèle avant de réinitialiser
             model_id_to_keep = wizard_data.get("model_id")
-
-            # Réinitialiser le wizard
             self.wizard.reset_wizard()
-
-            # Restaurer l'ID du modèle si nécessaire
             if model_id_to_keep or model_id:
                 self.wizard.update_data({"model_id": model_id or model_id_to_keep})
 
@@ -84,6 +79,10 @@ class ImageUploadStep(WizardStep):
 
         # Construire le contexte
         context = {"form": form, "wizard_step": self.position, "total_steps": 3}
+
+        # Forcer l'étape courante dans la session
+        self.wizard.request.session[f"{self.wizard.session_key}_step"] = 1
+        self.wizard.request.session.modified = True
 
         return self.render_template(context)
 
@@ -148,10 +147,24 @@ class ConfigurationStep(WizardStep):
         # Générer une prévisualisation avec les paramètres par défaut
         preview_image_base64 = self.generate_preview(wizard_data)
 
+        # Fallback pour afficher l'image originale si seulement path présent
+        original_image_base64 = image_data.get("image_base64")
+        if not original_image_base64 and image_data.get("image_path"):
+            try:
+                from .services.image_processing import file_to_base64
+
+                original_image_base64 = file_to_base64(image_data.get("image_path"))
+                # Ne pas écraser l'état sauf nécessité
+            except Exception as e:
+                logger.warning(
+                    f"Impossible de charger l'image originale depuis le chemin: {e}"
+                )
+                original_image_base64 = ""
+
         # Construire le contexte
         context = {
             "form": form,
-            "image_base64": image_data.get("image_base64", ""),
+            "image_base64": original_image_base64 or "",
             "preview_image_base64": preview_image_base64,
             "boards": boards,
             "user_shapes": user_shapes,
@@ -177,7 +190,15 @@ class ConfigurationStep(WizardStep):
         if getattr(self.wizard.request, "htmx", False):
             # Mise à jour des paramètres
             shape_id = self.wizard.request.POST.get("shape_id", "")
-            color_reduction = int(self.wizard.request.POST.get("color_reduction", 16))
+            posted_color = self.wizard.request.POST.get("color_reduction")
+            try:
+                color_reduction = (
+                    int(posted_color)
+                    if posted_color
+                    else int(wizard_data.get("color_reduction", 16))
+                )
+            except (ValueError, TypeError):
+                color_reduction = 16
             use_available_colors = (
                 self.wizard.request.POST.get("use_available_colors") == "on"
             )
@@ -202,7 +223,66 @@ class ConfigurationStep(WizardStep):
             )
             return HttpResponse(html)
 
-        # Si c'est une soumission normale du formulaire
+        # Soumission normale (non HTMX) : deux cas
+        # 1. Bouton "previous_step" géré plus haut
+        # 2. Bouton "generate" doit forcer passage à l'étape 3 même si le champ hidden n'est pas synchronisé
+
+        if "generate" in self.wizard.request.POST:
+            shape_id = self.wizard.request.POST.get("shape_id", "")
+            posted_color = self.wizard.request.POST.get("color_reduction")
+            try:
+                color_reduction = (
+                    int(posted_color)
+                    if posted_color
+                    else int(wizard_data.get("color_reduction", 16))
+                )
+            except (ValueError, TypeError):
+                color_reduction = 16
+            use_available_colors = (
+                self.wizard.request.POST.get("use_available_colors") == "on"
+            )
+
+            # Mettre à jour les données (écraser toujours pour cohérence)
+            self.wizard.update_data(
+                {
+                    "shape_id": shape_id,
+                    "color_reduction": color_reduction,
+                    "use_available_colors": use_available_colors,
+                }
+            )
+
+            # Générer le modèle final directement
+            final_model = self.generate_model(self.wizard.get_data())
+
+            # Stocker image finale sur disque (réduction session)
+            if final_model.get("image_base64"):
+                try:
+                    import base64
+
+                    from django.core.files.base import ContentFile
+
+                    from .services.image_processing import save_temp_image
+
+                    image_bytes = base64.b64decode(final_model["image_base64"])
+                    temp_file = ContentFile(image_bytes, name="final_preview.png")
+                    stored_path = save_temp_image(temp_file)
+                    final_model["image_path"] = stored_path
+                    del final_model["image_base64"]
+                except Exception as e:
+                    logger.warning(
+                        f"Impossible de sauvegarder l'image finale temporaire (generate bypass): {e}"
+                    )
+
+            self.wizard.update_data({"final_model": final_model})
+            # Si requête HTMX (hx-boost précédemment), retourner directement le template final
+            if getattr(self.wizard.request, "htmx", False):
+                self.wizard.set_current_step_number(3)
+                save_step = self.wizard.get_step_by_number(3)
+                return save_step.handle_get()
+            # Sinon redirection standard
+            return self.wizard.go_to_next_step()
+
+        # Si c'est une soumission normale du formulaire (sans bouton generate explicite)
         form = self.form_class(self.wizard.request.POST)
 
         if form.is_valid():
@@ -210,19 +290,51 @@ class ConfigurationStep(WizardStep):
             shape_id = self.wizard.request.POST.get("shape_id", "")
 
             # Mettre à jour les données du wizard
+            safe_color_reduction = (
+                form.cleaned_data.get("color_reduction")
+                or wizard_data.get("color_reduction")
+                or 16
+            )
+            try:
+                safe_color_reduction = int(safe_color_reduction)
+            except (ValueError, TypeError):
+                safe_color_reduction = 16
             self.wizard.update_data(
                 {
                     "shape_id": shape_id,
-                    "color_reduction": form.cleaned_data["color_reduction"],
+                    "color_reduction": safe_color_reduction,
                     "use_available_colors": form.cleaned_data["use_available_colors"],
                 }
             )
 
             # Générer le modèle final
             final_model = self.generate_model(self.wizard.get_data())
+
+            # Optimisation: sauvegarder l'image finale en fichier temporaire plutôt que garder base64 en session
+            if final_model.get("image_base64"):
+                try:
+                    import base64
+                    import io
+
+                    from django.core.files.base import ContentFile
+
+                    from .services.image_processing import save_temp_image
+
+                    image_bytes = base64.b64decode(final_model["image_base64"])
+                    temp_file = ContentFile(image_bytes, name="final_preview.png")
+                    stored_path = save_temp_image(temp_file)
+                    # Remplacer base64 par chemin
+                    final_model["image_path"] = stored_path
+                    # Optionnel: conserver une miniature très réduite si besoin futur
+                    del final_model["image_base64"]
+                except Exception as e:
+                    logger.warning(
+                        f"Impossible de sauvegarder l'image finale temporaire: {e}"
+                    )
+
             self.wizard.update_data({"final_model": final_model})
 
-            # Passer à l'étape suivante
+            # Passer à l'étape suivante explicitement
             return self.wizard.go_to_next_step()
         else:
             # Afficher les erreurs du formulaire
@@ -249,17 +361,22 @@ class ConfigurationStep(WizardStep):
 
         # Paramètres de configuration
         shape_id = data.get("shape_id", "")
-        color_reduction = data.get("color_reduction", 16)
+        raw_color_reduction = data.get("color_reduction", 16)
+        try:
+            color_reduction = int(raw_color_reduction) if raw_color_reduction else 16
+        except (ValueError, TypeError):
+            color_reduction = 16
         use_available_colors = data.get("use_available_colors", False)
 
         # Décoder l'image base64
         if image_path and not image_base64:
-            # Charger depuis stockage
+            # Charger depuis stockage en mémoire pour éviter "seek of closed file"
             from django.core.files.storage import default_storage
 
             with default_storage.open(image_path, "rb") as f:
-                img = Image.open(f)
-                img = img.convert("RGB") if img.mode != "RGB" else img
+                raw_bytes = f.read()
+            img = Image.open(io.BytesIO(raw_bytes))
+            img = img.convert("RGB") if img.mode != "RGB" else img
         else:
             image_bytes = base64.b64decode(image_base64)
             img = Image.open(io.BytesIO(image_bytes))
@@ -666,8 +783,8 @@ class ConfigurationStep(WizardStep):
 class SaveStep(WizardStep):
     """Troisième étape: Sauvegarde du modèle."""
 
-    name = "Finalisation et Sauvegarde"
-    template = "beadmodels/model_creation/save_step.html"
+    name = "Finalisation"
+    template = "beadmodels/wizard/finalize_step.html"
     position = 3
 
     def handle_get(self, **kwargs):
@@ -695,74 +812,11 @@ class SaveStep(WizardStep):
         # Récupérer les perles disponibles pour l'utilisateur
         user_beads = Bead.objects.filter(creator=self.wizard.request.user)
 
-        # Créer un formulaire pour enregistrer le modèle
-        from .forms import BeadModelForm
-
-        # Créer une classe de formulaire spécifique pour le wizard
-        class WizardBeadModelForm(BeadModelForm):
-            """Version améliorée du formulaire BeadModelForm pour le wizard."""
-
-            tags = forms.CharField(
-                required=False,
-                widget=forms.TextInput(
-                    attrs={
-                        "class": "form-control",
-                        "placeholder": "Séparez les tags par des virgules",
-                        "data-role": "tagsinput",
-                    }
-                ),
-                help_text="Ajoutez des tags pour retrouver facilement votre modèle",
-            )
-
-            favorite = forms.BooleanField(
-                required=False,
-                widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
-                label="Ajouter aux favoris",
-                help_text="Marquez ce modèle comme favori pour y accéder rapidement",
-            )
-
-            class Meta(BeadModelForm.Meta):
-                fields = ["name", "description", "board", "is_public"]
-                widgets = {
-                    "name": forms.TextInput(
-                        attrs={
-                            "class": "form-control",
-                            "placeholder": "Nom du modèle",
-                            "id": "model-name-input",
-                            "hx-trigger": "keyup changed delay:300ms",
-                            "hx-target": "#model-preview-title",
-                        }
-                    ),
-                    "description": forms.Textarea(
-                        attrs={
-                            "class": "form-control",
-                            "rows": 3,
-                            "placeholder": "Description (optionnelle)",
-                        }
-                    ),
-                    "board": forms.Select(
-                        attrs={
-                            "class": "form-select",
-                            "hx-trigger": "change",
-                            "hx-target": "#board-preview",
-                        }
-                    ),
-                    "is_public": forms.CheckboxInput(
-                        attrs={"class": "form-check-input"}
-                    ),
-                }
-                labels = {
-                    "name": "Nom du modèle",
-                    "description": "Description (optionnelle)",
-                    "board": "Support de perles",
-                    "is_public": "Rendre ce modèle public",
-                }
-                help_texts = {
-                    "is_public": "Si coché, les autres utilisateurs pourront voir ce modèle",
-                }
-
+        # Formulaire dédié à la finalisation
         # Obtenir la date actuelle formatée en français pour le nom par défaut
         import locale
+
+        from .forms import BeadModelFinalizeForm
 
         try:
             locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
@@ -788,7 +842,22 @@ class SaveStep(WizardStep):
             "board": default_board.pk if default_board else None,
         }
 
-        form = WizardBeadModelForm(initial=initial_data)
+        form = BeadModelFinalizeForm(
+            initial=initial_data, user=self.wizard.request.user
+        )
+
+        # Charger l'image finale depuis le chemin si disponible
+        final_image_base64 = final_model.get("image_base64")
+        if not final_image_base64 and final_model.get("image_path"):
+            try:
+                from .services.image_processing import file_to_base64
+
+                final_image_base64 = file_to_base64(final_model.get("image_path"))
+            except Exception as e:
+                logger.warning(
+                    f"Impossible de charger l'image finale depuis le chemin: {e}"
+                )
+                final_image_base64 = ""
 
         # Analyser la palette et trouver des correspondances avec les perles de l'utilisateur
         palette = final_model.get("palette", [])
@@ -842,8 +911,9 @@ class SaveStep(WizardStep):
             palette_with_matches.append(color_item)
 
         # Construire le contexte
+        excluded_colors = final_model.get("excluded_colors", [])
         context = {
-            "image_base64": final_model.get("image_base64", ""),
+            "image_base64": final_image_base64 or "",
             "grid_width": final_model.get("grid_width", 29),
             "grid_height": final_model.get("grid_height", 29),
             "shape_id": final_model.get("shape_id"),
@@ -863,6 +933,7 @@ class SaveStep(WizardStep):
                 if default_board
                 else None
             ),
+            "excluded_colors": excluded_colors,
         }
 
         return self.render_template(context)
@@ -871,7 +942,7 @@ class SaveStep(WizardStep):
         """Gère les actions finales avec une meilleure expérience utilisateur."""
         from django.contrib import messages
 
-        from .forms import BeadModelForm
+        from .forms import BeadModelFinalizeForm
 
         # Récupérer les données du modèle final
         wizard_data = self.wizard.get_data()
@@ -903,16 +974,9 @@ class SaveStep(WizardStep):
         # Si l'utilisateur souhaite sauvegarder le modèle en BDD (action par défaut)
         else:
             # Utiliser notre formulaire spécifique pour le wizard
-            class WizardBeadModelForm(BeadModelForm):
-                """Version améliorée du formulaire BeadModelForm pour le wizard."""
-
-                tags = forms.CharField(required=False)
-                favorite = forms.BooleanField(required=False)
-
-                class Meta(BeadModelForm.Meta):
-                    fields = ["name", "description", "board", "is_public"]
-
-            form = WizardBeadModelForm(self.wizard.request.POST)
+            form = BeadModelFinalizeForm(
+                self.wizard.request.POST, user=self.wizard.request.user
+            )
 
             if form.is_valid():
                 # Créer une nouvelle instance de BeadModel sans la sauvegarder encore
@@ -968,9 +1032,13 @@ class SaveStep(WizardStep):
                     "grid_width": final_model.get("grid_width", 29),
                     "grid_height": final_model.get("grid_height", 29),
                     "shape_id": final_model.get("shape_id"),
-                    "color_reduction": final_model.get("color_reduction", 16),
+                    "initial_color_reduction": self.wizard.get_data().get(
+                        "color_reduction", 16
+                    ),
+                    "final_color_reduction": final_model.get("color_reduction", 16),
                     "total_beads": final_model.get("total_beads", 0),
                     "palette": final_model.get("palette", []),
+                    "excluded_colors": final_model.get("excluded_colors", []),
                 }
 
                 # Stocker les métadonnées si le champ existe
@@ -1032,6 +1100,7 @@ class SaveStep(WizardStep):
                     "total_steps": 3,
                     "form": form,
                     "boards": BeadBoard.objects.all(),
+                    "excluded_colors": final_model.get("excluded_colors", []),
                 }
 
                 return self.render_template(context)
