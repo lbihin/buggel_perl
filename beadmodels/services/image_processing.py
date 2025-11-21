@@ -1,3 +1,26 @@
+import uuid
+
+from django.core.files.storage import default_storage
+
+
+def save_temp_image(uploaded_file) -> str:
+    """Persist uploaded image to a temporary media location and return its storage path.
+    Uses uuid for uniqueness. Returns relative storage path usable with default_storage.open().
+    """
+    ext = (uploaded_file.name.split(".")[-1] or "png").lower()
+    filename = f"temp_wizard/{uuid.uuid4()}.{ext}"
+    return default_storage.save(filename, uploaded_file)
+
+
+def file_to_base64(path: str) -> str:
+    """Load a stored file path via default_storage and return base64 PNG string."""
+    if not path:
+        return ""
+    with default_storage.open(path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+
 import base64
 import io
 from typing import List, Optional

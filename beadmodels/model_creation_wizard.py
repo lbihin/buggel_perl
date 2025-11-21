@@ -93,25 +93,11 @@ class ImageUploadStep(WizardStep):
 
         if form.is_valid():
             image = form.cleaned_data["image"]
+            # Sauvegarde temporaire sur disque pour éviter surcharge session
+            from .services.image_processing import save_temp_image
 
-            # Traitement de l'image
-            img = Image.open(image)
-            img_bytes = io.BytesIO()
-            img.save(img_bytes, format=img.format or "PNG")
-            img_bytes.seek(0)
-
-            # Sauvegarder l'image en base64 pour la réutiliser dans les étapes suivantes
-            img_base64 = base64.b64encode(img_bytes.read()).decode("utf-8")
-
-            # Mettre à jour les données du wizard
-            self.wizard.update_data(
-                {
-                    "image_data": {
-                        "image_base64": img_base64,
-                        "image_format": img.format or "PNG",
-                    }
-                }
-            )
+            stored_path = save_temp_image(image)
+            self.wizard.update_data({"image_data": {"image_path": stored_path}})
 
             # Passer à l'étape suivante
             return self.wizard.go_to_next_step()
@@ -256,9 +242,9 @@ class ConfigurationStep(WizardStep):
     def generate_preview(self, data):
         """Génère une prévisualisation pixelisée de l'image."""
         image_data = data.get("image_data", {})
-        image_base64 = image_data.get("image_base64", "")
-
-        if not image_base64:
+        image_base64 = image_data.get("image_base64")
+        image_path = image_data.get("image_path")
+        if not image_base64 and not image_path:
             return ""
 
         # Paramètres de configuration
@@ -267,8 +253,16 @@ class ConfigurationStep(WizardStep):
         use_available_colors = data.get("use_available_colors", False)
 
         # Décoder l'image base64
-        image_bytes = base64.b64decode(image_base64)
-        img = Image.open(io.BytesIO(image_bytes))
+        if image_path and not image_base64:
+            # Charger depuis stockage
+            from django.core.files.storage import default_storage
+
+            with default_storage.open(image_path, "rb") as f:
+                img = Image.open(f)
+                img = img.convert("RGB") if img.mode != "RGB" else img
+        else:
+            image_bytes = base64.b64decode(image_base64)
+            img = Image.open(io.BytesIO(image_bytes))
 
         # S'assurer que l'image est en mode RGB
         if img.mode != "RGB":
@@ -928,6 +922,14 @@ class SaveStep(WizardStep):
                 # Sauvegarder l'image originale
                 # L'image originale est celle que l'utilisateur a téléchargée à l'étape 1
                 image_data = wizard_data.get("image_data", {})
+                # Convertir image d'origine en base64 si seulement path présent
+                if not image_data.get("image_base64") and image_data.get("image_path"):
+                    from .services.image_processing import file_to_base64
+
+                    image_data["image_base64"] = file_to_base64(
+                        image_data.get("image_path")
+                    )
+
                 if image_data.get("image_base64"):
                     # Convertir la base64 en fichier
                     image_bytes = base64.b64decode(image_data.get("image_base64"))
@@ -941,6 +943,15 @@ class SaveStep(WizardStep):
                     )
 
                 # Sauvegarder le motif pixelisé
+                if not final_model.get("image_base64") and final_model.get(
+                    "image_path"
+                ):
+                    from .services.image_processing import file_to_base64
+
+                    final_model["image_base64"] = file_to_base64(
+                        final_model["image_path"]
+                    )
+
                 if final_model.get("image_base64"):
                     # Convertir la base64 en fichier
                     pattern_bytes = base64.b64decode(final_model.get("image_base64"))
