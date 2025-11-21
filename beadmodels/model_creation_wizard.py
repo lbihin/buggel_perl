@@ -7,8 +7,10 @@ la création de modèles de perles à repasser.
 
 import base64
 import io
+import uuid
 
 import numpy as np
+from django import forms
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -714,15 +716,15 @@ class ConfigurationStep(WizardStep):
         }
 
 
-class ResultStep(WizardStep):
-    """Troisième étape: Affichage et téléchargement du modèle."""
+class SaveStep(WizardStep):
+    """Troisième étape: Sauvegarde du modèle."""
 
-    name = "Résultat final"
-    template = "beadmodels/model_creation/result.html"
+    name = "Finalisation et Sauvegarde"
+    template = "beadmodels/model_creation/save_step.html"
     position = 3
 
     def handle_get(self, **kwargs):
-        """Affiche le résultat final."""
+        """Affiche le résultat final et les options de sauvegarde."""
         wizard_data = self.wizard.get_data()
         final_model = wizard_data.get("final_model", {})
 
@@ -743,6 +745,156 @@ class ResultStep(WizardStep):
             except BeadShape.DoesNotExist:
                 pass
 
+        # Récupérer les perles disponibles pour l'utilisateur
+        user_beads = Bead.objects.filter(creator=self.wizard.request.user)
+
+        # Créer un formulaire pour enregistrer le modèle
+        from .forms import BeadModelForm
+
+        # Créer une classe de formulaire spécifique pour le wizard
+        class WizardBeadModelForm(BeadModelForm):
+            """Version améliorée du formulaire BeadModelForm pour le wizard."""
+
+            tags = forms.CharField(
+                required=False,
+                widget=forms.TextInput(
+                    attrs={
+                        "class": "form-control",
+                        "placeholder": "Séparez les tags par des virgules",
+                        "data-role": "tagsinput",
+                    }
+                ),
+                help_text="Ajoutez des tags pour retrouver facilement votre modèle",
+            )
+
+            favorite = forms.BooleanField(
+                required=False,
+                widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+                label="Ajouter aux favoris",
+                help_text="Marquez ce modèle comme favori pour y accéder rapidement",
+            )
+
+            class Meta(BeadModelForm.Meta):
+                fields = ["name", "description", "board", "is_public"]
+                widgets = {
+                    "name": forms.TextInput(
+                        attrs={
+                            "class": "form-control",
+                            "placeholder": "Nom du modèle",
+                            "id": "model-name-input",
+                            "hx-trigger": "keyup changed delay:300ms",
+                            "hx-target": "#model-preview-title",
+                        }
+                    ),
+                    "description": forms.Textarea(
+                        attrs={
+                            "class": "form-control",
+                            "rows": 3,
+                            "placeholder": "Description (optionnelle)",
+                        }
+                    ),
+                    "board": forms.Select(
+                        attrs={
+                            "class": "form-select",
+                            "hx-trigger": "change",
+                            "hx-target": "#board-preview",
+                        }
+                    ),
+                    "is_public": forms.CheckboxInput(
+                        attrs={"class": "form-check-input"}
+                    ),
+                }
+                labels = {
+                    "name": "Nom du modèle",
+                    "description": "Description (optionnelle)",
+                    "board": "Support de perles",
+                    "is_public": "Rendre ce modèle public",
+                }
+                help_texts = {
+                    "is_public": "Si coché, les autres utilisateurs pourront voir ce modèle",
+                }
+
+        # Obtenir la date actuelle formatée en français pour le nom par défaut
+        import locale
+        from datetime import datetime
+
+        try:
+            locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+        except locale.Error:
+            pass  # Si la locale n'est pas disponible, on continue avec celle par défaut
+
+        default_name = f"Modèle du {datetime.now().strftime('%d %B %Y')}"
+
+        # Trouver le board par défaut ou celui précédemment utilisé
+        default_board = None
+        if final_model.get("board_id"):
+            try:
+                default_board = BeadBoard.objects.get(pk=final_model.get("board_id"))
+            except BeadBoard.DoesNotExist:
+                default_board = BeadBoard.objects.first()
+        else:
+            default_board = BeadBoard.objects.first()
+
+        # Initialiser le formulaire avec des valeurs par défaut
+        initial_data = {
+            "name": default_name,
+            "is_public": False,
+            "board": default_board.pk if default_board else None,
+        }
+
+        form = WizardBeadModelForm(initial=initial_data)
+
+        # Analyser la palette et trouver des correspondances avec les perles de l'utilisateur
+        palette = final_model.get("palette", [])
+        palette_with_matches = []
+
+        for color_item in palette:
+            # Extraire les valeurs RGB de la chaîne "rgb(r, g, b)"
+            import re
+
+            rgb_match = re.search(
+                r"rgb\((\d+),\s*(\d+),\s*(\d+)\)", color_item["color"]
+            )
+
+            if rgb_match:
+                r, g, b = map(int, rgb_match.groups())
+
+                # Rechercher des perles similaires dans la collection de l'utilisateur
+                color_matches = []
+                if user_beads:
+                    import numpy as np
+
+                    for bead in user_beads:
+                        # Calculer la distance euclidienne entre les couleurs
+                        distance = np.sqrt(
+                            (bead.red - r) ** 2
+                            + (bead.green - g) ** 2
+                            + (bead.blue - b) ** 2
+                        )
+
+                        # Si la distance est inférieure à un seuil (ex: 30), considérer comme similaire
+                        if distance < 30:
+                            color_matches.append(
+                                {
+                                    "name": bead.name,
+                                    "color": f"rgb({bead.red}, {bead.green}, {bead.blue})",
+                                    "hex": f"#{bead.red:02x}{bead.green:02x}{bead.blue:02x}",
+                                    "distance": int(distance),
+                                    "quantity": bead.quantity,
+                                }
+                            )
+
+                # Trier les correspondances par distance (plus proche d'abord)
+                color_matches.sort(key=lambda x: x["distance"])
+
+                # Limiter à 3 correspondances maximum
+                color_matches = color_matches[:3]
+
+                # Ajouter les matches à l'élément de palette
+                color_item["matches"] = color_matches
+
+            palette_with_matches.append(color_item)
+
         # Construire le contexte
         context = {
             "image_base64": final_model.get("image_base64", ""),
@@ -752,22 +904,183 @@ class ResultStep(WizardStep):
             "shape_name": shape_name,
             "shape_type": shape_type,
             "total_beads": final_model.get("total_beads", 0),
-            "palette": final_model.get("palette", []),
+            "palette": palette_with_matches,
+            "beads_count": len(final_model.get("palette", [])),
             "wizard_step": self.position,
             "total_steps": 3,
+            "form": form,
+            "boards": BeadBoard.objects.all(),
+            "user_has_beads": user_beads.exists() if user_beads else False,
+            "default_board": default_board,
+            "board_preview_url": (
+                f"/media/board_previews/{default_board.pk}.png"
+                if default_board
+                else None
+            ),
         }
 
         return self.render_template(context)
 
     def handle_post(self, **kwargs):
-        """Gère les actions finales."""
-        if "download" in self.wizard.request.POST:
-            return self.download_model()
+        """Gère les actions finales avec une meilleure expérience utilisateur."""
+        from django.contrib import messages
 
+        from .forms import BeadModelForm
+
+        # Récupérer les données du modèle final
+        wizard_data = self.wizard.get_data()
+        final_model = wizard_data.get("final_model", {})
+
+        if not final_model:
+            messages.error(self.wizard.request, "Erreur: données du modèle manquantes.")
+            return redirect("beadmodels:model_creation_wizard")
+
+        # Vérifier le type de soumission
+        # Si l'utilisateur veut simplement télécharger l'image
+        if "download" in self.wizard.request.POST:
+            download_format = self.wizard.request.POST.get("download_format", "png")
+            messages.info(
+                self.wizard.request,
+                f"Préparation du téléchargement au format {download_format}...",
+            )
+            return self.download_model(format=download_format)
+
+        # Si l'utilisateur veut télécharger les instructions
+        elif "download_instructions" in self.wizard.request.POST:
+            messages.info(self.wizard.request, "Préparation des instructions...")
+            return self.generate_instructions()
+
+        # Si c'est une demande de retour à l'étape précédente
+        elif "previous_step" in self.wizard.request.POST:
+            return self.wizard.go_to_previous_step()
+
+        # Si l'utilisateur souhaite sauvegarder le modèle en BDD (action par défaut)
+        else:
+            # Utiliser notre formulaire spécifique pour le wizard
+            class WizardBeadModelForm(BeadModelForm):
+                """Version améliorée du formulaire BeadModelForm pour le wizard."""
+
+                tags = forms.CharField(required=False)
+                favorite = forms.BooleanField(required=False)
+
+                class Meta(BeadModelForm.Meta):
+                    fields = ["name", "description", "board", "is_public"]
+
+            form = WizardBeadModelForm(self.wizard.request.POST)
+
+            if form.is_valid():
+                # Créer une nouvelle instance de BeadModel sans la sauvegarder encore
+                new_model = form.save(commit=False)
+                new_model.creator = self.wizard.request.user
+
+                # Sauvegarder l'image originale
+                # L'image originale est celle que l'utilisateur a téléchargée à l'étape 1
+                image_data = wizard_data.get("image_data", {})
+                if image_data.get("image_base64"):
+                    # Convertir la base64 en fichier
+                    image_bytes = base64.b64decode(image_data.get("image_base64"))
+                    image_format = image_data.get("image_format", "PNG")
+
+                    from django.core.files.base import ContentFile
+
+                    image_name = f"original_{uuid.uuid4()}.{image_format.lower()}"
+                    new_model.original_image.save(
+                        image_name, ContentFile(image_bytes), save=False
+                    )
+
+                # Sauvegarder le motif pixelisé
+                if final_model.get("image_base64"):
+                    # Convertir la base64 en fichier
+                    pattern_bytes = base64.b64decode(final_model.get("image_base64"))
+
+                    from django.core.files.base import ContentFile
+
+                    pattern_name = f"pattern_{uuid.uuid4()}.png"
+                    new_model.bead_pattern.save(
+                        pattern_name, ContentFile(pattern_bytes), save=False
+                    )
+
+                # Conserver les métadonnées du modèle
+                metadata = {}
+
+                # Sauvegarder les dimensions et la forme utilisées
+                metadata["grid_width"] = final_model.get("grid_width", 29)
+                metadata["grid_height"] = final_model.get("grid_height", 29)
+                metadata["shape_id"] = final_model.get("shape_id")
+                metadata["color_reduction"] = final_model.get("color_reduction", 16)
+                metadata["total_beads"] = final_model.get("total_beads", 0)
+
+                # Sauvegarder la palette
+                metadata["palette"] = final_model.get("palette", [])
+
+                # Stocker les métadonnées dans un champ JSON si disponible, sinon dans un autre champ
+                # Note: Cette fonctionnalité nécessiterait d'ajouter un champ 'metadata' au modèle BeadModel
+                # Pour l'instant, on passe cette étape
+
+                # Traiter les tags (si le modèle BeadModel supporte cette fonctionnalité)
+                # tags = form.cleaned_data.get("tags", "")
+                # if tags and hasattr(new_model, "tags"):
+                #     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+                #     new_model.tags = tag_list
+
+                # Marquer comme favori (si le modèle BeadModel supporte cette fonctionnalité)
+                # favorite = form.cleaned_data.get("favorite", False)
+                # if favorite and hasattr(new_model, "is_favorite"):
+                #     new_model.is_favorite = True
+
+                # Sauvegarder le modèle
+                new_model.save()
+
+                # Ajouter un message de succès avec plus d'informations
+                messages.success(
+                    self.wizard.request,
+                    f"Félicitations ! Votre modèle '{new_model.name}' a été créé avec succès ! "
+                    f"Il contient {final_model.get('total_beads', 0)} perles et "
+                    f"{len(final_model.get('palette', []))} couleurs différentes.",
+                )
+
+                # Réinitialiser le wizard et rediriger vers la page de détail du modèle
+                self.wizard.reset_wizard()
+                return redirect("beadmodels:model_detail", pk=new_model.pk)
+            else:
+                # En cas d'erreur dans le formulaire
+                # Récupérer les informations de la forme si applicable
+                shape_name = "Standard"
+                shape_type = "rectangle"
+                if final_model.get("shape_id"):
+                    from shapes.models import BeadShape
+
+                    try:
+                        shape = BeadShape.objects.get(pk=final_model.get("shape_id"))
+                        shape_name = shape.name
+                        shape_type = shape.shape_type
+                    except BeadShape.DoesNotExist:
+                        pass
+
+                # Construire le contexte avec le formulaire contenant des erreurs
+                context = {
+                    "image_base64": final_model.get("image_base64", ""),
+                    "grid_width": final_model.get("grid_width", 29),
+                    "grid_height": final_model.get("grid_height", 29),
+                    "shape_id": final_model.get("shape_id"),
+                    "shape_name": shape_name,
+                    "shape_type": shape_type,
+                    "total_beads": final_model.get("total_beads", 0),
+                    "palette": final_model.get("palette", []),
+                    "beads_count": len(final_model.get("palette", [])),
+                    "wizard_step": self.position,
+                    "total_steps": 3,
+                    "form": form,
+                    "boards": BeadBoard.objects.all(),
+                }
+
+                return self.render_template(context)
+
+        # Par défaut, réafficher simplement le template
         return self.render_template()
 
-    def download_model(self):
-        """Prépare le téléchargement du modèle."""
+    def download_model(self, format="png"):
+        """Prépare le téléchargement du modèle dans différents formats."""
         wizard_data = self.wizard.get_data()
         final_model = wizard_data.get("final_model", {})
 
@@ -784,10 +1097,86 @@ class ResultStep(WizardStep):
 
         # Décoder l'image
         image_bytes = base64.b64decode(image_base64)
+        img = Image.open(io.BytesIO(image_bytes))
+
+        # Préparer l'image dans le format demandé
+        output = io.BytesIO()
+
+        if format.lower() == "pdf":
+            # Pour créer un PDF, on peut utiliser une bibliothèque comme reportlab
+            # Cette fonctionnalité nécessiterait d'installer reportlab
+            # Pour l'instant, on reste en PNG
+            format = "png"
+            messages.warning(
+                self.wizard.request, "Export PDF non disponible. Téléchargement en PNG."
+            )
+
+        if format.lower() == "jpg" or format.lower() == "jpeg":
+            # Convertir en JPEG si demandé
+            if img.mode == "RGBA":
+                # Le JPEG ne supporte pas la transparence, on convertit en RGB
+                img = img.convert("RGB")
+            img.save(output, format="JPEG", quality=90)
+            content_type = "image/jpeg"
+            extension = "jpg"
+        else:
+            # Par défaut, format PNG
+            img.save(output, format="PNG")
+            content_type = "image/png"
+            extension = "png"
+
+        output.seek(0)
+
+        # Créer un nom de fichier basé sur la date
+        from datetime import datetime
+
+        now = datetime.now()
+        filename = f"modele_perles_{now.strftime('%Y%m%d_%H%M%S')}.{extension}"
 
         # Préparer la réponse HTTP pour le téléchargement
-        response = HttpResponse(image_bytes, content_type="image/png")
-        response["Content-Disposition"] = 'attachment; filename="modele_perles.png"'
+        response = HttpResponse(output.getvalue(), content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+        return response
+
+    def generate_instructions(self):
+        """Génère un PDF avec les instructions pour réaliser le modèle."""
+        wizard_data = self.wizard.get_data()
+        final_model = wizard_data.get("final_model", {})
+
+        if not final_model:
+            messages.error(
+                self.wizard.request, "Erreur lors de la génération des instructions."
+            )
+            return self.render_template()
+
+        # Récupérer l'image en base64
+        image_base64 = final_model.get("image_base64", "")
+
+        if not image_base64:
+            messages.error(self.wizard.request, "Image introuvable.")
+            return self.render_template()
+
+        # Générer un HTML avec les instructions
+        context = {
+            "image_base64": image_base64,
+            "grid_width": final_model.get("grid_width", 29),
+            "grid_height": final_model.get("grid_height", 29),
+            "total_beads": final_model.get("total_beads", 0),
+            "palette": final_model.get("palette", []),
+            "date": datetime.now().strftime("%d/%m/%Y"),
+            "model_name": self.wizard.request.POST.get("name", "Nouveau modèle"),
+        }
+
+        # Générer le HTML pour les instructions
+        instructions_html = render_to_string(
+            "beadmodels/model_creation/instructions.html", context
+        )
+
+        # Pour l'instant, on retourne simplement le HTML car la génération de PDF
+        # nécessiterait l'ajout d'une dépendance comme WeasyPrint ou xhtml2pdf
+        response = HttpResponse(instructions_html, content_type="text/html")
+        response["Content-Disposition"] = 'attachment; filename="instructions.html"'
 
         return response
 
@@ -796,7 +1185,8 @@ class ModelCreationWizard(LoginRequiredWizard):
     """Wizard complet de création de modèle à 3 étapes."""
 
     name = "Création de modèle"
-    steps = [ImageUploadStep, ConfigurationStep, ResultStep]
+    # Assurez-vous que les étapes sont dans le bon ordre et que SaveStep est bien la dernière
+    steps = [ImageUploadStep, ConfigurationStep, SaveStep]
     session_key = "model_creation_wizard"
 
     def get_url_name(self):
@@ -830,4 +1220,5 @@ class ModelCreationWizard(LoginRequiredWizard):
     def finish_wizard(self):
         """Action finale lorsque le wizard est terminé."""
         self.reset_wizard()
-        return redirect("home")
+        # Rediriger vers la liste des modèles de l'utilisateur
+        return redirect("beadmodels:my_models")

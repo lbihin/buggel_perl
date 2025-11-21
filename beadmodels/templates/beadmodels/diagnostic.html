@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Test du template base.html</h5>
+                </div>
+                <div class="card-body">
+                    <p>Si vous voyez cette page avec des styles correctement appliqués, alors le template <code>base.html</code> fonctionne correctement.</p>
+                    
+                    <p>Informations de diagnostic:</p>
+                    <ul>
+                        <li><strong>URL actuelle:</strong> {{ request.path }}</li>
+                        <li><strong>Utilisateur connecté:</strong> {{ request.user.username }}</li>
+                        <li><strong>Sessions actives:</strong> 
+                            <ul>
+                            {% for key, value in request.session.items %}
+                                <li>{{ key }}: {{ value|truncatechars:50 }}</li>
+                            {% endfor %}
+                            </ul>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-primary">Retour au wizard</a>
+                        <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-outline-secondary">Réinitialiser le wizard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

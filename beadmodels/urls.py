@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import path
 
 from . import views
@@ -23,6 +23,8 @@ def redirect_to_home(request):
 app_name = "beadmodels"
 
 urlpatterns = [
+    # Vue de test pour le formulaire de sauvegarde
+    path("test-save-form/", views.test_save_form, name="test_save_form"),
     # Utilisation des vues basées sur des classes pour les modèles
     path("create/", views.BeadModelCreateView.as_view(), name="create_model"),
     path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="model_detail"),
@@ -58,6 +60,13 @@ urlpatterns = [
     # Routes utilisateur
     # path("settings/", views.user_settings, name="user_settings"),
     path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
+    # Routes de diagnostic
+    path("diagnostic/", views.diagnostic_view, name="diagnostic"),
+    path(
+        "test-inheritance/",
+        lambda request: render(request, "test_inheritance.html"),
+        name="test_inheritance",
+    ),
     # Routes HTMX pour les perles
     path(
         "beads/<int:pk>/edit-quantity/",

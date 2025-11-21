@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Test Template Inheritance - Buggel{% endblock %}
+
+{% block extra_head %}
+<style>
+  .debug-box {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+  }
+  
+  .debug-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+  
+  .debug-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+  }
+  
+  .debug-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h1>Test d'héritage de template</h1>
+      
+      <div class="alert alert-info">
+        <strong>Information:</strong> Cette page teste l'héritage de templates dans l'application Django.
+      </div>
+      
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Test de style et d'héritage</h5>
+        </div>
+        <div class="card-body">
+          <p>Si vous voyez cette page avec les styles de Bootstrap (navbar en haut, police stylisée, etc.), 
+             cela signifie que l'héritage de templates fonctionne correctement.</p>
+          
+          <div class="debug-box debug-success">
+            <h5>✅ Héritage de base.html fonctionnel</h5>
+            <p>Le template base.html a été correctement chargé et appliqué.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Si vous ne voyez pas les styles</h5>
+        </div>
+        <div class="card-body">
+          <div class="debug-box debug-warning">
+            <h5>⚠️ Instructions en cas de problème</h5>
+            <ol>
+              <li>Vérifiez que les fichiers statiques sont correctement chargés</li>
+              <li>Assurez-vous que le template base.html existe dans le répertoire approprié</li>
+              <li>Vérifiez la configuration des templates dans settings.py</li>
+              <li>Videz le cache du navigateur et redémarrez le serveur Django</li>
+              <li>Exécutez le script reset_complete.py</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-primary">Tester le wizard (avec reset)</a>
+        <a href="{% url 'beadmodels:diagnostic' %}" class="btn btn-secondary">Voir diagnostic complet</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

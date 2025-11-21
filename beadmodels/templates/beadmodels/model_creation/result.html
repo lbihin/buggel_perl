@@ -46,20 +46,97 @@
                 {% endif %}
               </div>
               
-              <form method="post" class="mt-4">
-                {% csrf_token %}
-                <div class="d-grid gap-2">
-                  <button type="submit" name="download" class="btn btn-lg btn-primary">
-                    <i class="bi bi-download"></i> Télécharger le modèle
+              <!-- Actions principales -->
+              <div class="actions-container mb-4">
+                <div class="d-flex justify-content-between">
+                  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#saveFormCollapse">
+                    <i class="bi bi-save"></i> Sauvegarder le modèle
                   </button>
-                  <a href="javascript:history.back();" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left-circle"></i> Retour à la configuration
-                  </a>
-                  <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-outline-info">
-                    <i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle
-                  </a>
+                  
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="download" class="btn btn-outline-success">
+                      <i class="bi bi-download"></i> Télécharger l'image
+                    </button>
+                  </form>
                 </div>
-              </form>
+              </div>
+              
+              <!-- Formulaire de sauvegarde (collapsible) -->
+              <div class="collapse" id="saveFormCollapse">
+                <div class="card card-body">
+                  <h5>Enregistrer ce modèle</h5>
+                  <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                      <label for="{{ form.name.id_for_label }}" class="form-label">Nom du modèle</label>
+                      {{ form.name }}
+                      {% if form.name.errors %}
+                      <div class="invalid-feedback d-block">
+                        {% for error in form.name.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="{{ form.description.id_for_label }}" class="form-label">Description (optionnelle)</label>
+                      {{ form.description }}
+                      {% if form.description.errors %}
+                      <div class="invalid-feedback d-block">
+                        {% for error in form.description.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                      <label for="{{ form.board.id_for_label }}" class="form-label">Support de perles</label>
+                      {{ form.board }}
+                      {% if form.board.errors %}
+                      <div class="invalid-feedback d-block">
+                        {% for error in form.board.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                      {{ form.is_public }}
+                      <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                        Rendre ce modèle public
+                      </label>
+                      {% if form.is_public.errors %}
+                      <div class="invalid-feedback d-block">
+                        {% for error in form.is_public.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                      <button type="submit" name="save" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Sauvegarder
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              
+              <!-- Boutons de navigation -->
+              <div class="d-grid gap-2 mt-4">
+                <a href="javascript:history.back();" class="btn btn-outline-secondary">
+                  <i class="bi bi-arrow-left-circle"></i> Retour à la configuration
+                </a>
+                <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-outline-info">
+                  <i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle
+                </a>
+              </div>
             </div>
           </div>
           

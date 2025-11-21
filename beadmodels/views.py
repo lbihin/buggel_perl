@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import pprint
 import time
 from io import BytesIO
 
@@ -13,7 +14,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -999,3 +1000,80 @@ def bead_update_color_htmx(request, pk):
 
     # Si la méthode n'est pas POST, retourner la vue de formulaire
     return bead_edit_color_htmx(request, pk)
+
+
+@login_required
+@require_GET
+def test_save_form(request):
+    """Vue de test pour vérifier le formulaire de sauvegarde."""
+    # Créer une instance du formulaire BeadModelForm
+    from .forms import BeadModelForm
+    from .models import BeadBoard
+
+    form = BeadModelForm(initial={"name": "Test de formulaire", "is_public": False})
+
+    # Récupérer la liste des supports de perles
+    boards = BeadBoard.objects.all()
+
+    # Rendu du template avec le formulaire
+    context = {
+        "form": form,
+        "boards": boards,
+    }
+    return render(request, "beadmodels/model_creation/test_save_form.html", context)
+
+
+@login_required
+def diagnostic_view(request):
+    """Vue de diagnostic pour tester les templates et la session."""
+    import os
+
+    from django.template import TemplateDoesNotExist
+    from django.template.loader import get_template
+
+    # Si reset=true est fourni dans l'URL, réinitialiser la session du wizard
+    if request.GET.get("reset"):
+        if "model_creation_wizard" in request.session:
+            del request.session["model_creation_wizard"]
+        if "model_creation_wizard_step" in request.session:
+            del request.session["model_creation_wizard_step"]
+        messages.success(request, "Session du wizard réinitialisée avec succès.")
+
+    # Vérifier si les templates existent
+    base_template_exists = True
+    wizard_template_exists = True
+    base_template_path = "base.html"
+    wizard_template_path = "beadmodels/model_creation/upload_image.html"
+
+    try:
+        get_template(base_template_path)
+    except TemplateDoesNotExist:
+        base_template_exists = False
+
+    try:
+        get_template(wizard_template_path)
+    except TemplateDoesNotExist:
+        wizard_template_exists = False
+
+    # Formater les données de session pour l'affichage
+    debug_context = pprint.pformat(
+        {
+            "TEMPLATE_DIRS": settings.TEMPLATES[0]["DIRS"],
+            "APP_DIRS": settings.TEMPLATES[0]["APP_DIRS"],
+            "INSTALLED_APPS": settings.INSTALLED_APPS,
+            "STATIC_URL": settings.STATIC_URL,
+            "STATICFILES_DIRS": getattr(settings, "STATICFILES_DIRS", []),
+            "MIDDLEWARE": settings.MIDDLEWARE,
+        }
+    )
+
+    context = {
+        "debug_context": debug_context,
+        "base_template_exists": base_template_exists,
+        "wizard_template_exists": wizard_template_exists,
+        "base_template_path": base_template_path,
+        "wizard_template_path": wizard_template_path,
+    }
+
+    return render(request, "beadmodels/debug_wizard.html", context)
+    return render(request, "beadmodels/diagnostic.html")

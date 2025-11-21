@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+  <style>
+    @media print {
+      body {
+        font-size: 12pt;
+      }
+      .no-print {
+        display: none;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+    
+    .instruction-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .model-image {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+    }
+    
+    .grid-container {
+      margin: 20px 0;
+    }
+    
+    .color-sample {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 1px solid #ddd;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    
+    .color-table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    
+    .color-table th, .color-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    
+    .color-table th {
+      background-color: #f8f8f8;
+    }
+    
+    .instructions-section {
+      margin-top: 30px;
+    }
+    
+    .footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      text-align: center;
+      color: #666;
+    }
+    
+    @media print {
+      .print-button {
+        display: none;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="instruction-header">
+    <h1>Instructions pour "{{ model_name }}"</h1>
+    <p>Modèle de perles à repasser - Généré le {{ date }}</p>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-center">
+            <img src="data:image/png;base64,{{ image_base64 }}" alt="Modèle" class="model-image">
+            <p class="mt-2">Dimensions: {{ grid_width }}×{{ grid_height }} perles ({{ total_beads }} perles au total)</p>
+          </div>
+          
+          <div class="instructions-section">
+            <h3>Matériel nécessaire</h3>
+            <p>Pour réaliser ce modèle, vous aurez besoin de:</p>
+            <ul>
+              <li>{{ total_beads }} perles à repasser au total, réparties en {{ palette|length }} couleurs</li>
+              <li>Une plaque de {{ grid_width }}×{{ grid_height }} plots</li>
+              <li>Du papier sulfurisé</li>
+              <li>Un fer à repasser</li>
+            </ul>
+          </div>
+          
+          <div class="instructions-section">
+            <h3>Palette de couleurs</h3>
+            <p>Voici les couleurs nécessaires pour réaliser ce modèle:</p>
+            
+            <table class="color-table">
+              <thead>
+                <tr>
+                  <th>Couleur</th>
+                  <th>Quantité</th>
+                  <th>Pourcentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for color in palette %}
+                <tr>
+                  <td>
+                    <span class="color-sample" style="background-color: {{ color.color }};"></span>
+                    {{ color.hex }}
+                  </td>
+                  <td>{{ color.count }} perles</td>
+                  <td>{{ color.percentage }}%</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="instructions-section">
+            <h3>Instructions</h3>
+            <ol>
+              <li>Placez votre plaque de {{ grid_width }}×{{ grid_height }} plots sur une surface plane.</li>
+              <li>Commencez par les perles du centre pour éviter les décalages.</li>
+              <li>Suivez le modèle en plaçant les perles couleur par couleur.</li>
+              <li>Une fois toutes les perles placées, vérifiez que le motif correspond bien au modèle.</li>
+              <li>Placez une feuille de papier sulfurisé sur les perles.</li>
+              <li>Repassez doucement en faisant des mouvements circulaires pendant environ 15-20 secondes.</li>
+              <li>Laissez refroidir avant de retirer délicatement la création.</li>
+            </ol>
+          </div>
+          
+          <div class="footer">
+            <p>Modèle généré avec l'application Buggel - Tous droits réservés</p>
+          </div>
+          
+          <div class="text-center mt-4 print-button no-print">
+            <button onclick="window.print()" class="btn btn-primary">
+              <i class="bi bi-printer"></i> Imprimer les instructions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

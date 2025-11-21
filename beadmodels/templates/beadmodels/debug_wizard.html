@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+  <style>
+    .debug-info {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    .debug-info pre {
+      margin: 0;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-3">
+    <div class="alert alert-info">
+      <h4>Page de debug du wizard</h4>
+      <p>Cette page affiche les informations de debug pour le wizard de création de modèle.</p>
+      <div class="btn-group">
+        <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-primary">Aller au wizard</a>
+        <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-warning">Réinitialiser le wizard</a>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Informations de session</h5>
+      </div>
+      <div class="card-body">
+        <h6>Clés de session disponibles:</h6>
+        <ul>
+          {% for key, value in request.session.items %}
+            <li><strong>{{ key }}</strong>: 
+              {% if key == "model_creation_wizard" or key == "pixelization_wizard" or key == "model_creation_wizard_step" %}
+                <pre>{{ value|pprint }}</pre>
+              {% else %}
+                {{ value|truncatechars:100 }}
+              {% endif %}
+            </li>
+          {% empty %}
+            <li>Aucune clé de session trouvée.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Contexte de rendu</h5>
+      </div>
+      <div class="card-body">
+        <div class="debug-info">
+          <pre>{{ debug_context }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Vérification des templates</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Template base.html:</h6>
+            <div class="debug-info">
+              {% if base_template_exists %}
+                <div class="alert alert-success">Le template base.html existe et est accessible.</div>
+              {% else %}
+                <div class="alert alert-danger">Le template base.html n'existe pas ou n'est pas accessible.</div>
+              {% endif %}
+              <p>Chemin cherché: {{ base_template_path }}</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6>Template du wizard:</h6>
+            <div class="debug-info">
+              {% if wizard_template_exists %}
+                <div class="alert alert-success">Le template du wizard existe et est accessible.</div>
+              {% else %}
+                <div class="alert alert-danger">Le template du wizard n'existe pas ou n'est pas accessible.</div>
+              {% endif %}
+              <p>Chemin cherché: {{ wizard_template_path }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

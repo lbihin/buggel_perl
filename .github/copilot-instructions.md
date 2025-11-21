@@ -7,22 +7,24 @@ Buggel is a Django web application for creating iron-on bead patterns from image
 
 ### Core Components
 1. **Models and Relationships**:
-   - `BeadModel`: Main entity representing a bead pattern project
-   - `Bead`: Represents individual bead colors with RGB values and quantity
+   - `BeadModel`: Main entity representing a bead pattern project with original image and processed pattern
+   - `Bead`: Represents individual bead colors with RGB values and quantity tracking
    - `BeadBoard`: Defines board templates with dimensions for patterns
-   - `BeadShape` (in shapes app): Custom shapes for bead arrangements
+   - `BeadShape` (in shapes app): Custom shapes for bead arrangements (rectangle, square, circle)
 
 2. **Wizard Framework**:
    - Custom modular wizard system for multi-step processes
    - Base classes: `BaseWizard` and `WizardStep` in `beadmodels/wizards.py`
    - Implementation: `PixelizationWizard` in `beadmodels/pixelization_wizard.py`
    - Session-based state management for wizard progression
+   - Two main wizards: `ModelCreationWizard` and `PixelizationWizard`
 
 3. **Image Processing**:
    - Pixelization algorithm using OpenCV and scikit-learn
    - Color reduction through k-means clustering
    - Custom palette matching for available beads
    - Implementation in `beadmodels/pixelization_wizard.py`
+   - Processing steps: resize → reduce colors → match palette → generate grid
 
 ## Development Workflows
 
@@ -53,8 +55,11 @@ poetry run pytest beadmodels/tests.py
 poetry run pytest -m "not slow"
 ```
 
-### Data Utilities
+### Session Management
 ```bash
+# Reset all wizard sessions
+poetry run python reset_wizard.py
+
 # Check beads in the database
 poetry run python check_beads.py
 ```
@@ -66,7 +71,7 @@ poetry run python check_beads.py
 - Static assets organized by component in `beadmodels/static/`
 - HTMX used for dynamic UI updates
 - Bootstrap 5 with crispy forms for form rendering
-- French is the primary language for UI elements and comments
+- French is the primary language for UI elements and code comments
 
 ### Wizard Pattern
 When implementing new wizards:
@@ -102,13 +107,40 @@ Images are processed in stages:
 ## Critical Integration Points
 
 ### Custom User Beads
-Users can define their own bead colors which are then used for color matching in the pixelization process.
+Users can define their own bead colors which are then used for color matching in the pixelization process:
+- `Bead` model stores RGB values and quantities
+- `BeadForm` for adding/editing beads
+- Color matching algorithm prioritizes user's available beads
+- Bead management views are in `beadmodels/views.py` (BeadListView, BeadCreateView, etc.)
 
 ### Shape System
-The shapes app defines custom grid layouts that integrate with the pixelization wizard.
+The shapes app defines custom grid layouts that integrate with the pixelization wizard:
+- `BeadShape` model defines geometric properties (rectangle, square, circle)
+- Shapes can be user-created or system defaults
+- Shape selection affects grid dimensions and pattern output
+- Integration happens during the configuration step of the pixelization wizard
+
+### HTMX Integration
+HTMX is used for dynamic UI updates without full page reloads:
+- Middleware: `django_htmx.middleware.HtmxMiddleware`
+- HTMX attributes in forms for live updates (see form widgets)
+- Dedicated HTMX view functions with `_htmx` suffix (e.g., `bead_edit_quantity_htmx`)
+- Response partials return only the necessary HTML fragments
 
 ### Media Files
-Original images stored in `media/originals/` with processed patterns in `media/patterns/`.
+- Original images stored in `media/originals/`
+- Processed patterns in `media/patterns/`
+- Static assets in `beadmodels/static/` organized by component (CSS, JS, images)
+- Media URLs configured only in development mode
+
+### AppPreferencesMiddleware
+- Middleware injects user preferences into the request
+- Defined in `beadmodels/middleware.py`
+- Allows for consistent user settings across the application
+- Used by the wizards for default values and behavior
 
 ### Experimentation
-Jupyter notebooks in the `notebooks/` directory contain experimental image processing algorithms that can be tested before integration into the main application.
+- Jupyter notebooks in the `notebooks/` directory contain experimental algorithms
+- `test_pixelisation.ipynb` is the main notebook for image processing experiments
+- Use these to test new processing techniques before implementation
+- Experimental code should be refactored into appropriate modules when ready
