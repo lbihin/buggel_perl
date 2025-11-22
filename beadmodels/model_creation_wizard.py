@@ -194,6 +194,12 @@ class ConfigurationStep(WizardStep):
             # Mise à jour des paramètres
             shape_id = self.wizard.request.POST.get("shape_id", "")
             posted_color = self.wizard.request.POST.get("color_reduction")
+
+            # Log pour debug
+            logger.info(
+                f"HTMX preview request - shape_id: {shape_id}, color: {posted_color}"
+            )
+
             try:
                 color_reduction = (
                     int(posted_color)

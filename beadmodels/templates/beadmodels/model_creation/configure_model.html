@@ -77,6 +77,7 @@
                         hx-post="" 
                         hx-trigger="change" 
                         hx-target="#preview-container"
+                        hx-include="[name='color_reduction']:checked, [name='use_available_colors']"
                         autocomplete="off"
                       >
                       <label class="btn btn-outline-primary" for="shape_none">Standard</label>
@@ -93,6 +94,7 @@
                         hx-post="" 
                         hx-trigger="change" 
                         hx-target="#preview-container"
+                        hx-include="[name='color_reduction']:checked, [name='use_available_colors']"
                         autocomplete="off"
                       >
                       <label class="btn btn-outline-primary" for="shape_{{ shape.id }}">{{ shape.name }}</label>
@@ -126,6 +128,7 @@
                       hx-post="" 
                       hx-trigger="change" 
                       hx-target="#preview-container"
+                      hx-include="[name='shape_id']:checked, [name='use_available_colors']"
                       autocomplete="off"
                     >
                     <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
