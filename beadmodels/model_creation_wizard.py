@@ -8,7 +8,6 @@ la création de modèles de perles à repasser.
 import base64
 import io
 import logging
-import uuid
 from datetime import datetime
 
 import numpy as np
@@ -1019,85 +1018,36 @@ class SaveStep(WizardStep):
             )
 
             if form.is_valid():
-                # Créer une nouvelle instance de BeadModel sans la sauvegarder encore
-                new_model = form.save(commit=False)
-                new_model.creator = self.wizard.request.user
+                # Delegate the heavy save logic to a service function
+                try:
+                    from .services.save_model import save_bead_model_from_wizard
 
-                # Sauvegarder l'image originale
-                # L'image originale est celle que l'utilisateur a téléchargée à l'étape 1
-                image_data = wizard_data.get("image_data", {})
-                # Convertir image d'origine en base64 si seulement path présent
-                if not image_data.get("image_base64") and image_data.get("image_path"):
-                    from .services.image_processing import file_to_base64
-
-                    image_data["image_base64"] = file_to_base64(
-                        image_data.get("image_path")
+                    new_model = save_bead_model_from_wizard(
+                        self.wizard.request.user, wizard_data, form
                     )
-
-                if image_data.get("image_base64"):
-                    # Convertir la base64 en fichier
-                    image_bytes = base64.b64decode(image_data.get("image_base64"))
-                    image_format = image_data.get("image_format", "PNG")
-
-                    from django.core.files.base import ContentFile
-
-                    image_name = f"original_{uuid.uuid4()}.{image_format.lower()}"
-                    new_model.original_image.save(
-                        image_name, ContentFile(image_bytes), save=False
+                except Exception as e:
+                    logger.exception("Erreur lors de la sauvegarde du modèle: %s", e)
+                    messages.error(
+                        self.wizard.request,
+                        "Une erreur est survenue lors de la sauvegarde du modèle.",
                     )
+                    # Re-render the form with an error message
+                    context = {
+                        "image_base64": final_model.get("image_base64", ""),
+                        "grid_width": final_model.get("grid_width", 29),
+                        "grid_height": final_model.get("grid_height", 29),
+                        "shape_id": final_model.get("shape_id"),
+                        "total_beads": final_model.get("total_beads", 0),
+                        "palette": final_model.get("palette", []),
+                        "beads_count": len(final_model.get("palette", [])),
+                        "wizard_step": self.position,
+                        "total_steps": 3,
+                        "form": form,
+                        "boards": BeadBoard.objects.all(),
+                        "excluded_colors": final_model.get("excluded_colors", []),
+                    }
 
-                # Sauvegarder le motif pixelisé
-                if not final_model.get("image_base64") and final_model.get(
-                    "image_path"
-                ):
-                    from .services.image_processing import file_to_base64
-
-                    final_model["image_base64"] = file_to_base64(
-                        final_model["image_path"]
-                    )
-
-                if final_model.get("image_base64"):
-                    # Convertir la base64 en fichier
-                    pattern_bytes = base64.b64decode(final_model.get("image_base64"))
-
-                    from django.core.files.base import ContentFile
-
-                    pattern_name = f"pattern_{uuid.uuid4()}.png"
-                    new_model.bead_pattern.save(
-                        pattern_name, ContentFile(pattern_bytes), save=False
-                    )
-
-                # Conserver les métadonnées du modèle
-                metadata = {
-                    "grid_width": final_model.get("grid_width", 29),
-                    "grid_height": final_model.get("grid_height", 29),
-                    "shape_id": final_model.get("shape_id"),
-                    "initial_color_reduction": self.wizard.get_data().get(
-                        "color_reduction", 16
-                    ),
-                    "final_color_reduction": final_model.get("color_reduction", 16),
-                    "total_beads": final_model.get("total_beads", 0),
-                    "palette": final_model.get("palette", []),
-                    "excluded_colors": final_model.get("excluded_colors", []),
-                }
-
-                # Stocker les métadonnées si le champ existe
-                if hasattr(new_model, "metadata"):
-                    new_model.metadata = metadata
-
-                # Traiter les tags (si le modèle BeadModel supporte cette fonctionnalité)
-                # tags = form.cleaned_data.get("tags", "")
-                # if tags and hasattr(new_model, "tags"):
-                #     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
-                #     new_model.tags = tag_list
-
-                # Marquer comme favori (si le modèle BeadModel supporte cette fonctionnalité)
-                # favorite = form.cleaned_data.get("favorite", False)
-                # if favorite and hasattr(new_model, "is_favorite"):
-                #     new_model.is_favorite = True
-
-                # Sauvegarder le modèle
-                new_model.save()
+                    return self.render_template(context)
 
                 # Ajouter un message de succès avec plus d'informations
                 messages.success(
@@ -1305,4 +1255,5 @@ class ModelCreationWizard(LoginRequiredWizard):
         """Action finale lorsque le wizard est terminé."""
         self.reset_wizard()
         # Rediriger vers la liste des modèles de l'utilisateur
+        return redirect("beadmodels:my_models")
         return redirect("beadmodels:my_models")
