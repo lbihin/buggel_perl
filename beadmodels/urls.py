@@ -1,18 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.urls import path
 
 from . import views
 from .model_creation_wizard import ModelCreationWizard
-
-# Importation conditionnelle pour permettre la migration progressive
-# from .pixelization_wizard import PixelizationWizard
-
-
-# Redirection temporaire pour forcer l'utilisation du nouveau wizard
-def redirect_to_new_wizard(request):
-    return redirect("beadmodels:model_creation_wizard")
 
 
 # Redirection vers la page d'accueil principale
@@ -23,9 +15,6 @@ def redirect_to_home(request):
 app_name = "beadmodels"
 
 urlpatterns = [
-    # Vue de test pour le formulaire de sauvegarde
-    path("test-save-form/", views.test_save_form, name="test_save_form"),
-    # Utilisation des vues basées sur des classes pour les modèles
     path("create/", views.BeadModelCreateView.as_view(), name="create_model"),
     path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="model_detail"),
     path(
@@ -51,21 +40,9 @@ urlpatterns = [
         views.save_transformation,
         name="save_transformation",
     ),
-    # Redirection de l'ancien wizard vers le nouveau
-    path("pixelization-wizard/", redirect_to_new_wizard, name="pixelization_wizard"),
     # Nouveau wizard de création de modèle (à 3 étapes)
     path(
         "model-creation/", ModelCreationWizard.as_view(), name="model_creation_wizard"
-    ),
-    # Routes utilisateur
-    # path("settings/", views.user_settings, name="user_settings"),
-    path("shapes/<int:shape_id>/edit/", views.edit_shape, name="edit_shape"),
-    # Routes de diagnostic
-    path("diagnostic/", views.diagnostic_view, name="diagnostic"),
-    path(
-        "test-inheritance/",
-        lambda request: render(request, "test_inheritance.html"),
-        name="test_inheritance",
     ),
     # Routes HTMX pour les perles
     path(
