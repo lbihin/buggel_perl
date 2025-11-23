@@ -819,11 +819,11 @@ class ConfigurationStep(WizardStep):
         }
 
 
-class SaveStep(WizardStep):
+class WizardThirdStep(WizardStep):
     """Troisième étape: Sauvegarde du modèle."""
 
     name = "Finalisation"
-    template = "beadmodels/wizard/finalize_step.html"
+    template = "beadmodels/wizard_final_step.html"
     position = 3
 
     def handle_get(self, **kwargs):
@@ -1205,7 +1205,7 @@ class ModelCreationWizard(LoginRequiredWizard):
 
     name = "Création de modèle"
     # Assurez-vous que les étapes sont dans le bon ordre et que SaveStep est bien la dernière
-    steps = [ImageUploadStep, ConfigurationStep, SaveStep]
+    steps = [ImageUploadStep, ConfigurationStep, WizardThirdStep]
     session_key = "model_creation_wizard"
 
     def get_url_name(self):

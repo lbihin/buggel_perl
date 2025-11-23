@@ -510,14 +510,14 @@ def bead_edit_quantity_htmx(request, pk):
             "threshold": threshold,
         }
         return render(
-            request, "beadmodels/beads/htmx/bead_quantity_display.html", context
+            request, "beadmodels/partials/bead_quantity_display.html", context
         )
 
     # Sinon, afficher le formulaire d'édition
     context = {
         "bead": bead,
     }
-    return render(request, "beadmodels/beads/htmx/bead_edit_quantity.html", context)
+    return render(request, "beadmodels/partials/bead_edit_quantity.html", context)
 
 
 @login_required
@@ -553,7 +553,7 @@ def bead_update_quantity_htmx(request, pk):
             }
 
             return render(
-                request, "beadmodels/beads/htmx/bead_quantity_display.html", context
+                request, "beadmodels/partials/bead_quantity_display.html", context
             )
         except (ValueError, TypeError):
             # En cas d'erreur, retourner au formulaire d'édition
@@ -562,7 +562,7 @@ def bead_update_quantity_htmx(request, pk):
                 "error": "La quantité doit être un nombre entier positif.",
             }
             return render(
-                request, "beadmodels/beads/htmx/bead_edit_quantity.html", context
+                request, "beadmodels/partials/bead_edit_quantity.html", context
             )
 
     # Si la méthode n'est pas POST, retourner la vue de formulaire
@@ -579,13 +579,13 @@ def bead_edit_color_htmx(request, pk):
         context = {
             "bead": bead,
         }
-        return render(request, "beadmodels/beads/htmx/bead_color_display.html", context)
+        return render(request, "beadmodels/partials/bead_color_display.html", context)
 
     # Sinon, afficher le formulaire d'édition
     context = {
         "bead": bead,
     }
-    return render(request, "beadmodels/beads/htmx/bead_edit_color.html", context)
+    return render(request, "beadmodels/partials/bead_edit_color.html", context)
 
 
 @login_required
@@ -616,7 +616,7 @@ def bead_update_color_htmx(request, pk):
                 "bead": bead,
             }
             return render(
-                request, "beadmodels/beads/htmx/bead_color_display.html", context
+                request, "beadmodels/partials/bead_color_display.html", context
             )
         except (ValueError, TypeError) as e:
             # En cas d'erreur, retourner au formulaire d'édition avec message d'erreur
@@ -624,9 +624,7 @@ def bead_update_color_htmx(request, pk):
                 "bead": bead,
                 "error": "Les valeurs de couleur doivent être des nombres entiers entre 0 et 255.",
             }
-            return render(
-                request, "beadmodels/beads/htmx/bead_edit_color.html", context
-            )
+            return render(request, "beadmodels/partials/bead_edit_color.html", context)
 
     # Si la méthode n'est pas POST, retourner la vue de formulaire
     return bead_edit_color_htmx(request, pk)

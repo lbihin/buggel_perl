@@ -9,7 +9,7 @@ from .models import Bead
 
 class BeadListView(LoginRequiredMixin, ListView):
     model = Bead
-    template_name = "beadmodels/beads/bead_table.html"
+    template_name = "beadmodels/bead_table.html"
     context_object_name = "beads"
 
     def get_queryset(self):
@@ -43,7 +43,7 @@ class BeadCreateView(LoginRequiredMixin, CreateView):
 class BeadUpdateView(LoginRequiredMixin, UpdateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/beads/bead_form.html"
+    template_name = "beadmodels/bead_form.html"
     success_url = reverse_lazy("beadmodels:bead_list")
 
     def get_queryset(self):
