@@ -20,7 +20,7 @@
   <td width="40%">
     <div class="input-group input-group-sm">
       <!-- Sélecteur de type de dimension -->
-      <select class="form-select form-select-sm" id="inline-dimension-type" style="width: auto; max-width: 100px;" onchange="toggleDimensionsFields(this.value)">
+      <select class="form-select form-select-sm" id="inline-dimension-type" style="width: auto; max-width: 100px;">
         <option value="rectangle">Rectangle</option>
         <option value="square">Carré</option>
         <option value="circle">Cercle</option>
@@ -36,14 +36,14 @@
       </div>
       
       <!-- Carré -->
-      <div id="square-fields" class="ms-2" style="display: none;">
+      <div id="square-fields" class="ms-2">
         <div class="input-group input-group-sm">
           <input type="number" name="size" min="1" placeholder="Taille" class="form-control form-control-sm" value="10" style="width: 80px" />
         </div>
       </div>
       
       <!-- Cercle -->
-      <div id="circle-fields" class="ms-2" style="display: none;">
+      <div id="circle-fields" class="ms-2">
         <div class="input-group input-group-sm">
           <span class="input-group-text">Ø</span>
           <input type="number" name="diameter" min="1" placeholder="Diamètre" class="form-control form-control-sm" value="10" style="width: 80px" />
@@ -51,13 +51,16 @@
       </div>
       
       <div class="ms-2">
-        <button type="button" class="btn btn-sm btn-success" hx-post="{% url 'shapes:shape_save_new' %}" 
-            hx-include="#inline-add-shape-form" 
+        <button type="button" class="btn btn-sm btn-success" hx-post="{% url 'shapes:shape_save_new' %}"
+            hx-include="#inline-add-shape-form"
             hx-target="#shape-list-container"
             hx-swap="innerHTML">
           <i class="bi bi-check"></i>
         </button>
-        <button type="button" class="btn btn-sm btn-secondary" onclick="cancelInlineAdd()">
+        <button type="button" class="btn btn-sm btn-secondary"
+            hx-get="{% url 'shapes:shape_list' %}"
+            hx-target="#shape-list-container"
+            hx-swap="innerHTML">
           <i class="bi bi-x"></i>
         </button>
       </div>
@@ -68,23 +71,4 @@
   <td width="0"></td>
 </tr>
 
-<script>
-  function toggleDimensionsFields(dimensionType) {
-    // Cacher tous les champs de dimensions
-    document.getElementById('rectangle-fields').style.display = 'none';
-    document.getElementById('square-fields').style.display = 'none';
-    document.getElementById('circle-fields').style.display = 'none';
-    
-    // Afficher uniquement les champs correspondants au type sélectionné
-    document.getElementById(dimensionType + '-fields').style.display = 'block';
-    
-    // Mettre à jour le champ caché pour la compatibilité
-    document.querySelector('input[name="shape_type"]').value = dimensionType;
-  }
-  
-  // Initialisation des champs au chargement
-  document.addEventListener('DOMContentLoaded', function() {
-    // S'assurer que le bon groupe de champs est affiché au départ
-    toggleDimensionsFields('rectangle');
-  });
-</script>
+<!-- Removed inline JS; fields are shown by default. Use HTMX to handle submissions and cancelling. -->

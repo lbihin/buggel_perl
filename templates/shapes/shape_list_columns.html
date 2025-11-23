@@ -43,9 +43,8 @@
                 {% if rectangles %}
                   <div class="shape-list">
                     {% for shape in rectangles %}
-                      <div class="shape-item" id="shape-{{ shape.id }}" 
-                           onclick="selectShape('{{ shape.id }}')"
-                           {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
                         <div class="shape-content">
                           <p class="shape-dimensions mb-0">{{ shape.width }} × {{ shape.height }}</p>
                           <div class="shape-badges">
@@ -59,7 +58,10 @@
                         </div>
                         {% if not shape.is_default %}
                           <button class="btn btn-sm btn-icon delete-btn"
-                                onclick="confirmDelete('{{ shape.id }}', 'Rectangle {{ shape.width }}×{{ shape.height }}'); event.stopPropagation();">
+                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
+                                hx-target="#shape-list-container"
+                                title="Supprimer">
                             <i class="bi bi-x"></i>
                           </button>
                         {% endif %}
@@ -85,9 +87,8 @@
                 {% if squares %}
                   <div class="shape-list">
                     {% for shape in squares %}
-                      <div class="shape-item" id="shape-{{ shape.id }}" 
-                           onclick="selectShape('{{ shape.id }}')"
-                           {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
                         <div class="shape-content">
                           <p class="shape-dimensions mb-0">{{ shape.size }} × {{ shape.size }}</p>
                           <div class="shape-badges">
@@ -101,7 +102,10 @@
                         </div>
                         {% if not shape.is_default %}
                           <button class="btn btn-sm btn-icon delete-btn"
-                                onclick="confirmDelete('{{ shape.id }}', 'Carré {{ shape.size }}×{{ shape.size }}'); event.stopPropagation();">
+                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
+                                hx-target="#shape-list-container"
+                                title="Supprimer">
                             <i class="bi bi-x"></i>
                           </button>
                         {% endif %}
@@ -127,9 +131,8 @@
                 {% if circles %}
                   <div class="shape-list">
                     {% for shape in circles %}
-                      <div class="shape-item" id="shape-{{ shape.id }}" 
-                           onclick="selectShape('{{ shape.id }}')"
-                           {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
                         <div class="shape-content">
                           <p class="shape-dimensions mb-0">Ø {{ shape.diameter }}</p>
                           <div class="shape-badges">
@@ -143,7 +146,10 @@
                         </div>
                         {% if not shape.is_default %}
                           <button class="btn btn-sm btn-icon delete-btn"
-                                onclick="confirmDelete('{{ shape.id }}', 'Cercle Ø{{ shape.diameter }}'); event.stopPropagation();">
+                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
+                                hx-target="#shape-list-container"
+                                title="Supprimer">
                             <i class="bi bi-x"></i>
                           </button>
                         {% endif %}
@@ -247,94 +253,7 @@
     </div>
   </div>
 
-  <!-- Modal de confirmation pour la suppression -->
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow">
-        <div class="modal-header border-0">
-          <h5 class="modal-title fw-normal" id="deleteModalLabel">Confirmer la suppression</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          Voulez-vous vraiment supprimer <span id="shape-name-to-delete" class="fw-bold"></span> ?
-        </div>
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-          <form id="delete-form" method="post" action="">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-danger px-3">Supprimer</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Deletion confirmation handled inline by HTMX's hx-confirm on delete buttons. Modal removed. -->
 {% endblock %}
 
-{% block extra_js %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Gestion des boutons radio pour afficher les bons champs de dimensions
-    const radioButtons = document.querySelectorAll('input[name="shape_option"]');
-    radioButtons.forEach(radio => {
-      radio.addEventListener('change', function() {
-        // Cacher tous les champs de dimensions avec animation
-        document.querySelectorAll('.shape-dimensions').forEach(field => {
-          if (!field.classList.contains('d-none')) {
-            field.style.opacity = '0';
-            setTimeout(() => {
-              field.classList.add('d-none');
-            }, 200);
-          }
-        });
-        
-        // Afficher le champ correspondant au type sélectionné avec animation
-        const targetField = document.getElementById(this.value + '-dimensions');
-        targetField.classList.remove('d-none');
-        setTimeout(() => {
-          targetField.style.opacity = '1';
-        }, 50);
-      });
-    });
-    
-    // Mettre en évidence la forme sélectionnée avec animation
-    const selectedShape = document.querySelector('.shape-item[data-selected="true"]');
-    if (selectedShape) {
-      selectedShape.classList.add('selected');
-      
-      // Animation d'apparition progressive
-      setTimeout(() => {
-        selectedShape.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
-    
-    // Animation au survol des items
-    document.querySelectorAll('.shape-item').forEach(item => {
-      item.addEventListener('mouseenter', function() {
-        this.classList.add('shape-item-hover');
-      });
-      
-      item.addEventListener('mouseleave', function() {
-        this.classList.remove('shape-item-hover');
-      });
-    });
-  });
-  
-  // Fonction pour sélectionner une forme et rediriger vers le mode édition
-  function selectShape(shapeId) {
-    window.location.href = "{% url 'shapes:shape_list_columns' %}?edit=" + shapeId;
-  }
-  
-  // Fonction pour confirmer la suppression avec animation
-  function confirmDelete(shapeId, shapeName) {
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    document.getElementById('shape-name-to-delete').textContent = shapeName;
-    document.getElementById('delete-form').action = '/shapes/' + shapeId + '/delete/';
-    modal.show();
-    
-    // Focaliser le bouton d'annulation par défaut (sécurité)
-    setTimeout(() => {
-      document.querySelector('#deleteModal .btn-outline-secondary').focus();
-    }, 300);
-  }
-</script>
-{% endblock %}
+{% comment %} Removed custom JS: interactions use HTMX and HTML-only patterns now. {% endcomment %}

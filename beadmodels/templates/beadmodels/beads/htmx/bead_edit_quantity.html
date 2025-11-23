@@ -24,8 +24,10 @@
     </button>
     <button class="btn btn-sm btn-secondary" 
             id="cancel-quantity-btn-{{ bead.pk }}"
-            onclick="cancelQuantityEdit({{ bead.pk }})" 
-            type="button">
+            type="button"
+            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}?cancel=true"
+            hx-target="closest .quantity-display"
+            hx-swap="outerHTML transition:true">
       <span class="bi bi-x"></span>
     </button>
   </div>
@@ -34,26 +36,4 @@
   {% endif %}
 </form>
 
-<script>
-  // Focus sur le champ de quantité
-  document.getElementById('quantity-input-{{ bead.pk }}').focus();
-  
-  // Fonction pour annuler l'édition de quantité
-  function cancelQuantityEdit(beadId) {
-    htmx.ajax('GET', 
-              '{% url "beadmodels:bead_edit_quantity_htmx" bead.pk %}?cancel=true', 
-              {target: document.querySelector(`#cancel-quantity-btn-${beadId}`).closest('.quantity-display'),
-               swap: 'outerHTML transition:true'});
-  }
-  
-  // Support de la touche Entrée et Échap pour soumission/annulation
-  document.getElementById('quantity-input-{{ bead.pk }}').addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      document.getElementById('save-quantity-btn-{{ bead.pk }}').click();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelQuantityEdit({{ bead.pk }});
-    }
-  });
-</script>
+<!-- Removed inline JS: keyboard shortcuts and auto-focus removed to keep template JS-free. -->

@@ -53,10 +53,13 @@
     </tbody>
   </table>
 
-  <!-- Bouton flottant "+" pour ajouter une nouvelle forme -->
-  <div class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left" onclick="showAddShapeForm()">
+  <!-- Bouton flottant "+" pour ajouter une nouvelle forme (HTMX) -->
+  <button class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left" type="button"
+          hx-get="{% url 'shapes:get_inline_add_form' %}"
+          hx-target="#inline-form-placeholder"
+          hx-swap="beforebegin">
     <i class="bi bi-plus-lg"></i>
-  </div>
+  </button>
 </div>
 
 {% if shapes.has_other_pages %}

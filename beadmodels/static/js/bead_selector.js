@@ -1,14 +1,2 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const useCustomBeadsCheckbox = document.getElementById('useCustomBeads');
-    const beadSelectionContainer = document.getElementById('beadSelectionContainer');
-
-    if (useCustomBeadsCheckbox && beadSelectionContainer) {
-        useCustomBeadsCheckbox.addEventListener('change', function () {
-            if (this.checked) {
-                new bootstrap.Collapse(beadSelectionContainer).show();
-            } else {
-                new bootstrap.Collapse(beadSelectionContainer).hide();
-            }
-        });
-    }
-});
+// Deprecated: bead selection behavior has been moved to HTMX/server-side logic.
+// This file intentionally left empty to remove custom JS.

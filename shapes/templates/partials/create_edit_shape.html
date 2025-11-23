@@ -1,4 +1,5 @@
 {% load crispy_forms_tags %}
+{% load static %}
 
 <div class="card mb-4 shape-form">
   <div class="card-header bg-light">
@@ -107,70 +108,8 @@
       </div>
     </form>
   </div>
+  </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const shapeTypeHidden = document.getElementById('id_shape_type');
-  const dimensionSelectors = document.querySelectorAll('.dimension-selector');
-  const dimensionFields = document.querySelectorAll('.dimension-fields');
-  const autoTypeLabel = document.getElementById('auto_type_label');
-  const previewCanvas = document.getElementById('previewCanvas');
-  
-  // Gestion des sélecteurs de dimension
-  dimensionSelectors.forEach(selector => {
-    selector.addEventListener('change', function() {
-      // Cacher tous les champs de dimensions
-      dimensionFields.forEach(field => field.classList.add('d-none'));
-      
-      // Afficher uniquement les champs correspondants au type sélectionné
-      const selectedType = this.value;
-      const fieldsToShow = document.querySelector(`.${selectedType}-fields`);
-      if (fieldsToShow) {
-        fieldsToShow.classList.remove('d-none');
-      }
-      
-      // Mettre à jour le type automatique
-      updateAutoTypeLabel(selectedType);
-      
-      // Mettre à jour le champ caché pour la compatibilité
-      shapeTypeHidden.value = selectedType;
-      
-      // Mettre à jour l'aperçu
-      if (previewCanvas) {
-        updateShapePreview();
-      }
-    });
-  });
-  
-  function updateAutoTypeLabel(type) {
-    let typeText = 'Sera déterminé automatiquement';
-    if (type === 'rectangle') typeText = 'Rectangle';
-    else if (type === 'square') typeText = 'Carré';
-    else if (type === 'circle') typeText = 'Cercle';
-    
-    autoTypeLabel.textContent = typeText;
-  }
-  
-  // Veiller à ce que le canvas existe (il pourrait ne pas être rendu dans certains cas)
-  if (previewCanvas) {
-    const ctx = previewCanvas.getContext('2d');
-    
-    // Mise à jour lorsque les dimensions changent
-    ['id_width', 'id_height', 'id_size', 'id_diameter'].forEach(fieldId => {
-      const field = document.getElementById(fieldId);
-      if (field) {
-        field.addEventListener('input', updateShapePreview);
-      }
-    });
-    
-    // Mise à jour initiale
-    updateShapePreview();
-    
-    function updateShapePreview() {
-      // ...existing code...
-      // Cette fonction devrait être remplacée par votre code d'aperçu existant
-    }
-  }
-});
-</script>
+<!-- Small behavior script moved to a dedicated static file for clarity and reuse -->
+<script src="{% static 'shapes/js/shape_form.js' %}"></script>

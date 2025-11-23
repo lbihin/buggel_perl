@@ -1,10 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
-    // Auto-dismiss alerts after 5 seconds
-    const alerts = document.querySelectorAll(".alert-dismissible");
-    alerts.forEach((alert) => {
-        setTimeout(() => {
-            alert.classList.add("fade");
-            setTimeout(() => alert.remove(), 500);
-        }, 5000);
-    });
-});
+// Deprecated: auto-dismiss behavior removed to avoid custom JS.
+// Prefer server-side messages or CSS-based presentation.
+
+// Intentionally left blank.
