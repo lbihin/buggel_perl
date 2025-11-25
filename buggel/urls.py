@@ -28,6 +28,7 @@ from .views import home
 urlpatterns = [
     path("", home, name="home"),
     path("admin/", admin.site.urls),
+    path("beads/", include("beads.urls")),
     path("beadmodels/", include("beadmodels.urls")),
     path(
         "login/",
@@ -35,7 +36,6 @@ urlpatterns = [
         name="login",
     ),
     path("logout/", accounts_views.logout, name="logout"),
-
     path("shapes/", include("shapes.urls")),
     path("account/", include("accounts.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

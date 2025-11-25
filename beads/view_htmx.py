@@ -13,11 +13,11 @@ def bead_edit_quantity_htmx(request, pk):
         threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
         context = {"bead": bead, "threshold": threshold}
         return render(
-            request, "beadmodels/partials/bead_quantity_display.html", context
+            request, "beads/partials/bead_quantity_display.html", context
         )
 
     return render(
-        request, "beadmodels/partials/bead_edit_quantity.html", {"bead": bead}
+        request, "beads/partials/bead_edit_quantity.html", {"bead": bead}
     )
 
 
@@ -38,7 +38,7 @@ def bead_update_quantity_htmx(request, pk):
             threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
             context = {"bead": bead, "threshold": threshold}
             return render(
-                request, "beadmodels/partials/bead_quantity_display.html", context
+                request, "beads/partials/bead_quantity_display.html", context
             )
         except (ValueError, TypeError):
             context = {
@@ -46,7 +46,7 @@ def bead_update_quantity_htmx(request, pk):
                 "error": "La quantité doit être un nombre entier positif.",
             }
             return render(
-                request, "beadmodels/partials/bead_edit_quantity.html", context
+                request, "beads/partials/bead_edit_quantity.html", context
             )
 
     return bead_edit_quantity_htmx(request, pk)
@@ -57,9 +57,9 @@ def bead_edit_color_htmx(request, pk):
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
     if request.GET.get("cancel"):
         return render(
-            request, "beadmodels/partials/bead_color_display.html", {"bead": bead}
+            request, "beads/partials/bead_color_display.html", {"bead": bead}
         )
-    return render(request, "beadmodels/partials/bead_edit_color.html", {"bead": bead})
+    return render(request, "beads/partials/bead_edit_color.html", {"bead": bead})
 
 
 @login_required
@@ -76,12 +76,12 @@ def bead_update_color_htmx(request, pk):
             bead.name = f"Perle #{red:02x}{green:02x}{blue:02x}"
             bead.save(update_fields=["red", "green", "blue", "name"])
             return render(
-                request, "beadmodels/partials/bead_color_display.html", {"bead": bead}
+                request, "beads/partials/bead_color_display.html", {"bead": bead}
             )
         except (ValueError, TypeError):
             return render(
                 request,
-                "beadmodels/partials/bead_edit_color.html",
+                "beads/partials/bead_edit_color.html",
                 {
                     "bead": bead,
                     "error": "Les valeurs de couleur doivent être des nombres entiers entre 0 et 255.",

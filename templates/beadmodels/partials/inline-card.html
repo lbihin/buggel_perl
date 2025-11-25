@@ -10,7 +10,7 @@
     <h5 class="card-title">{{ model.title }}</h5>
     <p class="card-text flex-grow-1">{{ model.description|truncatewords:20 }}</p>
     <div class="d-flex justify-content-between align-items-center mt-auto">
-      <a href="{% url 'beadmodels:model_detail' model.pk %}" class="btn btn-primary">{{ button_text|default:'Voir le modèle' }}</a>
+      <a href="{% url 'beadmodels:details' model.pk %}" class="btn btn-primary">{{ button_text|default:'Voir le modèle' }}</a>
       {% if show_privacy_badge %}
         <span class="badge {% if model.is_public %}
             

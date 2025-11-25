@@ -10,7 +10,7 @@
     "python.envFile": ".env",
     "python.poetryPath": "${env:POETRY_PATH}",
     "editor.codeActionsOnSave": {
-        "source.unusedImports": "always",
+        "source.unusedImports": "explicit",
         "source.organizeImports": "always"
     },
     "editor.formatOnSaveMode": "file",

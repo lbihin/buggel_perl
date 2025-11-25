@@ -9,7 +9,7 @@
   <div class="row">
     {% for model in models %}
       <div class="col-md-4 mb-4">
-        {% include 'components/inline-cards.html' with model=model show_privacy_badge=True %}
+        {% include 'beadmodels/partials/inline-card.html' with model=model show_privacy_badge=True %}
       </div>
     {% empty %}
       <div class="col-12">

@@ -177,12 +177,13 @@
     </div>
 
     <!-- Bouton flottant "+" pour ajouter une nouvelle perle -->
-    <a class="floating-add-btn" title="Ajouter une nouvelle perle" href="{% url 'beadmodels:bead_create' %}">
+    <a class="floating-add-btn" title="Ajouter une nouvelle perle" href="{% url 'beads:create' %}">
       <i class="bi bi-plus-lg"></i>
     </a>
       <i class="bi bi-info-circle me-2"></i>
       <strong>Astuce :</strong> Cliquez sur la couleur ou la quantité d'une perle pour les modifier directement.
 {% comment %} Removed JS: interaction simplified to server/HTMX-only patterns. {% endcomment %}
+  <script>
         const rgb = hexToRgb(`#${hexInput}`);
         
         // Mise à jour des champs RGB

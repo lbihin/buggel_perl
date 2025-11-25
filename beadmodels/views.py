@@ -9,16 +9,14 @@ import numpy as np
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
 from PIL import Image
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
 from .forms import TransformModelForm
-from .models import Bead, BeadModel
-from .view_beads import *  # noqa: F401,F403
-from .view_htmx import *  # noqa: F401,F403
+from .models import BeadModel
 
 # Import model-related views from the new module to keep this module as a façade
 from .view_models import *  # noqa: F401,F403
@@ -488,143 +486,3 @@ def apply_kmeans(colors, n_clusters):
     centers = np.clip(centers, 0, 255).astype(np.uint8)
 
     return centers
-
-
-# HTMX views pour l'édition inline des perles
-
-
-@login_required
-def bead_edit_quantity_htmx(request, pk):
-    """Vue HTMX pour afficher le formulaire d'édition de quantité de perle ou revenir à l'affichage normal."""
-    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
-
-    # Si un paramètre cancel est présent, afficher la vue normale
-    if request.GET.get("cancel"):
-        # Récupérer le seuil d'alerte depuis les paramètres
-        from django.conf import settings
-
-        threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
-
-        context = {
-            "bead": bead,
-            "threshold": threshold,
-        }
-        return render(
-            request, "beadmodels/partials/bead_quantity_display.html", context
-        )
-
-    # Sinon, afficher le formulaire d'édition
-    context = {
-        "bead": bead,
-    }
-    return render(request, "beadmodels/partials/bead_edit_quantity.html", context)
-
-
-@login_required
-def bead_update_quantity_htmx(request, pk):
-    """Vue HTMX pour mettre à jour la quantité d'une perle."""
-    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
-
-    if request.method == "POST":
-        try:
-            # Traitement optimisé sans conversions inutiles
-            quantity_str = request.POST.get("quantity", "")
-
-            # Vérifier si la valeur est vide
-            if quantity_str.strip() == "":
-                bead.quantity = None
-            else:
-                quantity = int(quantity_str)
-                if quantity < 0:
-                    quantity = 0
-                bead.quantity = quantity
-
-            # Optimisation : sauvegarde avec update_fields pour réduire le temps de requête
-            bead.save(update_fields=["quantity"])
-
-            # Import et récupération du seuil depuis les paramètres (déplacé en haut pour optimisation)
-            from django.conf import settings
-
-            threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
-
-            context = {
-                "bead": bead,
-                "threshold": threshold,
-            }
-
-            return render(
-                request, "beadmodels/partials/bead_quantity_display.html", context
-            )
-        except (ValueError, TypeError):
-            # En cas d'erreur, retourner au formulaire d'édition
-            context = {
-                "bead": bead,
-                "error": "La quantité doit être un nombre entier positif.",
-            }
-            return render(
-                request, "beadmodels/partials/bead_edit_quantity.html", context
-            )
-
-    # Si la méthode n'est pas POST, retourner la vue de formulaire
-    return bead_edit_quantity_htmx(request, pk)
-
-
-@login_required
-def bead_edit_color_htmx(request, pk):
-    """Vue HTMX pour afficher le formulaire d'édition de couleur de perle ou revenir à l'affichage normal."""
-    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
-
-    # Si un paramètre cancel est présent, afficher la vue normale
-    if request.GET.get("cancel"):
-        context = {
-            "bead": bead,
-        }
-        return render(request, "beadmodels/partials/bead_color_display.html", context)
-
-    # Sinon, afficher le formulaire d'édition
-    context = {
-        "bead": bead,
-    }
-    return render(request, "beadmodels/partials/bead_edit_color.html", context)
-
-
-@login_required
-def bead_update_color_htmx(request, pk):
-    """Vue HTMX pour mettre à jour la couleur d'une perle."""
-    bead = get_object_or_404(Bead, pk=pk, creator=request.user)
-
-    if request.method == "POST":
-        try:
-            # Récupérer et valider les valeurs RGB
-            red = max(0, min(255, int(request.POST.get("red", "0"))))
-            green = max(0, min(255, int(request.POST.get("green", "0"))))
-            blue = max(0, min(255, int(request.POST.get("blue", "0"))))
-
-            # Mettre à jour les valeurs de couleur
-            bead.red = red
-            bead.green = green
-            bead.blue = blue
-
-            # Mettre à jour le nom de la perle (basé sur la couleur)
-            bead.name = f"Perle #{red:02x}{green:02x}{blue:02x}"
-
-            # Optimisation : sauvegarde avec update_fields pour réduire le temps de requête
-            bead.save(update_fields=["red", "green", "blue", "name"])
-
-            # Retourner l'affichage de la couleur
-            context = {
-                "bead": bead,
-            }
-            return render(
-                request, "beadmodels/partials/bead_color_display.html", context
-            )
-        except (ValueError, TypeError) as e:
-            # En cas d'erreur, retourner au formulaire d'édition avec message d'erreur
-            context = {
-                "bead": bead,
-                "error": "Les valeurs de couleur doivent être des nombres entiers entre 0 et 255.",
-            }
-            return render(request, "beadmodels/partials/bead_edit_color.html", context)
-
-    # Si la méthode n'est pas POST, retourner la vue de formulaire
-    return bead_edit_color_htmx(request, pk)

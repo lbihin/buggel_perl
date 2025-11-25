@@ -21,7 +21,7 @@ from django.urls import reverse
 from PIL import Image
 
 from .forms import ImageUploadForm, ModelConfigurationForm
-from .models import Bead, BeadBoard
+from .models import BeadBoard
 from .wizards import LoginRequiredWizard, WizardStep
 
 

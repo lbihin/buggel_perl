@@ -1,3 +1,4 @@
+# Create your views here.
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
@@ -9,7 +10,7 @@ from .models import Bead
 
 class BeadListView(LoginRequiredMixin, ListView):
     model = Bead
-    template_name = "beadmodels/bead_table.html"
+    template_name = "beads/table.html"
     context_object_name = "beads"
 
     def get_queryset(self):
@@ -32,7 +33,8 @@ class BeadListView(LoginRequiredMixin, ListView):
 class BeadCreateView(LoginRequiredMixin, CreateView):
     model = Bead
     form_class = BeadForm
-    success_url = reverse_lazy("beadmodels:bead_list")
+    template_name = "beads/create_or_update.html"
+    success_url = reverse_lazy("beads:list")
 
     def form_valid(self, form):
         form.instance.creator = self.request.user
@@ -43,8 +45,8 @@ class BeadCreateView(LoginRequiredMixin, CreateView):
 class BeadUpdateView(LoginRequiredMixin, UpdateView):
     model = Bead
     form_class = BeadForm
-    template_name = "beadmodels/bead_form.html"
-    success_url = reverse_lazy("beadmodels:bead_list")
+    template_name = "beads/create_or_update.html"
+    success_url = reverse_lazy("beads:list")
 
     def get_queryset(self):
         return Bead.objects.filter(creator=self.request.user)
@@ -56,7 +58,7 @@ class BeadUpdateView(LoginRequiredMixin, UpdateView):
 
 class BeadDeleteView(LoginRequiredMixin, DeleteView):
     model = Bead
-    success_url = reverse_lazy("beadmodels:bead_list")
+    success_url = reverse_lazy("beads:list")
 
     def get_queryset(self):
         return Bead.objects.filter(creator=self.request.user)

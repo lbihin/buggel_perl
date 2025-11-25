@@ -27,7 +27,7 @@ class BeadModelListView(LoginRequiredMixin, ListView):
 
 class BeadModelDetailView(DetailView):
     model = BeadModel
-    template_name = "beadmodels/models/model_detail.html"
+    template_name = "beadmodels/details.html"
     context_object_name = "model"
 
     def get_context_data(self, **kwargs):
