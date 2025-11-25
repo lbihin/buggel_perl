@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -65,13 +66,13 @@ class BeadModelCreateView(LoginRequiredMixin, CreateView):
 class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
     model = BeadModel
     form_class = BeadModelForm
-    template_name = "beadmodels/models/edit_model.html"
+    template_name = "beadmodels/edit.html"
 
     def dispatch(self, request, *args, **kwargs):
         model = self.get_object()
         if model.creator != request.user:
             messages.error(request, "Vous n'avez pas le droit de modifier ce modèle.")
-            return redirect("beadmodels:model_detail", pk=model.pk)
+            return redirect("beadmodels:details", pk=model.pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -80,27 +81,35 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy("beadmodels:model_detail", kwargs={"pk": self.object.pk})
+        return reverse_lazy("beadmodels:details", kwargs={"pk": self.object.pk})
 
 
 class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     model = BeadModel
-    template_name = "beadmodels/models/delete_model.html"
+    template_name = "beadmodels/partials/delete.html"
     success_url = reverse_lazy("beadmodels:my_models")
 
-    def dispatch(self, request, *args, **kwargs):
-        model = self.get_object()
-        if model.creator != request.user:
-            messages.error(request, "Vous n'avez pas le droit de supprimer ce modèle.")
-            return redirect("beadmodels:model_detail", pk=model.pk)
-        return super().dispatch(request, *args, **kwargs)
+    # def dispatch(self, request, *args, **kwargs):
+    #     model = self.get_object()
+    #     if model.creator != request.user:
+    #         messages.error(request, "Vous n'avez pas le droit de supprimer ce modèle.")
+    #         return redirect("beadmodels:detail", pk=model.pk)
+    #     return super().dispatch(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         messages.success(request, "Votre modèle a été supprimé avec succès!")
-        return super().delete(request, *args, **kwargs)
+        super().delete(request, *args, **kwargs)
+
+
+# def delete_modal(request, pk):
+#     """Vue pour afficher le modal de suppression via HTMX"""
+#     model = BeadModel.objects.get(pk=pk)
+#     if model.creator != request.user:
+#         return HttpResponse("Non autorisé", status=403)
+
+#     return render(request, "partials/delete_modal.html", {"model": model})
 
 
 def my_models(request):
     user_models = BeadModel.objects.filter(creator=request.user).order_by("-created_at")
-    return render(request, "beadmodels/models/my_models.html", {"models": user_models})
     return render(request, "beadmodels/models/my_models.html", {"models": user_models})

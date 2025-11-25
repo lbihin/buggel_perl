@@ -66,16 +66,14 @@
             <h5 class="card-title mb-0">Actions</h5>
           </div>
           <div class="card-body">
-              <div class="d-grid gap-2">
+            <div class="d-grid gap-2">
               <a class="btn btn-primary" href="{% url 'beadmodels:model_creation_wizard' %}?model_id={{ model.id }}">Créer un modèle de perles</a>
-              <a href="{% url 'beadmodels:edit_model' model.pk %}" class="btn btn-primary">Modifier</a>
-              <a href="{% url 'beadmodels:delete_model' model.pk %}" class="btn btn-danger">Supprimer</a>
+              <a href="{% url 'beadmodels:edit' model.pk %}" class="btn btn-primary">Modifier</a>
+              <button type="button" class="btn btn-danger" hx-get="{% url 'beadmodels:delete_modal' model.pk %}" hx-target="body" hx-swap="beforeend">Supprimer</button>
             </div>
           </div>
         </div>
       {% endif %}
     </div>
   </div>
-
-  <!-- Legacy wizard modal removed in favor of server-side wizard flow. Buttons now link to the wizard. -->
 {% endblock %}

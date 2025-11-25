@@ -4,7 +4,6 @@ from django.shortcuts import redirect
 from django.urls import path
 
 from . import views
-from .model_creation_wizard import ModelCreationWizard
 
 
 # Redirection vers la page d'accueil principale
@@ -16,16 +15,10 @@ app_name = "beadmodels"
 
 urlpatterns = [
     # path("create/", views.BeadModelCreateView.as_view(), name="create_model"),
-    path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="details"),
-    # path(
-    #     "model/<int:pk>/edit/", views.BeadModelUpdateView.as_view(), name="edit_model"
-    # ),
-    # path(
-    #     "model/<int:pk>/delete/",
-    #     views.BeadModelDeleteView.as_view(),
-    #     name="delete_model",
-    # ),
     path("", views.BeadModelListView.as_view(), name="my_models"),
+    path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="details"),
+    path("model/<int:pk>/edit/", views.BeadModelUpdateView.as_view(), name="edit"),
+    path("model/<int:pk>/delete/", views.BeadModelDeleteView.as_view(), name="delete"),
     # # Route d'accueil locale
     # path("home/", redirect_to_home, name="home"),
     # # Gestion des perles avec des vues basées sur des classes
@@ -42,10 +35,9 @@ urlpatterns = [
     # ),
     # Nouveau wizard de création de modèle (à 3 étapes)
     path(
-        "model-creation/", ModelCreationWizard.as_view(), name="model_creation_wizard"
+        "create/", views.ModelCreationWizard.as_view(), name="create"
     ),
     # # Routes HTMX pour les perles
-
     # # Routes HTMX pour les formes
 ]
 

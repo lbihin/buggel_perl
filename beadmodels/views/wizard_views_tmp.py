@@ -15,11 +15,8 @@ from PIL import Image
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-from .forms import TransformModelForm
-from .models import BeadModel
-
-# Import model-related views from the new module to keep this module as a façade
-from .view_models import *  # noqa: F401,F403
+from ..forms import TransformModelForm
+from ..models import BeadModel
 
 
 @login_required

@@ -20,16 +20,16 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from PIL import Image
 
-from .forms import ImageUploadForm, ModelConfigurationForm
-from .models import BeadBoard
-from . import LoginRequiredWizard, WizardStep
+from ..forms import ImageUploadForm, ModelConfigurationForm
+from ..models import BeadBoard
+from .wizard_helpers import LoginRequiredWizard, WizardStep
 
 
 class ImageUploadStep(WizardStep):
     """Première étape: Chargement de l'image."""
 
     name = "Chargement de l'image"
-    template = "beadmodels/model_creation/upload_image.html"
+    template = "beadmodels/wizard/upload_image.html"
     form_class = ImageUploadForm
     position = 1
 
@@ -37,7 +37,7 @@ class ImageUploadStep(WizardStep):
         """Gère l'affichage du formulaire de chargement d'image."""
         # Nettoyage silencieux des anciens fichiers temporaires (pas de message utilisateur)
         try:
-            from .services.image_processing import cleanup_temp_images
+            from ..services.image_processing import cleanup_temp_images
 
             cleanup_temp_images(max_age_seconds=3600)
         except Exception:
@@ -1210,7 +1210,7 @@ class ModelCreationWizard(LoginRequiredWizard):
 
     def get_url_name(self):
         """Renvoie le nom d'URL du wizard."""
-        return "beadmodels:model_creation_wizard"
+        return "beadmodels:create"
 
     def get_redirect_kwargs(self):
         """Récupère les paramètres à conserver lors des redirections."""
@@ -1255,5 +1255,4 @@ class ModelCreationWizard(LoginRequiredWizard):
         """Action finale lorsque le wizard est terminé."""
         self.reset_wizard()
         # Rediriger vers la liste des modèles de l'utilisateur
-        return redirect("beadmodels:my_models")
         return redirect("beadmodels:my_models")

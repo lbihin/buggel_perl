@@ -3,7 +3,7 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Mes modèles</h2>
-    <a href="{% url 'beadmodels:model_creation_wizard' %}" class="btn btn-primary">Créer un nouveau modèle</a>
+    <a href="{% url 'beadmodels:create' %}" class="btn btn-primary">Créer un nouveau modèle</a>
   </div>
 
   <div class="row">
@@ -15,7 +15,7 @@
       <div class="col-12">
         <div class="alert alert-info">
           Vous n'avez pas encore créé de modèle.
-          <a href="{% url 'beadmodels:model_creation_wizard' %}" class="alert-link">Créez votre premier modèle</a> !
+          <a href="{% url 'beadmodels:create' %}" class="alert-link">Créez votre premier modèle</a> !
         </div>
       </div>
     {% endfor %}
