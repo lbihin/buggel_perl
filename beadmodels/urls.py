@@ -34,9 +34,7 @@ urlpatterns = [
     #     name="save_transformation",
     # ),
     # Nouveau wizard de création de modèle (à 3 étapes)
-    path(
-        "create/", views.ModelCreationWizard.as_view(), name="create"
-    ),
+    path("create/", views.ModelCreatorWizard.as_view(), name="create"),
     # # Routes HTMX pour les perles
     # # Routes HTMX pour les formes
 ]

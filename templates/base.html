@@ -36,7 +36,7 @@
             {% if user.is_authenticated %}
               <li class="nav-item">
                 {# Lien modifié pour lancer directement le wizard de création (étape 1) #}
-                <a class="nav-link" href="{% url 'beadmodels:create' %}">Créer un modèle</a>
+                <a class="nav-link" href="{% url 'beadmodels:create' %}?q=reset">Créer un modèle</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'beadmodels:my_models' %}">Mes modèles</a>

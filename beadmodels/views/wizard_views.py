@@ -12,6 +12,8 @@ from datetime import datetime
 
 import numpy as np
 
+from beads.models import Bead
+
 logger = logging.getLogger(__name__)
 from django.contrib import messages
 from django.http import HttpResponse
@@ -25,7 +27,7 @@ from ..models import BeadBoard
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
 
-class ImageUploadStep(WizardStep):
+class UploadImage(WizardStep):
     """Première étape: Chargement de l'image."""
 
     name = "Chargement de l'image"
@@ -35,6 +37,12 @@ class ImageUploadStep(WizardStep):
 
     def handle_get(self, **kwargs):
         """Gère l'affichage du formulaire de chargement d'image."""
+
+        # Initialiser le formulaire
+        form = self.form_class()
+        
+        context = {"form": form, "wizard_step": self.position, "total_steps": 3}
+        return self.render_template(context)
         # Nettoyage silencieux des anciens fichiers temporaires (pas de message utilisateur)
         try:
             from ..services.image_processing import cleanup_temp_images
@@ -62,9 +70,9 @@ class ImageUploadStep(WizardStep):
                     self.wizard.request, f"Utilisation du modèle ID {model_id}"
                 )
                 # Réinitialiser mais conserver l'ID du modèle
-                self.wizard.update_data({"model_id": model_id})
+                self.wizard.update_session_data({"model_id": model_id})
 
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
 
         # Si on est explicitement à l'étape 1, on réinitialise les données
         # sauf si on vient de faire un reset explicite
@@ -74,7 +82,9 @@ class ImageUploadStep(WizardStep):
             model_id_to_keep = wizard_data.get("model_id")
             self.wizard.reset_wizard()
             if model_id_to_keep or model_id:
-                self.wizard.update_data({"model_id": model_id or model_id_to_keep})
+                self.wizard.update_session_data(
+                    {"model_id": model_id or model_id_to_keep}
+                )
 
         # Initialiser le formulaire
         form = self.form_class()
@@ -93,37 +103,37 @@ class ImageUploadStep(WizardStep):
         form = self.form_class(self.wizard.request.POST, self.wizard.request.FILES)
 
         if form.is_valid():
+            from ..services.image_processing import save_temp_image
+
             image = form.cleaned_data["image"]
             # Sauvegarde temporaire sur disque pour éviter surcharge session
-            from .services.image_processing import save_temp_image
-
             stored_path = save_temp_image(image)
-            self.wizard.update_data({"image_data": {"image_path": stored_path}})
+            self.wizard.update_session_data({"image_data": {"image_path": stored_path}})
 
             # Passer à l'étape suivante
             return self.wizard.go_to_next_step()
-        else:
-            # Afficher les erreurs du formulaire
-            context = {"form": form, "wizard_step": self.position, "total_steps": 3}
-            return self.render_template(context)
+
+        # En cas d'erreur, réafficher le formulaire avec les erreurs
+        context = {"form": form, "wizard_step": self.position, "total_steps": 3}
+        return self.render_template(context)
 
 
-class ConfigurationStep(WizardStep):
+class ConfigureModel(WizardStep):
     """Deuxième étape: Configuration et prévisualisation du modèle."""
 
     name = "Configuration du modèle"
-    template = "beadmodels/model_creation/configure_model.html"
+    template = "beadmodels/wizard/configure_model.html"
     form_class = ModelConfigurationForm
     position = 2
 
     def handle_get(self, **kwargs):
         """Gère l'affichage du formulaire de configuration."""
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
         image_data = wizard_data.get("image_data", {})
 
         if not image_data:
             messages.error(self.wizard.request, "Veuillez d'abord charger une image.")
-            return redirect("beadmodels:model_creation_wizard")
+            return redirect("beadmodels:create", kwargs={'q': 'reset'})
 
         # Initialiser le formulaire avec les données existantes ou valeurs par défaut
         initial_data = {
@@ -153,7 +163,7 @@ class ConfigurationStep(WizardStep):
         original_image_base64 = image_data.get("image_base64")
         if not original_image_base64 and image_data.get("image_path"):
             try:
-                from .services.image_processing import file_to_base64
+                from ..services.image_processing import file_to_base64
 
                 original_image_base64 = file_to_base64(image_data.get("image_path"))
                 # Ne pas écraser l'état sauf nécessité
@@ -181,12 +191,16 @@ class ConfigurationStep(WizardStep):
 
     def handle_post(self, **kwargs):
         """Traite le formulaire de configuration."""
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
 
-        # Vérifier si l'utilisateur a cliqué sur le bouton "Retour"
-        if "previous_step" in self.wizard.request.POST:
-            # Déléguer à la classe parente qui sait comment gérer la navigation
+        
+        # Gestion des boutons de navigation
+        direction = self.wizard.request.POST.get("q")
+        if direction == "previous":
             return self.wizard.go_to_previous_step()
+        if direction == "next":
+            return self.wizard.go_to_next_step()
+        
 
         # Prévisualisation déclenchée via HTMX
         if getattr(self.wizard.request, "htmx", False):
@@ -212,7 +226,7 @@ class ConfigurationStep(WizardStep):
             )
 
             # Mettre à jour les données du wizard
-            self.wizard.update_data(
+            self.wizard.update_session_data(
                 {
                     "shape_id": shape_id,
                     "color_reduction": color_reduction,
@@ -221,13 +235,13 @@ class ConfigurationStep(WizardStep):
             )
 
             # Générer la prévisualisation
-            preview_image_base64 = self.generate_preview(self.wizard.get_data())
+            preview_image_base64 = self.generate_preview(self.wizard.get_session_data())
 
             # Renvoyer uniquement la partie prévisualisation
             context = {"preview_image_base64": preview_image_base64}
 
             html = render_to_string(
-                "beadmodels/model_creation/preview_partial.html", context
+                "beadmodels/partials/preview.html", context
             )
             return HttpResponse(html)
 
@@ -251,7 +265,7 @@ class ConfigurationStep(WizardStep):
             )
 
             # Mettre à jour les données (écraser toujours pour cohérence)
-            self.wizard.update_data(
+            self.wizard.update_session_data(
                 {
                     "shape_id": shape_id,
                     "color_reduction": color_reduction,
@@ -260,7 +274,7 @@ class ConfigurationStep(WizardStep):
             )
 
             # Générer le modèle final directement
-            final_model = self.generate_model(self.wizard.get_data())
+            final_model = self.generate_model(self.wizard.get_session_data())
 
             # Stocker image finale sur disque (réduction session)
             if final_model.get("image_base64"):
@@ -281,7 +295,7 @@ class ConfigurationStep(WizardStep):
                         f"Impossible de sauvegarder l'image finale temporaire (generate bypass): {e}"
                     )
 
-            self.wizard.update_data({"final_model": final_model})
+            self.wizard.update_session_data({"final_model": final_model})
             # Si requête HTMX (hx-boost précédemment), retourner directement le template final
             if getattr(self.wizard.request, "htmx", False):
                 self.wizard.set_current_step_number(3)
@@ -307,7 +321,7 @@ class ConfigurationStep(WizardStep):
                 safe_color_reduction = int(safe_color_reduction)
             except (ValueError, TypeError):
                 safe_color_reduction = 16
-            self.wizard.update_data(
+            self.wizard.update_session_data(
                 {
                     "shape_id": shape_id,
                     "color_reduction": safe_color_reduction,
@@ -316,7 +330,7 @@ class ConfigurationStep(WizardStep):
             )
 
             # Générer le modèle final
-            final_model = self.generate_model(self.wizard.get_data())
+            final_model = self.generate_model(self.wizard.get_session_data())
 
             # Optimisation: sauvegarder l'image finale en fichier temporaire plutôt que garder base64 en session
             if final_model.get("image_base64"):
@@ -340,7 +354,7 @@ class ConfigurationStep(WizardStep):
                         f"Impossible de sauvegarder l'image finale temporaire: {e}"
                     )
 
-            self.wizard.update_data({"final_model": final_model})
+            self.wizard.update_session_data({"final_model": final_model})
 
             # Passer à l'étape suivante explicitement
             return self.wizard.go_to_next_step()
@@ -585,7 +599,7 @@ class ConfigurationStep(WizardStep):
         pixels = img_array.reshape(-1, 3)
 
         # Réduction de couleurs via service partagé
-        from .services.image_processing import reduce_colors
+        from ..services.image_processing import reduce_colors
 
         user_colors = None
         if use_available_colors:
@@ -819,21 +833,22 @@ class ConfigurationStep(WizardStep):
         }
 
 
-class WizardThirdStep(WizardStep):
+class SaveModel(WizardStep):
     """Troisième étape: Sauvegarde du modèle."""
 
     name = "Finalisation"
-    template = "beadmodels/wizard_final_step.html"
+    template = "beadmodels/wizard/result.html"
     position = 3
 
     def handle_get(self, **kwargs):
         """Affiche le résultat final et les options de sauvegarde."""
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
         final_model = wizard_data.get("final_model", {})
 
-        if not final_model:
-            messages.error(self.wizard.request, "Veuillez configurer votre modèle.")
-            return redirect("beadmodels:model_creation_wizard")
+        # TODO: désactivation temporaire. On vérifie que les boutons suivant et précédent fonctionnent correctement.
+        # if not final_model:
+        #     messages.error(self.wizard.request, "Veuillez configurer votre modèle.")
+        #     return redirect("beadmodels:create")
 
         # Récupérer les informations de la forme si applicable
         shape_name = "Standard"
@@ -855,7 +870,7 @@ class WizardThirdStep(WizardStep):
         # Obtenir la date actuelle formatée en français pour le nom par défaut
         import locale
 
-        from .forms import BeadModelFinalizeForm
+        from ..forms import BeadModelFinalizeForm
 
         try:
             locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
@@ -889,7 +904,7 @@ class WizardThirdStep(WizardStep):
         final_image_base64 = final_model.get("image_base64")
         if not final_image_base64 and final_model.get("image_path"):
             try:
-                from .services.image_processing import file_to_base64
+                from ..services.image_processing import file_to_base64
 
                 final_image_base64 = file_to_base64(final_model.get("image_path"))
             except Exception as e:
@@ -981,15 +996,16 @@ class WizardThirdStep(WizardStep):
         """Gère les actions finales avec une meilleure expérience utilisateur."""
         from django.contrib import messages
 
-        from .forms import BeadModelFinalizeForm
+        from ..forms import BeadModelFinalizeForm
 
         # Récupérer les données du modèle final
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
         final_model = wizard_data.get("final_model", {})
 
-        if not final_model:
-            messages.error(self.wizard.request, "Erreur: données du modèle manquantes.")
-            return redirect("beadmodels:model_creation_wizard")
+        # TODO: désactivation temporaire. On vérifie que les boutons suivant et précédent fonctionnent correctement.
+        # if not final_model:
+        #     messages.error(self.wizard.request, "Erreur: données du modèle manquantes.")
+        #     return redirect("beadmodels:create")
 
         # Vérifier le type de soumission
         # Si l'utilisateur veut simplement télécharger l'image
@@ -1100,7 +1116,7 @@ class WizardThirdStep(WizardStep):
 
     def download_model(self, format="png"):
         """Prépare le téléchargement du modèle dans différents formats."""
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
         final_model = wizard_data.get("final_model", {})
 
         if not final_model:
@@ -1160,7 +1176,7 @@ class WizardThirdStep(WizardStep):
 
     def generate_instructions(self):
         """Génère un PDF avec les instructions pour réaliser le modèle."""
-        wizard_data = self.wizard.get_data()
+        wizard_data = self.wizard.get_session_data()
         final_model = wizard_data.get("final_model", {})
 
         if not final_model:
@@ -1200,12 +1216,11 @@ class WizardThirdStep(WizardStep):
         return response
 
 
-class ModelCreationWizard(LoginRequiredWizard):
+class ModelCreatorWizard(LoginRequiredWizard):
     """Wizard complet de création de modèle à 3 étapes."""
 
-    name = "Création de modèle"
-    # Assurez-vous que les étapes sont dans le bon ordre et que SaveStep est bien la dernière
-    steps = [ImageUploadStep, ConfigurationStep, WizardThirdStep]
+    name = "Création de modèle de perles"
+    steps = [UploadImage, ConfigureModel, SaveModel]  # Étapes du wizard par ordre
     session_key = "model_creation_wizard"
 
     def get_url_name(self):
@@ -1214,45 +1229,40 @@ class ModelCreationWizard(LoginRequiredWizard):
 
     def get_redirect_kwargs(self):
         """Récupère les paramètres à conserver lors des redirections."""
-        # Conserver l'ID du modèle dans les redirections
-        model_id = self.get_data().get("model_id")
-        if model_id:
-            return {"model_id": model_id}
-        return {}
 
-    def dispatch(self, request, *args, **kwargs):
-        """Vérifie si une réinitialisation du wizard est demandée."""
-        # Réinitialiser le wizard seulement si demandé explicitement
-        if "reset" in request.GET and request.GET.get("reset") == "true":
-            self.reset_wizard()
-            # Forcer le retour à l'étape 1
-            request.session[f"{self.session_key}_step"] = 1
-            messages.info(
-                request,
-                "Assistant réinitialisé. Vous pouvez commencer un nouveau modèle.",
-            )
-            return redirect(reverse(self.get_url_name()))
+        # Conserver l'ID du modèle lors des redirections
+        model_id = self.get_session_data().get("model_id")
+        return {"model_id": model_id} if model_id else {}
 
-        # Auto-reset: détecter arrivée externe (pas une redirection interne du wizard)
-        # Une redirection interne porte le referer du wizard lui-même
-        if request.method == "GET" and self.get_current_step_number() > 1:
-            referer = request.META.get("HTTP_REFERER", "")
-            wizard_url_path = reverse(self.get_url_name())
+    # def dispatch(self, request, *args, **kwargs):
+    #     """Vérifie si une réinitialisation du wizard est demandée."""
 
-            # Si pas de referer OU referer ne vient pas du wizard → arrivée externe
-            # ET pas de paramètre continue explicite → reset
-            if referer and wizard_url_path not in referer:
-                # Arrivée depuis un autre URL (ex: my_models)
-                if not request.GET.get("continue"):
-                    self.reset_wizard()
-                    request.session[f"{self.session_key}_step"] = 1
-                    return redirect(reverse(self.get_url_name()))
+    #     # if bool(request.GET.get("reset")):
+    #     #     self.reset_wizard()
+    #     #     self.set_current_step_number(1)
+    #     #     messages.debug(request, "Assistant a été réinitialisé.")
+    #     #     # url = reverse(self.get_url_name()) + f"?reset={reset_value}"
+    #     #     return redirect(f"{reverse(self.get_url_name(), kwargs={'step_id': self.get_current_step_number()})}")
 
-        # Laisser la classe parente gérer la requête normalement
-        return super().dispatch(request, *args, **kwargs)
+    #     # # if (
+    #     # #     request.method == "GET"
+    #     # #     and self.get_current_step_number() > 1
+    #     # #     and not request.GET.get("continue")
+    #     # # ):
+    #     # #     data = self.get_session_data()
+    #     # #     if "image_data" not in data:
+    #     # #         self.reset_wizard()
+    #     # #         self.set_current_step_number(1)
+    #     # #         return redirect(f"{reverse(self.get_url_name())}?step={self.get_current_step_number()}")
+
+    #     # # Laisser la classe parente gérer la requête normalement
+    #     return super().dispatch(request, *args, **kwargs)
+    
+    def start_wizard(self):
+        self.reset_wizard()
+        return self.go_to_step(1)
 
     def finish_wizard(self):
         """Action finale lorsque le wizard est terminé."""
         self.reset_wizard()
-        # Rediriger vers la liste des modèles de l'utilisateur
         return redirect("beadmodels:my_models")

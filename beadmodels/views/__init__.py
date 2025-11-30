@@ -5,7 +5,7 @@ from .model_views import (
     BeadModelListView,
     BeadModelUpdateView,
 )
-from .wizard_views import ModelCreationWizard
+from .wizard_views import ModelCreatorWizard
 
 __all__ = [
     "BeadModelCreateView",
@@ -13,5 +13,5 @@ __all__ = [
     "BeadModelDetailView",
     "BeadModelListView",
     "BeadModelUpdateView",
-    "ModelCreationWizard",
+    "ModelCreatorWizard",
 ]

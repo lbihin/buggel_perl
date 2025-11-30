@@ -41,7 +41,7 @@
                 <img src="data:image/png;base64,{{ image_base64 }}" alt="Image originale" class="img-fluid border rounded" style="max-height: 300px;" />
               {% else %}
                 <div class="alert alert-warning">
-                  Aucune image n'a été chargée. <a href="{% url 'beadmodels:model_creation_wizard' %}">Retour à l'étape 1</a>.
+                  Aucune image n'a été chargée. <a href="{% url 'beadmodels:create' %}">Retour à l'étape 1</a>.
                 </div>
               {% endif %}
             </div>
@@ -73,7 +73,7 @@
                         name="shape_id" 
                         id="shape_none" 
                         value="" 
-                        {% if not selected_shape_id %}checked{% endif %}
+                        {% if not selected_shape_id %}checked="checked"{% endif %}
                         hx-post="" 
                         hx-trigger="change" 
                         hx-target="#preview-container"
@@ -161,15 +161,15 @@
               <!-- Prévisualisation du modèle pixelisé -->
               <h6 class="mt-4">Modèle pixelisé</h6>
               <div id="preview-container" class="mb-4">
-                {% include 'beadmodels/model_creation/preview_partial.html' %}
+                {% include 'beadmodels/wizard/partials/preview.html' %}
               </div>
               
               <!-- Boutons de navigation -->
               <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <button type="submit" name="previous_step" class="btn btn-outline-secondary me-md-2">
+                <button type="submit" name="q" value="previous" class="btn btn-outline-secondary me-md-2">
                   <i class="bi bi-arrow-left-circle"></i> Retour
                 </button>
-                <button type="submit" name="generate" class="btn btn-primary">
+                <button type="submit" name="q" value="next" class="btn btn-primary">
                   <i class="bi bi-palette"></i> Générer
                 </button>
               </div>

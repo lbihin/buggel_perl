@@ -41,7 +41,7 @@
                   </div>
                 {% else %}
                   <div class="alert alert-warning">
-                    Aucune image générée. <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true">Retour à l'étape 1</a>.
+                    Aucune image générée. <a href="{% url 'beadmodels:create' %}?reset=true">Retour à l'étape 1</a>.
                   </div>
                 {% endif %}
               </div>
@@ -133,7 +133,7 @@
                 <a href="javascript:history.back();" class="btn btn-outline-secondary">
                   <i class="bi bi-arrow-left-circle"></i> Retour à la configuration
                 </a>
-                <a href="{% url 'beadmodels:model_creation_wizard' %}?reset=true" class="btn btn-outline-info">
+                <a href="{% url 'beadmodels:create' %}?q=reset" class="btn btn-outline-info">
                   <i class="bi bi-arrow-clockwise"></i> Créer un nouveau modèle
                 </a>
               </div>

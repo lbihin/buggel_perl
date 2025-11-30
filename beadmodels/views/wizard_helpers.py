@@ -16,50 +16,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 
-class WizardStep(ABC):
-    """Classe abstraite représentant une étape du wizard."""
-
-    name = "Étape"
-    template = None
-    form_class = None
-    position = 0
-
-    def __init__(self, wizard):
-        self.wizard = wizard
-        # Ne plus accéder à request ici car elle n'est pas encore disponible
-        # lors de l'initialisation
-
-    @abstractmethod
-    def handle_get(self, **kwargs):
-        """Gère les requêtes GET pour cette étape."""
-        pass
-
-    @abstractmethod
-    def handle_post(self, **kwargs):
-        """Gère les requêtes POST pour cette étape."""
-        pass
-
-    def get_context_data(self, **kwargs):
-        """Renvoie le contexte pour le template."""
-        context = {
-            "wizard": self.wizard,
-            "current_step": self,
-            "step_name": self.name,
-            "position": self.position,
-            "total_steps": self.wizard.get_total_steps(),
-        }
-        context.update(kwargs)
-        return context
-
-    def render_template(self, context=None):
-        """Rend le template avec le contexte fourni."""
-        if context is None:
-            context = {}
-
-        full_context = self.get_context_data(**context)
-        return render(self.wizard.request, self.template, full_context)
-
-
 class BaseWizard(View):
     """Classe de base pour les wizards modulaires."""
 
@@ -106,19 +62,19 @@ class BaseWizard(View):
         """Renvoie le nombre total d'étapes."""
         return len(self._steps)
 
-    def get_data(self):
+    def get_session_data(self):
         """Récupère les données du wizard stockées en session."""
         return self.request.session.get(self.session_key, {})
 
-    def set_data(self, data):
+    def set_session_data(self, data):
         """Met à jour les données du wizard en session."""
         self.request.session[self.session_key] = data
 
-    def update_data(self, new_data):
+    def update_session_data(self, new_data):
         """Met à jour les données du wizard avec de nouvelles valeurs."""
-        data = self.get_data()
+        data = self.get_session_data()
         data.update(new_data)
-        self.set_data(data)
+        self.set_session_data(data)
 
     def reset_wizard(self):
         """Réinitialise complètement le wizard."""
@@ -161,6 +117,11 @@ class BaseWizard(View):
         pass
 
     @abstractmethod
+    def start_wizard(self):
+        """Action à effectuer quand le wizard démarre."""
+        pass
+
+    @abstractmethod
     def finish_wizard(self):
         """Action à effectuer quand le wizard est terminé."""
         pass
@@ -183,26 +144,27 @@ class BaseWizard(View):
         self.request = request
 
         # Gestion du reset du wizard
-        if self.request.GET.get("reset") == "true":
+        if self.request.GET.get("q") == "reset":
             self.reset_wizard()
-            return self.handle_reset()
+            messages.info(self.request, f"Le {self.name.lower()} a été réinitialisé.")
+            # return self.handle_reset()
 
         # Vérification de la disponibilité des données
-        data = self.get_data()
-        current_step = self.get_current_step_number()
+        # data = self.get_session_data()
+        # current_step = self.get_current_step_number()
 
-        # Si on est à une étape > 1 mais qu'on n'a pas de données d'image, on revient à l'étape 1
-        if current_step > 1 and (
-            "image_data" not in data or not data.get("image_data")
-        ):
-            messages.warning(request, "Veuillez d'abord charger une image.")
-            self.set_current_step_number(1)
-            return redirect(reverse(self.get_url_name()))
+        # # Si on est à une étape > 1 mais qu'on n'a pas de données d'image, on revient à l'étape 1
+        # if current_step > 1 and (
+        #     "image_data" not in data or not data.get("image_data")
+        # ):
+        #     messages.warning(request, "Veuillez d'abord charger une image.")
+        #     self.set_current_step_number(1)
+        #     return redirect(reverse(self.get_url_name()))
 
         # Gestion des boutons précédent/suivant
-        if request.method == "POST":
-            if "previous_step" in request.POST:
-                return self.go_to_previous_step(self.get_redirect_kwargs())
+        # if request.method == "POST":
+        #     if "previous_step" in request.POST:
+        #         return self.go_to_previous_step(self.get_redirect_kwargs())
 
         # Déléguer à l'étape courante
         step = self.get_current_step()
@@ -226,3 +188,47 @@ class LoginRequiredWizard(BaseWizard):
     """Version du wizard qui nécessite une connexion."""
 
     pass
+
+
+class WizardStep(ABC):
+    """Classe abstraite représentant une étape du wizard."""
+
+    name = "Étape"
+    template = None
+    form_class = None
+    position = 0
+
+    def __init__(self, wizard: BaseWizard):
+        self.wizard = wizard
+        # Ne plus accéder à request ici car elle n'est pas encore disponible
+        # lors de l'initialisation
+
+    @abstractmethod
+    def handle_get(self, **kwargs):
+        """Gère les requêtes GET pour cette étape."""
+        pass
+
+    @abstractmethod
+    def handle_post(self, **kwargs):
+        """Gère les requêtes POST pour cette étape."""
+        pass
+
+    def get_context_data(self, **kwargs):
+        """Renvoie le contexte pour le template."""
+        context = {
+            "wizard": self.wizard,
+            "current_step": self,
+            "step_name": self.name,
+            "position": self.position,
+            "total_steps": self.wizard.get_total_steps(),
+        }
+        context.update(kwargs)
+        return context
+
+    def render_template(self, context=None):
+        """Rend le template avec le contexte fourni."""
+        if context is None:
+            context = {}
+
+        full_context = self.get_context_data(**context)
+        return render(self.wizard.request, self.template, full_context)
