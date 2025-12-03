@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 from django.urls import path
 
 from . import views
+from .views import wizard_htmx_views as htmx_views
 
 
 # Redirection vers la page d'accueil principale
@@ -38,6 +39,15 @@ urlpatterns = [
     # # Routes HTMX pour les perles
     # # Routes HTMX pour les formes
 ]
+
+urlpatterns_htmx = [
+    path(
+        "hx/shape/<int:pk>/change/",
+        htmx_views.change_shape_hx_view,
+        name="hx-config-change-shape",
+    ),
+]
+urlpatterns += urlpatterns_htmx
 
 # Ajouter les chemins statiques seulement en développement
 if settings.DEBUG:

@@ -9,6 +9,7 @@ import base64
 import io
 import logging
 from datetime import datetime
+from typing import Self
 
 import numpy as np
 
@@ -19,7 +20,6 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from django.urls import reverse
 from PIL import Image
 
 from ..forms import ImageUploadForm, ModelConfigurationForm
@@ -40,7 +40,7 @@ class UploadImage(WizardStep):
 
         # Initialiser le formulaire
         form = self.form_class()
-        
+
         context = {"form": form, "wizard_step": self.position, "total_steps": 3}
         return self.render_template(context)
         # Nettoyage silencieux des anciens fichiers temporaires (pas de message utilisateur)
@@ -128,12 +128,16 @@ class ConfigureModel(WizardStep):
 
     def handle_get(self, **kwargs):
         """Gère l'affichage du formulaire de configuration."""
+
+        from ..services.image_processing import file_to_base64
+        from shapes.models import BeadShape
+        
         wizard_data = self.wizard.get_session_data()
         image_data = wizard_data.get("image_data", {})
 
         if not image_data:
             messages.error(self.wizard.request, "Veuillez d'abord charger une image.")
-            return redirect("beadmodels:create", kwargs={'q': 'reset'})
+            return redirect("beadmodels:create", kwargs={"q": "reset"})
 
         # Initialiser le formulaire avec les données existantes ou valeurs par défaut
         initial_data = {
@@ -143,15 +147,20 @@ class ConfigureModel(WizardStep):
 
         form = self.form_class(initial=initial_data)
 
-        # Récupérer les boards disponibles
-        boards = BeadBoard.objects.all()
-
         # Récupérer les formes de l'utilisateur
-        from shapes.models import BeadShape
 
-        user_shapes = BeadShape.objects.filter(
+        usr_shapes = BeadShape.objects.filter(
             creator=self.wizard.request.user
         ).order_by("name")
+
+        # Trouver les formes par défaut si aucune n´est par défaut la première est choisie
+        selected_shape_id = wizard_data.get("shape_id")
+
+        if not selected_shape_id:
+            selected_shape_id = (
+                usr_shapes.filter(is_default=True).first() or usr_shapes.first()
+            ).pk
+            self.wizard.update_session_data({"shape_id": selected_shape_id})
 
         # Définir les valeurs de couleurs disponibles
         color_values = [2, 4, 6, 8, 16, 24, 32]
@@ -160,31 +169,21 @@ class ConfigureModel(WizardStep):
         preview_image_base64 = self.generate_preview(wizard_data)
 
         # Fallback pour afficher l'image originale si seulement path présent
-        original_image_base64 = image_data.get("image_base64")
-        if not original_image_base64 and image_data.get("image_path"):
-            try:
-                from ..services.image_processing import file_to_base64
+        original_image_base64 = file_to_base64(image_data.get("image_path"))
 
-                original_image_base64 = file_to_base64(image_data.get("image_path"))
-                # Ne pas écraser l'état sauf nécessité
-            except Exception as e:
-                logger.warning(
-                    f"Impossible de charger l'image originale depuis le chemin: {e}"
-                )
-                original_image_base64 = ""
+        current_step_context = self.get_context_data()
 
         # Construire le contexte
         context = {
             "form": form,
-            "image_base64": original_image_base64 or "",
+            "image_base64": original_image_base64,
             "preview_image_base64": preview_image_base64,
-            "boards": boards,
-            "user_shapes": user_shapes,
-            "has_grid_options": bool(user_shapes.exists()),
+            "user_shapes": usr_shapes,
             "selected_shape_id": wizard_data.get("shape_id"),
             "color_values": color_values,
-            "wizard_step": self.position,
-            "total_steps": 3,
+            "step_nr": self.position,
+            "step_name": self.name,
+            "total_steps": current_step_context.get("total_steps"),
         }
 
         return self.render_template(context)
@@ -193,14 +192,12 @@ class ConfigureModel(WizardStep):
         """Traite le formulaire de configuration."""
         wizard_data = self.wizard.get_session_data()
 
-        
         # Gestion des boutons de navigation
         direction = self.wizard.request.POST.get("q")
         if direction == "previous":
             return self.wizard.go_to_previous_step()
         if direction == "next":
             return self.wizard.go_to_next_step()
-        
 
         # Prévisualisation déclenchée via HTMX
         if getattr(self.wizard.request, "htmx", False):
@@ -240,9 +237,7 @@ class ConfigureModel(WizardStep):
             # Renvoyer uniquement la partie prévisualisation
             context = {"preview_image_base64": preview_image_base64}
 
-            html = render_to_string(
-                "beadmodels/partials/preview.html", context
-            )
+            html = render_to_string("beadmodels/partials/preview.html", context)
             return HttpResponse(html)
 
         # Soumission normale (non HTMX) : deux cas
@@ -814,7 +809,7 @@ class ConfigureModel(WizardStep):
             total_beads = grid_width * grid_height
 
         # Palette via service - utiliser les pixels réduits pour précision
-        from .services.image_processing import compute_palette
+        from ..services.image_processing import compute_palette
 
         palette = compute_palette(
             reduced_pixels=reduced_pixels,
@@ -1223,6 +1218,14 @@ class ModelCreatorWizard(LoginRequiredWizard):
     steps = [UploadImage, ConfigureModel, SaveModel]  # Étapes du wizard par ordre
     session_key = "model_creation_wizard"
 
+    # Chaque étape sera un singleton et clé inhérente à la classe
+    _instance = None
+
+    def __new__(cls) -> Self:
+        if cls._instance is None:
+            cls._instance = super(ModelCreatorWizard, cls).__new__(cls)
+        return cls._instance
+
     def get_url_name(self):
         """Renvoie le nom d'URL du wizard."""
         return "beadmodels:create"
@@ -1231,7 +1234,7 @@ class ModelCreatorWizard(LoginRequiredWizard):
         """Récupère les paramètres à conserver lors des redirections."""
 
         # Conserver l'ID du modèle lors des redirections
-        model_id = self.get_session_data().get("model_id")
+        model_id = self.get_session_data()
         return {"model_id": model_id} if model_id else {}
 
     # def dispatch(self, request, *args, **kwargs):
@@ -1257,7 +1260,7 @@ class ModelCreatorWizard(LoginRequiredWizard):
 
     #     # # Laisser la classe parente gérer la requête normalement
     #     return super().dispatch(request, *args, **kwargs)
-    
+
     def start_wizard(self):
         self.reset_wizard()
         return self.go_to_step(1)

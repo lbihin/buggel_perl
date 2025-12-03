@@ -15,20 +15,19 @@
   </div>
 
   <div class="container mt-3 wizard-container">
-    <h1 class="h3">{{ wizard.name }}</h1>
+    <h1 class="h3">{{ step_name }}</h1>
     
     <div class="progress mb-4">
-      <div class="progress-bar" role="progressbar" style="width: {% widthratio wizard_step total_steps 100 %}%;" 
-          aria-valuenow="{{ wizard_step }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">
-        Étape {{ wizard_step }} sur {{ total_steps }}
+      <div class="progress-bar" role="progressbar" style="width: {% widthratio step_nr total_steps 100 %}%;" 
+          aria-valuenow="{{ step_nr }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">
+        Étape {{ step_nr }} sur {{ total_steps }}
       </div>
     </div>
     
     <div class="card wizard-card">
       <div class="card-header bg-primary text-white">
         <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Étape {{ wizard_step }} : {{ current_step.name }}</h5>
-          <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur {{ total_steps }}</span>
+          <h5 class="mb-0">{{ current_step.name }}</h5>
         </div>
       </div>
       <div class="card-body">
@@ -62,50 +61,32 @@
               {% endif %}
               
               <!-- Formes personnalisées -->
-              {% if has_grid_options %}
-                <div class="mb-3" id="shape-selector">
-                  <label class="form-label">Formes personnalisées</label>
-                  <div class="segmented-control">
-                    <div class="form-check form-check-inline">
-                      <input 
-                        class="btn-check" 
-                        type="radio" 
-                        name="shape_id" 
-                        id="shape_none" 
-                        value="" 
-                        {% if not selected_shape_id %}checked="checked"{% endif %}
-                        hx-post="" 
-                        hx-trigger="change" 
-                        hx-target="#preview-container"
-                        hx-include="[name='color_reduction']:checked, [name='use_available_colors']"
-                        autocomplete="off"
-                      >
-                      <label class="btn btn-outline-primary" for="shape_none">Standard</label>
-                    </div>
-                    {% for shape in user_shapes %}
-                    <div class="form-check form-check-inline">
-                      <input 
-                        class="btn-check" 
-                        type="radio" 
-                        name="shape_id" 
-                        id="shape_{{ shape.id }}" 
-                        value="{{ shape.id }}" 
-                        {% if selected_shape_id|stringformat:"s" == shape.id|stringformat:"s" %}checked{% endif %}
-                        hx-post="" 
-                        hx-trigger="change" 
-                        hx-target="#preview-container"
-                        hx-include="[name='color_reduction']:checked, [name='use_available_colors']"
-                        autocomplete="off"
-                      >
-                      <label class="btn btn-outline-primary" for="shape_{{ shape.id }}">{{ shape.name }}</label>
-                    </div>
-                    {% endfor %}
+              <div class="mb-3" id="shape-selector">
+                <label class="form-label">Formes personnalisées</label>
+                <div class="segmented-control">
+                  {% for shape in user_shapes %}
+                  <div class="form-check form-check-inline">
+                    <input 
+                      class="btn-check" 
+                      type="radio" 
+                      name="shape_id" 
+                      id="shape_{{ shape.id }}" 
+                      value="{{ shape.id }}" 
+                      {% if selected_shape_id|stringformat:"s" == shape.id|stringformat:"s" %}checked{% endif %}
+                      hx-post="{% url 'beadmodels:hx-config-change-shape' shape.id %}" 
+                      hx-trigger="change" 
+                      hx-target="#preview-container"
+                      {% comment %} hx-include="[name='color_reduction']:checked, [name='use_available_colors'], [name='wizard']" {% endcomment %}
+                      autocomplete="off"
+                    >
+                    <label class="btn btn-outline-primary" for="shape_{{ shape.id }}">{{ shape.name }}</label>
                   </div>
-                  <small class="form-text text-muted mt-2 d-block">
-                    Sélectionnez une forme personnalisée pour adapter votre modèle.
-                  </small>
+                  {% endfor %}
                 </div>
-              {% endif %}
+                <small class="form-text text-muted mt-2 d-block">
+                  Sélectionnez une forme personnalisée pour adapter votre modèle.
+                </small>
+              </div>
               
               <!-- Nombre de couleurs -->
               <div class="mb-3">

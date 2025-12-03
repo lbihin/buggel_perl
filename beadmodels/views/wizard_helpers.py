@@ -7,6 +7,7 @@ adaptable à différents types de flux de formulaires multi-étapes.
 """
 
 from abc import ABC, abstractmethod
+from typing_extensions import Self
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -213,7 +214,7 @@ class WizardStep(ABC):
         """Gère les requêtes POST pour cette étape."""
         pass
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
         """Renvoie le contexte pour le template."""
         context = {
             "wizard": self.wizard,
