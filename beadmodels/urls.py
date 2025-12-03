@@ -46,6 +46,11 @@ urlpatterns_htmx = [
         htmx_views.change_shape_hx_view,
         name="hx-config-change-shape",
     ),
+    path(
+        "hx/colors/<int:color_reduction>/change/",
+        htmx_views.change_max_colors_hx_view,
+        name="hx-config-change-max-colors",
+    )
 ]
 urlpatterns += urlpatterns_htmx
 

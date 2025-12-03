@@ -33,3 +33,24 @@ def change_shape_hx_view(request, pk: int):
         "beadmodels/wizard/partials/preview.html",
         {"preview_image_base64": preview_image_base64, "shape": shape_obj},
     )
+
+
+def change_max_colors_hx_view(request, color_reduction: int):
+    """Handle HTMX request to change max colors."""
+
+    if not request.htmx:
+        raise Http404("Cette vue est uniquement accessible via HTMX.")
+
+    # Read/Update wizard data
+    wz = ModelCreatorWizard()
+    wizard_data = wz.get_session_data()
+    wz.update_session_data({"color_reduction": color_reduction})
+    configuration_step: ConfigureModel = wz.get_current_step()
+
+    preview_image_base64 = configuration_step.generate_preview(wizard_data)
+
+    return render(
+        request,
+        "beadmodels/wizard/partials/preview.html",
+        {"preview_image_base64": preview_image_base64},
+    )

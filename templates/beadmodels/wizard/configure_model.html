@@ -106,10 +106,10 @@
                       {% elif not form.color_reduction.value and value == 16 %}
                         checked
                       {% endif %}
-                      hx-post="" 
+                      hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}" 
                       hx-trigger="change" 
                       hx-target="#preview-container"
-                      hx-include="[name='shape_id']:checked, [name='use_available_colors']"
+                      {% comment %} hx-include="[name='shape_id']:checked, [name='use_available_colors']" {% endcomment %}
                       autocomplete="off"
                     >
                     <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
