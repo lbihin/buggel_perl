@@ -8,7 +8,6 @@ adaptable à différents types de flux de formulaires multi-étapes.
 
 from abc import ABC, abstractmethod
 
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -146,7 +145,6 @@ class BaseWizard(View):
         # Gestion du reset du wizard
         if self.request.GET.get("q") == "reset":
             self.reset_wizard()
-            messages.info(self.request, f"Le {self.name.lower()} a été réinitialisé.")
 
         # Déléguer à l'étape courante
         step = self.get_current_step()
@@ -161,7 +159,6 @@ class BaseWizard(View):
 
     def handle_reset(self):
         """Gère la réinitialisation du wizard."""
-        messages.info(self.request, f"Le {self.name.lower()} a été réinitialisé.")
         return redirect(reverse(self.get_url_name()))
 
 
