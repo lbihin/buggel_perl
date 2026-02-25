@@ -3,7 +3,7 @@ import io
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import (
@@ -141,3 +141,35 @@ class BeadModelDownloadView(LoginRequiredMixin, View):
         response = HttpResponse(output.getvalue(), content_type=content_type)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
+
+
+class BeadModelInlineEditView(LoginRequiredMixin, View):
+    """HTMX inline editing for model name and description."""
+
+    def get(self, request, pk, field):
+        """Return an edit form for the given field."""
+        model = get_object_or_404(BeadModel, pk=pk, creator=request.user)
+        return render(
+            request,
+            "beadmodels/partials/inline_edit.html",
+            {"model": model, "field": field},
+        )
+
+    def post(self, request, pk, field):
+        """Save the field and return the display version."""
+        model = get_object_or_404(BeadModel, pk=pk, creator=request.user)
+
+        if field == "name":
+            value = request.POST.get("value", "").strip()
+            if value:
+                model.name = value
+                model.save(update_fields=["name", "updated_at"])
+        elif field == "description":
+            model.description = request.POST.get("value", "").strip()
+            model.save(update_fields=["description", "updated_at"])
+
+        return render(
+            request,
+            "beadmodels/partials/inline_display.html",
+            {"model": model, "field": field},
+        )

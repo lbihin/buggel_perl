@@ -1,0 +1,35 @@
+{% if field == "name" %}
+<form hx-post="{% url 'beadmodels:inline_edit' model.pk field %}"
+      hx-target="#inline-{{ field }}"
+      hx-swap="innerHTML"
+      class="d-flex align-items-center gap-2">
+  {% csrf_token %}
+  <input type="text" name="value" value="{{ model.name }}" class="form-control form-control-lg" autofocus
+         style="font-weight: bold;" maxlength="200" required />
+  <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i></button>
+  <button type="button" class="btn btn-sm btn-outline-secondary"
+          hx-get="{% url 'beadmodels:inline_edit' model.pk field %}"
+          hx-target="#inline-{{ field }}"
+          hx-swap="innerHTML"
+          hx-headers='{"X-Cancel": "true"}'
+          onclick="this.closest('#inline-{{ field }}').innerHTML = this.closest('#inline-{{ field }}').dataset.original; return false;">
+    <i class="bi bi-x-lg"></i>
+  </button>
+</form>
+{% elif field == "description" %}
+<form hx-post="{% url 'beadmodels:inline_edit' model.pk field %}"
+      hx-target="#inline-{{ field }}"
+      hx-swap="innerHTML"
+      class="d-flex align-items-start gap-2">
+  {% csrf_token %}
+  <textarea name="value" class="form-control" rows="2" autofocus
+            placeholder="Ajouter une description…">{{ model.description }}</textarea>
+  <div class="d-flex flex-column gap-1">
+    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+            onclick="this.closest('#inline-{{ field }}').innerHTML = this.closest('#inline-{{ field }}').dataset.original; return false;">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</form>
+{% endif %}

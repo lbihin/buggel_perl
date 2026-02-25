@@ -576,3 +576,41 @@ class ModelCreatorWizard(LoginRequiredWizard):
     def finish_wizard(self):
         self.reset_wizard()
         return redirect("beadmodels:my_models")
+
+    def dispatch(self, request, *args, **kwargs):
+        """Override dispatch to handle model_id → skip to step 2."""
+        self.request = request
+
+        model_id = request.GET.get("model_id")
+        if model_id and request.method == "GET":
+            try:
+                from ..models import BeadModel
+
+                obj = BeadModel.objects.get(pk=model_id, creator=request.user)
+                # Reset wizard and pre-populate with existing image
+                self.reset_wizard()
+                image_b64 = file_to_base64(obj.original_image.path)
+                stored_path = save_temp_image(
+                    __import__(
+                        "django.core.files.base", fromlist=["ContentFile"]
+                    ).ContentFile(base64.b64decode(image_b64), name="original.png")
+                )
+                session_data = {
+                    "image_data": {"image_path": stored_path},
+                    "source_model_id": int(model_id),
+                }
+                # Restore generation settings from metadata if available
+                meta = obj.metadata or {}
+                if meta.get("shape_id"):
+                    session_data["shape_id"] = meta["shape_id"]
+                if meta.get("final_color_reduction"):
+                    session_data["color_reduction"] = meta["final_color_reduction"]
+                self.set_session_data(session_data)
+                self.set_current_step_number(2)
+                step = self.get_current_step()
+                return step.handle_get(**kwargs)
+            except BeadModel.DoesNotExist:
+                messages.error(request, "Modèle introuvable.")
+                return redirect("beadmodels:my_models")
+
+        return super().dispatch(request, *args, **kwargs)

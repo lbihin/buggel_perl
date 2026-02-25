@@ -22,6 +22,11 @@ urlpatterns = [
         views.BeadModelDownloadView.as_view(),
         name="download_default",
     ),
+    path(
+        "model/<int:pk>/inline-edit/<str:field>/",
+        views.BeadModelInlineEditView.as_view(),
+        name="inline_edit",
+    ),
     # Wizard de création de modèle (à 3 étapes)
     path("create/", views.ModelCreatorWizard.as_view(), name="create"),
     # Routes HTMX pour le wizard

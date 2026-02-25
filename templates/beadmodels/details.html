@@ -1,18 +1,65 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+  <style>
+    .editable-field .edit-icon {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .editable-field:hover .edit-icon {
+      opacity: 1;
+    }
+    .editable-field {
+      cursor: pointer;
+    }
+    .editable-field:hover {
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 0.25rem;
+      padding: 2px 6px;
+      margin: -2px -6px;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="row">
     {# === Colonne principale : modèle en perles === #}
     <div class="col-md-8">
-      <h2>{{ model.name }}</h2>
+      {% if user == model.creator %}
+        <div id="inline-name">
+          <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
+            {{ model.name }}
+            <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.6em;"></i>
+          </h2>
+        </div>
+      {% else %}
+        <h2>{{ model.name }}</h2>
+      {% endif %}
+
       <p class="text-muted">
         Créé par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}
         {% if model.updated_at != model.created_at %}
           (Modifié le {{ model.updated_at|date:'d/m/Y' }})
         {% endif %}
       </p>
-      {% if model.description %}
-        <p>{{ model.description }}</p>
+
+      {% if user == model.creator %}
+        <div id="inline-description" class="mb-3">
+          {% if model.description %}
+            <p class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour modifier la description">
+              {{ model.description }}
+              <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.8em;"></i>
+            </p>
+          {% else %}
+            <p class="editable-field text-muted d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour ajouter une description">
+              <i class="bi bi-pencil" style="font-size: 0.8em;"></i> Ajouter une description…
+            </p>
+          {% endif %}
+        </div>
+      {% else %}
+        {% if model.description %}
+          <p>{{ model.description }}</p>
+        {% endif %}
       {% endif %}
 
       {% if model.bead_pattern %}
@@ -93,7 +140,7 @@
             <div class="d-flex flex-wrap gap-1">
               {% for color in model.metadata.palette %}
                 {% if not color.is_background %}
-                  <div class="text-center" style="width: 48px;" title="{{ color.name|default:'?' }} — {{ color.count }} perles">
+                  <div class="text-center" style="width: 48px;" title="{{ color.hex }} — {{ color.count }} perles">
                     <div style="width: 32px; height: 32px; margin: 0 auto; border-radius: 50%; border: 1px solid #ccc; background-color: {{ color.hex }};"></div>
                     <small class="text-muted" style="font-size: .65rem;">{{ color.count }}</small>
                   </div>
@@ -114,9 +161,8 @@
             <div class="d-grid gap-2">
               {% if model.bead_pattern %}
                 <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary"><i class="bi bi-file-earmark-pdf"></i> Télécharger PDF</a>
+                <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Régénérer le motif</a>
               {% endif %}
-              <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Régénérer le motif</a>
-              <a href="{% url 'beadmodels:edit' model.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Renommer / Décrire</a>
               <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Supprimer</a>
             </div>
           </div>

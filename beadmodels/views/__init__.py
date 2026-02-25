@@ -3,6 +3,7 @@ from .model_views import (
     BeadModelDeleteView,
     BeadModelDetailView,
     BeadModelDownloadView,
+    BeadModelInlineEditView,
     BeadModelListView,
     BeadModelUpdateView,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "BeadModelDeleteView",
     "BeadModelDetailView",
     "BeadModelDownloadView",
+    "BeadModelInlineEditView",
     "BeadModelListView",
     "BeadModelUpdateView",
     "ModelCreatorWizard",
