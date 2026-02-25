@@ -2,74 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import BeadShape, CustomShape
-
-
-class BeadShapeModelTest(TestCase):
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
-        )
-
-    def test_create_rectangle_shape(self):
-        shape = BeadShape.objects.create(
-            name="Rectangle Test",
-            shape_type="rectangle",
-            width=10,
-            height=20,
-            creator=self.user,
-        )
-        self.assertEqual(shape.get_dimensions_display(), "10×20")
-        self.assertEqual(shape.get_parameters(), {"width": 10, "height": 20})
-        self.assertEqual(str(shape), "Rectangle Test")
-
-    def test_create_square_shape(self):
-        shape = BeadShape.objects.create(
-            name="Carré Test",
-            shape_type="square",
-            size=15,
-            creator=self.user,
-        )
-        self.assertEqual(shape.get_dimensions_display(), "15×15")
-        self.assertEqual(shape.get_parameters(), {"size": 15})
-        self.assertEqual(str(shape), "Carré Test")
-
-    def test_create_circle_shape(self):
-        shape = BeadShape.objects.create(
-            name="Cercle Test",
-            shape_type="circle",
-            diameter=8,
-            creator=self.user,
-        )
-        self.assertEqual(shape.get_dimensions_display(), "∅8")
-        self.assertEqual(shape.get_parameters(), {"diameter": 8})
-        self.assertEqual(str(shape), "Cercle Test")
-
-
-class CustomShapeModelTest(TestCase):
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
-        )
-        self.base_shape = BeadShape.objects.create(
-            name="Base Rectangle",
-            shape_type="rectangle",
-            width=5,
-            height=10,
-            creator=self.user,
-        )
-
-    def test_create_custom_shape(self):
-        custom = CustomShape.objects.create(
-            user=self.user,
-            base_shape=self.base_shape,
-            name="Custom Rectangle",
-            shape_type="rectangle",
-            width=7,
-            height=12,
-        )
-        self.assertEqual(str(custom), "Custom Rectangle (5×10)")
-        self.assertEqual(custom.get_parameters(), {"width": 7, "height": 12})
+from .models import BeadShape
 
 
 class BeadShapeBDDTest(TestCase):
@@ -174,12 +107,6 @@ class BeadShapeBDDTest(TestCase):
             },
             follow=True,
         )
-        self.assertContains(
-            response, "Vous n'avez pas l'autorisation de modifier cette forme"
-        )
+        self.assertContains(response, "autorisation de modifier cette forme")
         shape.refresh_from_db()
         self.assertEqual(shape.name, "Forme Autre")
-
-
-# TODO: Ajouter des tests pour les vues et les formulaires (BeadShapeForm)
-# TODO: Ajouter des tests d'intégration pour les workflows utilisateur

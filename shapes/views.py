@@ -32,7 +32,7 @@ def _check_shape_permission(request, shape, action="modifier"):
         msg = f"Vous n'avez pas l'autorisation de {action} cette forme"
         if getattr(request, "htmx", False):
             return HttpResponse(msg, status=403)
-        messages.error(request, msg)
+        request.session["error_message"] = msg
         return redirect(reverse("shapes:shape_list_columns"))
     return None
 
@@ -167,16 +167,10 @@ def update_shape(request, shape_id):
         shape.save()
 
         msg = "Forme mise à jour avec succès!"
-        if getattr(request, "htmx", False):
-            request.session["success_message"] = msg
-        else:
-            messages.success(request, msg)
+        request.session["success_message"] = msg
     else:
         msg = "Erreur lors de la mise à jour de la forme."
-        if getattr(request, "htmx", False):
-            request.session["error_message"] = msg
-        else:
-            messages.error(request, msg)
+        request.session["error_message"] = msg
 
     return redirect("shapes:shape_list_columns")
 
@@ -191,20 +185,14 @@ def delete_shape(request, shape_id):
 
     if shape.is_default:
         msg = "Les formes par défaut ne peuvent pas être supprimées"
-        if getattr(request, "htmx", False):
-            request.session["error_message"] = msg
-        else:
-            messages.error(request, msg)
+        request.session["error_message"] = msg
         return redirect("shapes:shape_list_columns")
 
     shape_name = shape.name
     shape.delete()
 
     msg = f"Forme {shape_name} supprimée avec succès!"
-    if getattr(request, "htmx", False):
-        request.session["success_message"] = msg
-    else:
-        messages.success(request, msg)
+    request.session["success_message"] = msg
 
     return redirect("shapes:shape_list_columns")
 
