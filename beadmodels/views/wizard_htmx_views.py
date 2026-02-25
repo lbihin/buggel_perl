@@ -1,61 +1,58 @@
-from __future__ import annotations
+"""
+Vues HTMX pour la mise à jour live de la prévisualisation (Step 2 du wizard).
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from beadmodels.views.wizard_views import ConfigureModel
+Ces vues sont appelées par les boutons radio forme/couleur dans configure_model.html.
+Elles mettent à jour la session, régénèrent la preview via le service
+et renvoient le fragment HTML du preview-container.
+"""
 
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
-from django.shortcuts import render
+from django.http import Http404, HttpResponse
+from django.template.loader import render_to_string
 
-from beadmodels.views.wizard_views import ModelCreatorWizard
-from shapes.models import BeadShape
+from beadmodels.services.image_processing import generate_preview
+from beadmodels.views.wizard_views import _build_preview_kwargs
+
+SESSION_KEY = "model_creation_wizard"
+
+
+def _get_wizard_data(request) -> dict:
+    return request.session.get(SESSION_KEY, {})
+
+
+def _update_wizard_data(request, updates: dict):
+    data = _get_wizard_data(request)
+    data.update(updates)
+    request.session[SESSION_KEY] = data
+
+
+def _render_preview(request) -> HttpResponse:
+    """Regenerate preview from current session state and return HTML fragment."""
+    wizard_data = _get_wizard_data(request)
+    kwargs = _build_preview_kwargs(wizard_data, request.user)
+    result = generate_preview(**kwargs)
+    html = render_to_string(
+        "beadmodels/wizard/partials/preview.html",
+        {"preview_image_base64": result.image_base64},
+    )
+    return HttpResponse(html)
 
 
 @login_required
 def change_shape_hx_view(request, pk: int):
     """Handle HTMX request to change shape."""
-
-    if not request.htmx:
+    if not getattr(request, "htmx", False):
         raise Http404("Cette vue est uniquement accessible via HTMX.")
 
-    shape_obj = BeadShape.objects.filter(id=pk, creator=request.user).first()
-
-    # Create a wizard instance properly and set request
-    wz = ModelCreatorWizard()
-    wz.request = request
-    wizard_data = wz.get_session_data()
-    wz.update_session_data({"shape_id": pk})
-    configuration_step: ConfigureModel = wz.get_current_step()
-
-    preview_image_base64 = configuration_step.generate_preview(wizard_data)
-
-    return render(
-        request,
-        "beadmodels/wizard/partials/preview.html",
-        {"preview_image_base64": preview_image_base64, "shape": shape_obj},
-    )
+    _update_wizard_data(request, {"shape_id": pk})
+    return _render_preview(request)
 
 
 @login_required
 def change_max_colors_hx_view(request, color_reduction: int):
     """Handle HTMX request to change max colors."""
-
-    if not request.htmx:
+    if not getattr(request, "htmx", False):
         raise Http404("Cette vue est uniquement accessible via HTMX.")
 
-    # Create a wizard instance properly and set request
-    wz = ModelCreatorWizard()
-    wz.request = request
-    wizard_data = wz.get_session_data()
-    wz.update_session_data({"color_reduction": color_reduction})
-    configuration_step: ConfigureModel = wz.get_current_step()
-
-    preview_image_base64 = configuration_step.generate_preview(wizard_data)
-
-    return render(
-        request,
-        "beadmodels/wizard/partials/preview.html",
-        {"preview_image_base64": preview_image_base64},
-    )
+    _update_wizard_data(request, {"color_reduction": color_reduction})
+    return _render_preview(request)

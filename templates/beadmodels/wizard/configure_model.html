@@ -76,7 +76,6 @@
                       hx-post="{% url 'beadmodels:hx-config-change-shape' shape.id %}" 
                       hx-trigger="change" 
                       hx-target="#preview-container"
-                      {% comment %} hx-include="[name='color_reduction']:checked, [name='use_available_colors'], [name='wizard']" {% endcomment %}
                       autocomplete="off"
                     >
                     <label class="btn btn-outline-primary" for="shape_{{ shape.id }}">{{ shape.name }}</label>
@@ -109,7 +108,6 @@
                       hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}" 
                       hx-trigger="change" 
                       hx-target="#preview-container"
-                      {% comment %} hx-include="[name='shape_id']:checked, [name='use_available_colors']" {% endcomment %}
                       autocomplete="off"
                     >
                     <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>

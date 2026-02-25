@@ -146,7 +146,7 @@ class ConfigureModel(WizardStep):
 
         if not image_data:
             messages.error(self.wizard.request, "Veuillez d'abord charger une image.")
-            return redirect("beadmodels:create", kwargs={"q": "reset"})
+            return redirect("beadmodels:create")
 
         initial_data = {
             "color_reduction": wizard_data.get("color_reduction", 16),
@@ -189,21 +189,25 @@ class ConfigureModel(WizardStep):
         wizard_data = self.wizard.get_session_data()
         request = self.wizard.request
 
-        # Navigation
+        # Navigation: retour
         direction = request.POST.get("q")
         if direction == "previous":
             return self.wizard.go_to_previous_step()
-        if direction == "next":
-            return self.wizard.go_to_next_step()
 
-        # ---------- HTMX preview ----------
-        if getattr(request, "htmx", False) and "generate" not in request.POST:
-            shape_id = request.POST.get("shape_id", "")
+        # ---------- HTMX live-preview (checkbox "use_available_colors") ----------
+        if getattr(request, "htmx", False) and direction != "next":
+            # Use POST values with session fallback (checkbox HTMX may
+            # not include all form fields)
+            shape_id = request.POST.get("shape_id") or wizard_data.get("shape_id", "")
             color_reduction = _safe_int(
                 request.POST.get("color_reduction"),
                 _safe_int(wizard_data.get("color_reduction"), 16),
             )
-            use_available = request.POST.get("use_available_colors") == "on"
+            use_available = (
+                request.POST.get("use_available_colors") == "on"
+                if "use_available_colors" in request.POST
+                else wizard_data.get("use_available_colors", False)
+            )
 
             self.wizard.update_session_data(
                 {
@@ -218,40 +222,19 @@ class ConfigureModel(WizardStep):
             )
             preview_result = generate_preview(**preview_kwargs)
             html = render_to_string(
-                "beadmodels/partials/preview.html",
+                "beadmodels/wizard/partials/preview.html",
                 {"preview_image_base64": preview_result.image_base64},
             )
             return HttpResponse(html)
 
-        # ---------- Generate button ----------
-        if "generate" in request.POST:
+        # ---------- Générer le modèle final → étape 3 ----------
+        if direction == "next" or "generate" in request.POST:
             return self._handle_generate(wizard_data)
 
-        # ---------- Standard form submit ----------
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            shape_id = request.POST.get("shape_id", "")
-            color_reduction = _safe_int(
-                form.cleaned_data.get("color_reduction")
-                or wizard_data.get("color_reduction"),
-                16,
-            )
-            self.wizard.update_session_data(
-                {
-                    "shape_id": shape_id,
-                    "color_reduction": color_reduction,
-                    "use_available_colors": form.cleaned_data["use_available_colors"],
-                }
-            )
-
-            model_result = self._generate_final_model()
-            model_dict = _store_final_image(_model_result_to_dict(model_result))
-            self.wizard.update_session_data({"final_model": model_dict})
-            return self.wizard.go_to_next_step()
-
-        # Validation errors — re-render with preview
+        # Fallback: re-render step 2
         preview_kwargs = _build_preview_kwargs(wizard_data, request.user)
         preview_result = generate_preview(**preview_kwargs)
+        form = self.form_class(request.POST)
         context = {
             "form": form,
             "image_base64": wizard_data.get("image_data", {}).get("image_base64", ""),
@@ -266,12 +249,16 @@ class ConfigureModel(WizardStep):
     def _handle_generate(self, wizard_data: dict):
         """Handle the 'generate' button: produce final model and go to step 3."""
         request = self.wizard.request
-        shape_id = request.POST.get("shape_id", "")
+        shape_id = request.POST.get("shape_id") or wizard_data.get("shape_id", "")
         color_reduction = _safe_int(
             request.POST.get("color_reduction"),
             _safe_int(wizard_data.get("color_reduction"), 16),
         )
-        use_available = request.POST.get("use_available_colors") == "on"
+        use_available = (
+            request.POST.get("use_available_colors") == "on"
+            if "use_available_colors" in request.POST
+            else wizard_data.get("use_available_colors", False)
+        )
 
         self.wizard.update_session_data(
             {
@@ -308,7 +295,7 @@ class SaveModel(WizardStep):
     """Troisieme etape: Sauvegarde du modele."""
 
     name = "Finalisation"
-    template = "beadmodels/wizard/result.html"
+    template = "wizard_final_step.html"
     position = 3
 
     def handle_get(self, **kwargs):
@@ -402,7 +389,7 @@ class SaveModel(WizardStep):
 
         # Downloads
         if "download" in self.wizard.request.POST:
-            fmt = self.wizard.request.POST.get("download_format", "png")
+            fmt = self.wizard.request.POST.get("download", "png")
             return self._download_model(final_model, fmt)
         if "download_instructions" in self.wizard.request.POST:
             return self._generate_instructions(final_model)
@@ -550,7 +537,7 @@ class SaveModel(WizardStep):
             "date": datetime.now().strftime("%d/%m/%Y"),
             "model_name": "Nouveau modèle",
         }
-        html = render_to_string("beadmodels/model_creation/instructions.html", context)
+        html = render_to_string("beadmodels/wizard/instructions.html", context)
         response = HttpResponse(html, content_type="text/html")
         response["Content-Disposition"] = 'attachment; filename="instructions.html"'
         return response

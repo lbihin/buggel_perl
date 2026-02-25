@@ -36,6 +36,7 @@ class ModelConfigurationForm(forms.Form):
                 "hx-post": "",
                 "hx-trigger": "change",
                 "hx-target": "#preview-container",
+                "hx-include": "[name='shape_id']:checked, [name='color_reduction']:checked",
             }
         ),
     )
