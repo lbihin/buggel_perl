@@ -11,7 +11,7 @@ from PIL import Image
 def test_upload_step_stores_path_not_base64(client):
     user = User.objects.create_user(username="sessuser", password="pass12345")
     client.login(username="sessuser", password="pass12345")
-    url = reverse("beadmodels:model_creation_wizard")
+    url = reverse("beadmodels:create")
     # GET to initialize
     client.get(url)
     # Create in-memory image

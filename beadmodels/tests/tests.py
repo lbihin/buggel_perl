@@ -10,9 +10,12 @@ from django.test import Client
 from django.urls import reverse
 from PIL import Image
 
-from .forms import BeadForm, BeadModelForm
-from .models import Bead, BeadBoard, BeadModel
-from .views import process_image_for_wizard
+from beadmodels.forms import BeadModelForm
+from beadmodels.models import BeadBoard, BeadModel
+from beads.forms import BeadForm
+from beads.models import Bead
+from shapes.forms import BeadShapeForm
+from shapes.models import BeadShape, CustomShape
 
 # ------------------- Fixtures -------------------
 
@@ -261,18 +264,16 @@ class TestForms:
 @pytest.mark.django_db
 class TestViews:
 
-    def test_home_view(self, client, bead_model):
-        """Test la vue d'accueil."""
-        # Correction: Utiliser le namespace beadmodels pour l'URL home
-        url = reverse("beadmodels:home")
-        response = client.get(url)
+    def test_home_view(self, authenticated_client, bead_model):
+        """Test la vue d'accueil (liste des modèles)."""
+        url = reverse("beadmodels:my_models")
+        response = authenticated_client.get(url)
 
         assert response.status_code == 200
-        assert "models" in response.context
 
     def test_model_detail_view_public(self, client, bead_model):
         """Test la vue de détail d'un modèle public."""
-        url = reverse("beadmodels:model_detail", kwargs={"pk": bead_model.pk})
+        url = reverse("beadmodels:details", kwargs={"pk": bead_model.pk})
         response = client.get(url)
 
         assert response.status_code == 200
@@ -292,7 +293,7 @@ class TestViews:
             board=bead_board,
         )
 
-        url = reverse("beadmodels:model_detail", kwargs={"pk": private_model.pk})
+        url = reverse("beadmodels:details", kwargs={"pk": private_model.pk})
         response = client.get(url, follow=True)
 
         # Vérifier la redirection après refus d'accès
@@ -306,7 +307,7 @@ class TestViews:
         bead_model.is_public = False
         bead_model.save()
 
-        url = reverse("beadmodels:model_detail", kwargs={"pk": bead_model.pk})
+        url = reverse("beadmodels:details", kwargs={"pk": bead_model.pk})
         response = authenticated_client.get(url)
 
         assert response.status_code == 200
@@ -314,7 +315,7 @@ class TestViews:
 
     def test_create_model_view(self, user, authenticated_client):
         """Test la vue de création de modèle."""
-        url = reverse("beadmodels:create_model")
+        url = reverse("beadmodels:create")
 
         # Créer une image test spécifiquement pour ce test
         image = Image.new("RGB", (100, 100), color="blue")
@@ -349,7 +350,7 @@ class TestViews:
 
     def test_bead_list_view(self, authenticated_client, bead):
         """Test la vue de liste des perles."""
-        url = reverse("beadmodels:bead_list")
+        url = reverse("beads:list")
         response = authenticated_client.get(url)
 
         assert response.status_code == 200
@@ -358,7 +359,7 @@ class TestViews:
 
     def test_delete_model_view(self, authenticated_client, bead_model):
         """Test la suppression d'un modèle."""
-        url = reverse("beadmodels:delete_model", kwargs={"pk": bead_model.pk})
+        url = reverse("beadmodels:delete", kwargs={"pk": bead_model.pk})
         response = authenticated_client.post(url, follow=True)
 
         # Vérifier que le modèle a été supprimé
@@ -447,7 +448,7 @@ class TestIntegration:
         model_id = model.pk
 
         # 2. VISUALISATION - Accéder à la page de détail du modèle
-        detail_url = reverse("beadmodels:model_detail", kwargs={"pk": model.pk})
+        detail_url = reverse("beadmodels:details", kwargs={"pk": model.pk})
         response = authenticated_client.get(detail_url)
         assert response.status_code == 200
         assert "model" in response.context
@@ -498,7 +499,7 @@ class TestIntegration:
         assert Bead.objects.filter(creator=user).count() == 2
 
         # 2. VISUALISATION - Accéder à la liste des perles
-        bead_list_url = reverse("beadmodels:bead_list")
+        bead_list_url = reverse("beads:list")
         response = authenticated_client.get(bead_list_url)
         assert response.status_code == 200
         assert len(response.context["beads"]) == 2
@@ -575,16 +576,14 @@ class TestIntegration:
 
         # 2. ACCÈS - Tester l'accès aux modèles pour le propriétaire
         # Le propriétaire peut voir ses modèles privés
-        url_private = reverse(
-            "beadmodels:model_detail", kwargs={"pk": private_model.pk}
-        )
+        url_private = reverse("beadmodels:details", kwargs={"pk": private_model.pk})
         response = authenticated_client.get(url_private)
         assert response.status_code == 200
         assert response.context["model"] == private_model
 
         # 3. ACCÈS - Tester l'accès aux modèles pour un autre utilisateur
         # L'autre utilisateur peut voir les modèles publics
-        url_public = reverse("beadmodels:model_detail", kwargs={"pk": public_model.pk})
+        url_public = reverse("beadmodels:details", kwargs={"pk": public_model.pk})
         response = other_client.get(url_public)
         assert response.status_code == 200
         assert response.context["model"] == public_model
@@ -743,7 +742,7 @@ class TestIntegration:
         assert model.is_public is True
 
         # 4. VISUALISATION - L'utilisateur consulte son modèle
-        detail_url = reverse("beadmodels:model_detail", kwargs={"pk": model.pk})
+        detail_url = reverse("beadmodels:details", kwargs={"pk": model.pk})
         response = authenticated_client.get(detail_url)
         assert response.status_code == 200
 
@@ -776,21 +775,23 @@ class TestIntegration:
 
 # ------------------- Tests du nouveau wizard (étape finalisation) -------------------
 
+
 @pytest.mark.django_db
 class TestFinalizeStep:
-    def test_finalize_step_template_and_form(self, authenticated_client, test_image, bead_board):
+    def test_finalize_step_template_and_form(
+        self, authenticated_client, test_image, bead_board
+    ):
         """Vérifie que l'étape 3 affiche le nouveau template avec le formulaire de finalisation."""
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
 
         # Étape 1: upload image
         response1 = authenticated_client.post(url, {"image": test_image}, follow=True)
         assert response1.status_code == 200
 
         # Étape 2: configuration (soumission classique)
-        response2 = authenticated_client.post(url, {
-            "color_reduction": 8,
-            "use_available_colors": "on"
-        }, follow=True)
+        response2 = authenticated_client.post(
+            url, {"color_reduction": 8, "use_available_colors": "on"}, follow=True
+        )
         assert response2.status_code == 200
 
         # Forcer la session sur l'étape 3 si nécessaire
@@ -802,12 +803,14 @@ class TestFinalizeStep:
         assert response3.status_code == 200
         # Vérifie que le nouveau template contient le champ nom et le bouton d'enregistrement
         assert b"Finalisation" in response3.content
-        assert b"Nom du modèle" in response3.content
-        assert b"Enregistrer le modèle" in response3.content
+        assert "Nom du modèle" in response3.content.decode()
+        assert "Enregistrer le modèle" in response3.content.decode()
 
-    def test_finalize_step_save_model(self, authenticated_client, test_image, bead_board):
+    def test_finalize_step_save_model(
+        self, authenticated_client, test_image, bead_board
+    ):
         """Teste qu'un modèle est correctement sauvegardé via l'étape de finalisation."""
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
         authenticated_client.post(url, {"image": test_image}, follow=True)
         authenticated_client.post(url, {"color_reduction": 8}, follow=True)
         session = authenticated_client.session

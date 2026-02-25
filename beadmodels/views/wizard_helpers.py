@@ -7,7 +7,6 @@ adaptable à différents types de flux de formulaires multi-étapes.
 """
 
 from abc import ABC, abstractmethod
-from typing_extensions import Self
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -148,24 +147,6 @@ class BaseWizard(View):
         if self.request.GET.get("q") == "reset":
             self.reset_wizard()
             messages.info(self.request, f"Le {self.name.lower()} a été réinitialisé.")
-            # return self.handle_reset()
-
-        # Vérification de la disponibilité des données
-        # data = self.get_session_data()
-        # current_step = self.get_current_step_number()
-
-        # # Si on est à une étape > 1 mais qu'on n'a pas de données d'image, on revient à l'étape 1
-        # if current_step > 1 and (
-        #     "image_data" not in data or not data.get("image_data")
-        # ):
-        #     messages.warning(request, "Veuillez d'abord charger une image.")
-        #     self.set_current_step_number(1)
-        #     return redirect(reverse(self.get_url_name()))
-
-        # Gestion des boutons précédent/suivant
-        # if request.method == "POST":
-        #     if "previous_step" in request.POST:
-        #         return self.go_to_previous_step(self.get_redirect_kwargs())
 
         # Déléguer à l'étape courante
         step = self.get_current_step()

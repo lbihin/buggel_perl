@@ -149,24 +149,6 @@ class TransformModelForm(forms.Form):
     )
 
 
-
-
-
-class UserPreferencesForm(forms.Form):
-    default_grid_size = forms.IntegerField(
-        label="Taille de grille par défaut",
-        min_value=5,
-        max_value=100,
-        initial=29,
-        widget=forms.NumberInput(attrs={"class": "form-control"}),
-    )
-    public_by_default = forms.BooleanField(
-        label="Rendre mes modèles publics par défaut",
-        required=False,
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
-    )
-
-
 class AppPreferenceForm(forms.ModelForm):
     """Formulaire pour les préférences de l'application."""
 

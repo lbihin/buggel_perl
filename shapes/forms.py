@@ -6,13 +6,13 @@ from shapes.models import BeadShape
 class BeadShapeForm(forms.ModelForm):
     class Meta:
         model = BeadShape
-        fields = ["name", "shape_type"]
+        fields = ["name", "shape_type", "is_shared"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "shape_type": forms.Select(attrs={"class": "form-control"}),
         }
 
-    # Champs dynamiques qui seront ajoutés en fonction du type de forme
+    # Champs dynamiques ajoutés en fonction du type de forme
     width = forms.IntegerField(
         label="Largeur",
         min_value=1,
@@ -42,7 +42,6 @@ class BeadShapeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         instance = kwargs.get("instance")
         if instance and instance.pk:
-            # Pré-remplir les champs spécifiques en fonction du type de forme
             if instance.shape_type == "rectangle":
                 self.fields["width"].initial = instance.width
                 self.fields["height"].initial = instance.height
@@ -55,7 +54,6 @@ class BeadShapeForm(forms.ModelForm):
         cleaned_data = super().clean()
         shape_type = cleaned_data.get("shape_type")
 
-        # Valider les champs en fonction du type de forme
         if shape_type == "rectangle":
             if not cleaned_data.get("width"):
                 self.add_error("width", "La largeur est requise pour un rectangle.")
@@ -74,50 +72,23 @@ class BeadShapeForm(forms.ModelForm):
         instance = super().save(commit=False)
         shape_type = self.cleaned_data.get("shape_type")
 
-        # Enregistrer les champs spécifiques en fonction du type de forme
+        # Enregistrer les dimensions et nettoyer les champs non pertinents
         if shape_type == "rectangle":
             instance.width = self.cleaned_data.get("width")
             instance.height = self.cleaned_data.get("height")
+            instance.size = None
+            instance.diameter = None
         elif shape_type == "square":
             instance.size = self.cleaned_data.get("size")
+            instance.width = None
+            instance.height = None
+            instance.diameter = None
         elif shape_type == "circle":
             instance.diameter = self.cleaned_data.get("diameter")
+            instance.width = None
+            instance.height = None
+            instance.size = None
 
         if commit:
             instance.save()
         return instance
-
-
-SHAPE_CHOICES = [
-    ("rectangle", "Rectangle"),
-    ("square", "Carré"),
-    ("circle", "Rond"),
-]
-
-
-class ShapeForm(forms.Form):
-    shape_type = forms.ChoiceField(
-        choices=SHAPE_CHOICES,
-        label="Type de forme",
-        widget=forms.Select(attrs={"class": "form-select", "id": "shapeType"}),
-    )
-    width = forms.IntegerField(
-        required=False,
-        label="Largeur (pics)",
-        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
-    )
-    height = forms.IntegerField(
-        required=False,
-        label="Hauteur (pics)",
-        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
-    )
-    size = forms.IntegerField(
-        required=False,
-        label="Taille (pics)",
-        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
-    )
-    diameter = forms.IntegerField(
-        required=False,
-        label="Diamètre (pics)",
-        widget=forms.NumberInput(attrs={"class": "form-control", "min": 1}),
-    )

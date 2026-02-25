@@ -18,11 +18,12 @@ def authenticated_client(client, user):
     client.login(username="testuser", password="testpass123")
     return client
 
+
 @pytest.mark.django_db
 class TestUserProfileViews:
     def test_usr_settings_get(self, authenticated_client):
         """Test de la vue usr_settings pour une requête GET."""
-        response = authenticated_client.get("/user/settings/")
+        response = authenticated_client.get("/account/settings/")
         assert response.status_code == 200
         assert "active_tab" in response.context
         assert response.context["active_tab"] == "profile"

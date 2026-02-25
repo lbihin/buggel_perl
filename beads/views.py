@@ -2,7 +2,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView
 
 from .forms import BeadForm
 from .models import Bead
@@ -18,10 +18,13 @@ class BeadListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django.conf import settings
-
-        context["threshold"] = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
-        threshold = context["threshold"]
+        preferences = getattr(self.request, "app_preferences", None)
+        threshold = (
+            getattr(preferences, "bead_low_quantity_threshold", 20)
+            if preferences
+            else 20
+        )
+        context["threshold"] = threshold
         context["low_quantity_beads"] = [
             bead
             for bead in context["beads"]
@@ -54,15 +57,3 @@ class BeadUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Perle mise à jour avec succès!")
         return super().form_valid(form)
-
-
-class BeadDeleteView(LoginRequiredMixin, DeleteView):
-    model = Bead
-    success_url = reverse_lazy("beads:list")
-
-    def get_queryset(self):
-        return Bead.objects.filter(creator=self.request.user)
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, "Perle supprimée avec succès!")
-        return super().delete(request, *args, **kwargs)

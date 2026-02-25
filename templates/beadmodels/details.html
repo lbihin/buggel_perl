@@ -30,7 +30,7 @@
           <div class="card-body">
             <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" />
             <div class="mt-3">
-              <a class="btn btn-secondary" href="{% url 'beadmodels:model_creation_wizard' %}?model_id={{ model.id }}">Modifier la transformation</a>
+              <a class="btn btn-secondary" href="{% url 'beadmodels:create' %}?model_id={{ model.id }}">Modifier la transformation</a>
             </div>
           </div>
         </div>
@@ -67,9 +67,9 @@
           </div>
           <div class="card-body">
             <div class="d-grid gap-2">
-              <a class="btn btn-primary" href="{% url 'beadmodels:model_creation_wizard' %}?model_id={{ model.id }}">Créer un modèle de perles</a>
+              <a class="btn btn-primary" href="{% url 'beadmodels:create' %}?model_id={{ model.id }}">Créer un modèle de perles</a>
               <a href="{% url 'beadmodels:edit' model.pk %}" class="btn btn-primary">Modifier</a>
-              <button type="button" class="btn btn-danger" hx-get="{% url 'beadmodels:delete_modal' model.pk %}" hx-target="body" hx-swap="beforeend">Supprimer</button>
+              <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-danger">Supprimer</a>
             </div>
           </div>
         </div>

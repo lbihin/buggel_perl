@@ -2,8 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from .forms import BeadModelForm
-from .models import BeadBoard
+from beadmodels.forms import BeadModelForm
+from beadmodels.models import BeadBoard
 
 
 @login_required

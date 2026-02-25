@@ -7,7 +7,7 @@ from django.urls import reverse
 def test_model_creation_wizard_reset(client):
     user = User.objects.create_user(username="wizuser", password="pass12345")
     client.login(username="wizuser", password="pass12345")
-    url = reverse("beadmodels:model_creation_wizard")
+    url = reverse("beadmodels:create")
     # First access sets step 1
     resp1 = client.get(url)
     assert resp1.status_code == 200
@@ -30,7 +30,7 @@ def test_model_creation_wizard_previous_button(client):
     """Vérifie que le bouton Retour de l'étape 2 ramène à l'étape 1."""
     user = User.objects.create_user(username="wizprev", password="pass12345")
     client.login(username="wizprev", password="pass12345")
-    url = reverse("beadmodels:model_creation_wizard")
+    url = reverse("beadmodels:create")
     # Étape 1 GET
     client.get(url)
     # Étape 1 POST (upload simulé sans fichier en adaptant): on simule session image_data
@@ -47,7 +47,7 @@ def test_model_creation_wizard_previous_button(client):
         """Vérifie que l'image originale est affichée à l'étape 2 même si seulement path en session."""
         user = User.objects.create_user(username="wizimg", password="pass12345")
         client.login(username="wizimg", password="pass12345")
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
         client.get(url)
         # Créer une petite image temporaire
         from PIL import Image
@@ -70,7 +70,7 @@ def test_model_creation_wizard_previous_button(client):
         """POST sans color_reduction ne doit pas casser et doit utiliser 16 par défaut."""
         user = User.objects.create_user(username="wizcolor", password="pass12345")
         client.login(username="wizcolor", password="pass12345")
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
         client.get(url)
         # Image session
         from PIL import Image
@@ -91,7 +91,7 @@ def test_model_creation_wizard_previous_button(client):
         """Vérifie que le bouton Générer passe à l'étape 3 et que l'image finale est chargée depuis un chemin."""
         user = User.objects.create_user(username="wizgen", password="pass12345")
         client.login(username="wizgen", password="pass12345")
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
         client.get(url)
         from PIL import Image
 
@@ -116,7 +116,7 @@ def test_model_creation_wizard_previous_button(client):
         """Le bouton Générer doit fonctionner même sans champ color_reduction dans POST."""
         user = User.objects.create_user(username="wizgennocolor", password="pass12345")
         client.login(username="wizgennocolor", password="pass12345")
-        url = reverse("beadmodels:model_creation_wizard")
+        url = reverse("beadmodels:create")
         client.get(url)
         from PIL import Image
 

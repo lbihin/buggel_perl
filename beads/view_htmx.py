@@ -8,17 +8,16 @@ from .models import Bead
 def bead_edit_quantity_htmx(request, pk):
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
     if request.GET.get("cancel"):
-        from django.conf import settings
-
-        threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
-        context = {"bead": bead, "threshold": threshold}
-        return render(
-            request, "beads/partials/bead_quantity_display.html", context
+        preferences = getattr(request, "app_preferences", None)
+        threshold = (
+            getattr(preferences, "bead_low_quantity_threshold", 20)
+            if preferences
+            else 20
         )
+        context = {"bead": bead, "threshold": threshold}
+        return render(request, "beads/partials/bead_quantity_display.html", context)
 
-    return render(
-        request, "beads/partials/bead_edit_quantity.html", {"bead": bead}
-    )
+    return render(request, "beads/partials/bead_edit_quantity.html", {"bead": bead})
 
 
 @login_required
@@ -33,21 +32,20 @@ def bead_update_quantity_htmx(request, pk):
                 quantity = int(quantity_str)
                 bead.quantity = max(0, quantity)
             bead.save(update_fields=["quantity"])
-            from django.conf import settings
-
-            threshold = getattr(settings, "BEAD_LOW_QUANTITY_THRESHOLD", 20)
-            context = {"bead": bead, "threshold": threshold}
-            return render(
-                request, "beads/partials/bead_quantity_display.html", context
+            preferences = getattr(request, "app_preferences", None)
+            threshold = (
+                getattr(preferences, "bead_low_quantity_threshold", 20)
+                if preferences
+                else 20
             )
+            context = {"bead": bead, "threshold": threshold}
+            return render(request, "beads/partials/bead_quantity_display.html", context)
         except (ValueError, TypeError):
             context = {
                 "bead": bead,
                 "error": "La quantité doit être un nombre entier positif.",
             }
-            return render(
-                request, "beads/partials/bead_edit_quantity.html", context
-            )
+            return render(request, "beads/partials/bead_edit_quantity.html", context)
 
     return bead_edit_quantity_htmx(request, pk)
 
@@ -56,9 +54,7 @@ def bead_update_quantity_htmx(request, pk):
 def bead_edit_color_htmx(request, pk):
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
     if request.GET.get("cancel"):
-        return render(
-            request, "beads/partials/bead_color_display.html", {"bead": bead}
-        )
+        return render(request, "beads/partials/bead_color_display.html", {"bead": bead})
     return render(request, "beads/partials/bead_edit_color.html", {"bead": bead})
 
 

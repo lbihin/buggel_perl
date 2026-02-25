@@ -163,16 +163,5 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Afficher l'overlay de chargement pendant les requêtes HTMX
-      document.body.addEventListener('htmx:beforeSend', function(event) {
-        document.getElementById('loadingOverlay').classList.remove('d-none');
-      });
-      
-      document.body.addEventListener('htmx:afterOnLoad', function(event) {
-        document.getElementById('loadingOverlay').classList.add('d-none');
-      });
-    });
-  </script>
+  <script src="{% static 'js/loading-overlay.js' %}"></script>
 {% endblock %}

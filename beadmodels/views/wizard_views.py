@@ -9,22 +9,21 @@ import base64
 import io
 import logging
 from datetime import datetime
-from typing import Self
 
 import numpy as np
-
-from beads.models import Bead
-
-logger = logging.getLogger(__name__)
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from PIL import Image
 
+from beads.models import Bead
+
 from ..forms import ImageUploadForm, ModelConfigurationForm
 from ..models import BeadBoard
 from .wizard_helpers import LoginRequiredWizard, WizardStep
+
+logger = logging.getLogger(__name__)
 
 
 class UploadImage(WizardStep):
@@ -42,60 +41,6 @@ class UploadImage(WizardStep):
         form = self.form_class()
 
         context = {"form": form, "wizard_step": self.position, "total_steps": 3}
-        return self.render_template(context)
-        # Nettoyage silencieux des anciens fichiers temporaires (pas de message utilisateur)
-        try:
-            from ..services.image_processing import cleanup_temp_images
-
-            cleanup_temp_images(max_age_seconds=3600)
-        except Exception:
-            pass
-
-        # Vérifier si un model_id est fourni dans la requête
-        model_id = self.wizard.request.GET.get("model_id")
-        current_data = self.wizard.request.session.get(self.wizard.session_key, {})
-        current_model_id = current_data.get("model_id")
-
-        # On force le reset du wizard dans deux cas :
-        # 1. Si explicitement demandé par ?reset=true
-        # 2. Si un nouvel ID de modèle est fourni qui diffère de celui en session
-        reset_wizard = self.wizard.request.GET.get("reset") == "true" or (
-            model_id and str(current_model_id) != str(model_id)
-        )
-
-        if reset_wizard:
-            self.wizard.reset_wizard()
-            if model_id:
-                messages.info(
-                    self.wizard.request, f"Utilisation du modèle ID {model_id}"
-                )
-                # Réinitialiser mais conserver l'ID du modèle
-                self.wizard.update_session_data({"model_id": model_id})
-
-        wizard_data = self.wizard.get_session_data()
-
-        # Si on est explicitement à l'étape 1, on réinitialise les données
-        # sauf si on vient de faire un reset explicite
-        current_step = self.wizard.get_current_step_number()
-        # Nouveau comportement: toute arrivée sur l'étape 1 démarre un wizard frais
-        if current_step == 1 and not reset_wizard:
-            model_id_to_keep = wizard_data.get("model_id")
-            self.wizard.reset_wizard()
-            if model_id_to_keep or model_id:
-                self.wizard.update_session_data(
-                    {"model_id": model_id or model_id_to_keep}
-                )
-
-        # Initialiser le formulaire
-        form = self.form_class()
-
-        # Construire le contexte
-        context = {"form": form, "wizard_step": self.position, "total_steps": 3}
-
-        # Forcer l'étape courante dans la session
-        self.wizard.request.session[f"{self.wizard.session_key}_step"] = 1
-        self.wizard.request.session.modified = True
-
         return self.render_template(context)
 
     def handle_post(self, **kwargs):
@@ -129,9 +74,10 @@ class ConfigureModel(WizardStep):
     def handle_get(self, **kwargs):
         """Gère l'affichage du formulaire de configuration."""
 
-        from ..services.image_processing import file_to_base64
         from shapes.models import BeadShape
-        
+
+        from ..services.image_processing import file_to_base64
+
         wizard_data = self.wizard.get_session_data()
         image_data = wizard_data.get("image_data", {})
 
@@ -1218,48 +1164,14 @@ class ModelCreatorWizard(LoginRequiredWizard):
     steps = [UploadImage, ConfigureModel, SaveModel]  # Étapes du wizard par ordre
     session_key = "model_creation_wizard"
 
-    # Chaque étape sera un singleton et clé inhérente à la classe
-    _instance = None
-
-    def __new__(cls) -> Self:
-        if cls._instance is None:
-            cls._instance = super(ModelCreatorWizard, cls).__new__(cls)
-        return cls._instance
-
     def get_url_name(self):
         """Renvoie le nom d'URL du wizard."""
         return "beadmodels:create"
 
     def get_redirect_kwargs(self):
         """Récupère les paramètres à conserver lors des redirections."""
-
-        # Conserver l'ID du modèle lors des redirections
         model_id = self.get_session_data()
         return {"model_id": model_id} if model_id else {}
-
-    # def dispatch(self, request, *args, **kwargs):
-    #     """Vérifie si une réinitialisation du wizard est demandée."""
-
-    #     # if bool(request.GET.get("reset")):
-    #     #     self.reset_wizard()
-    #     #     self.set_current_step_number(1)
-    #     #     messages.debug(request, "Assistant a été réinitialisé.")
-    #     #     # url = reverse(self.get_url_name()) + f"?reset={reset_value}"
-    #     #     return redirect(f"{reverse(self.get_url_name(), kwargs={'step_id': self.get_current_step_number()})}")
-
-    #     # # if (
-    #     # #     request.method == "GET"
-    #     # #     and self.get_current_step_number() > 1
-    #     # #     and not request.GET.get("continue")
-    #     # # ):
-    #     # #     data = self.get_session_data()
-    #     # #     if "image_data" not in data:
-    #     # #         self.reset_wizard()
-    #     # #         self.set_current_step_number(1)
-    #     # #         return redirect(f"{reverse(self.get_url_name())}?step={self.get_current_step_number()}")
-
-    #     # # Laisser la classe parente gérer la requête normalement
-    #     return super().dispatch(request, *args, **kwargs)
 
     def start_wizard(self):
         self.reset_wizard()
