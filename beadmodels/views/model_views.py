@@ -1,7 +1,11 @@
+import io
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -9,6 +13,7 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
+from PIL import Image
 
 from ..forms import BeadModelForm, TransformModelForm
 from ..models import BeadModel
@@ -99,3 +104,40 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Votre modèle a été supprimé avec succès!")
         return super().form_valid(form)
+
+
+class BeadModelDownloadView(LoginRequiredMixin, View):
+    """Download the bead pattern image as PDF or PNG."""
+
+    def get(self, request, pk, fmt="pdf"):
+        model = get_object_or_404(BeadModel, pk=pk)
+
+        # Access control
+        is_owner = request.user.is_authenticated and model.creator == request.user
+        if not model.is_public and not is_owner:
+            raise Http404
+
+        if not model.bead_pattern:
+            messages.error(request, "Ce modèle n'a pas encore de motif en perles.")
+            return redirect("beadmodels:details", pk=pk)
+
+        img = Image.open(model.bead_pattern.path)
+        output = io.BytesIO()
+        safe_name = model.name.replace(" ", "_")[:50]
+
+        if fmt == "png":
+            img.save(output, format="PNG")
+            content_type = "image/png"
+            filename = f"{safe_name}.png"
+        else:
+            # PDF via Pillow
+            if img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(output, format="PDF", resolution=150)
+            content_type = "application/pdf"
+            filename = f"{safe_name}.pdf"
+
+        output.seek(0)
+        response = HttpResponse(output.getvalue(), content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response

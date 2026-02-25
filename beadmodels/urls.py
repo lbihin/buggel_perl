@@ -12,6 +12,16 @@ urlpatterns = [
     path("model/<int:pk>/", views.BeadModelDetailView.as_view(), name="details"),
     path("model/<int:pk>/edit/", views.BeadModelUpdateView.as_view(), name="edit"),
     path("model/<int:pk>/delete/", views.BeadModelDeleteView.as_view(), name="delete"),
+    path(
+        "model/<int:pk>/download/<str:fmt>/",
+        views.BeadModelDownloadView.as_view(),
+        name="download",
+    ),
+    path(
+        "model/<int:pk>/download/",
+        views.BeadModelDownloadView.as_view(),
+        name="download_default",
+    ),
     # Wizard de création de modèle (à 3 étapes)
     path("create/", views.ModelCreatorWizard.as_view(), name="create"),
     # Routes HTMX pour le wizard
