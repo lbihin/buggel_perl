@@ -30,33 +30,34 @@
         {% if palette %}
           <div class="row">
             {% for c in palette %}
+              {% if not c.is_background %}
               <div class="col-6 col-lg-4 mb-2">
                 <div class="border rounded p-2 h-100">
                   <div class="d-flex align-items-center mb-1">
-                    <span class="rounded me-2" style="display:inline-block;width:24px;height:24px;background:{{ c.color }};"></span>
+                    <span class="rounded me-2" style="display:inline-block;width:24px;height:24px;background:{{ c.color }};border:1px solid #ddd;"></span>
                     <strong>{{ c.count }} perles</strong>
+                    <small class="text-muted ms-1">({{ c.percentage }}%)</small>
                   </div>
                   {% if c.matches %}
                     <small class="text-muted">Correspondances:</small>
-                    <ul class="list-unstyled mb-1">
+                    <ul class="list-unstyled mb-0">
                       {% for m in c.matches %}
                         <li><span style="background:{{ m.color }};display:inline-block;width:12px;height:12px;border:1px solid #ccc;"></span> {{ m.name }} ({{ m.quantity|default:'-' }})</li>
                       {% endfor %}
                     </ul>
                   {% endif %}
-                  {% if forloop.counter0 not in excluded_colors %}
-                    <form method="post" hx-post="" hx-target="#palette-container" hx-swap="outerHTML">
-                      {% csrf_token %}
-                      <input type="hidden" name="exclude_color_index" value="{{ forloop.counter0 }}" />
-                      <button class="btn btn-sm btn-outline-danger w-100">Exclure</button>
-                    </form>
-                  {% else %}
-                    <span class="badge bg-danger">Exclue</span>
-                  {% endif %}
                 </div>
               </div>
+              {% endif %}
             {% endfor %}
           </div>
+          {% for c in palette %}
+            {% if c.is_background %}
+            <div class="mt-2">
+              <small class="text-muted"><i class="bi bi-info-circle"></i> Fond détecté : <span style="display:inline-block;width:12px;height:12px;background:{{ c.color }};border:1px solid #ccc;"></span> {{ c.hex }} ({{ c.count }} perles exclues du décompte)</small>
+            </div>
+            {% endif %}
+          {% endfor %}
         {% else %}
           <p class="text-muted">Aucune palette disponible.</p>
         {% endif %}
@@ -71,7 +72,6 @@
         {{ form.non_field_errors }}
         <div class="mb-3">{{ form.name.label_tag }} {{ form.name }} {{ form.name.errors }}</div>
         <div class="mb-3">{{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}</div>
-        <div class="mb-3">{{ form.board.label_tag }} {{ form.board }} {{ form.board.errors }}</div>
         <div class="form-check mb-3">
           {{ form.is_public }} {{ form.is_public.label_tag }}
           <small class="form-text text-muted">Rendre visible aux autres utilisateurs</small>
@@ -79,10 +79,10 @@
         <div class="mb-3">{{ form.tags.label_tag }} {{ form.tags }} {{ form.tags.errors }}</div>
         <hr />
         <div class="d-grid gap-2">
-          <button type="submit" name="save" class="btn btn-success">Enregistrer le modèle</button>
-          <button type="submit" name="download" value="png" class="btn btn-outline-primary">Télécharger PNG</button>
-          <button type="submit" name="download_instructions" class="btn btn-outline-secondary">Instructions</button>
-          <button type="submit" name="previous_step" class="btn btn-outline-dark">Retour étape 2</button>
+          <button type="submit" name="save" class="btn btn-success"><i class="bi bi-save"></i> Enregistrer le modèle</button>
+          <button type="submit" name="download" value="png" class="btn btn-outline-primary"><i class="bi bi-download"></i> Télécharger PNG</button>
+          <button type="submit" name="download_instructions" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-text"></i> Instructions</button>
+          <button type="submit" name="previous_step" class="btn btn-outline-dark"><i class="bi bi-arrow-left-circle"></i> Retour étape 2</button>
         </div>
       </div>
     </form>

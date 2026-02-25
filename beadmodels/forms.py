@@ -59,14 +59,12 @@ class BeadModelFinalizeForm(forms.ModelForm):
 
     class Meta:
         model = BeadModel
-        fields = ["name", "description", "board", "is_public"]
+        fields = ["name", "description", "is_public"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "placeholder": "Nom du modèle",
-                    "hx-trigger": "keyup changed delay:300ms",
-                    "hx-target": "#model-preview-title",
                 }
             ),
             "description": forms.Textarea(
@@ -76,19 +74,11 @@ class BeadModelFinalizeForm(forms.ModelForm):
                     "placeholder": "Description (optionnelle)",
                 }
             ),
-            "board": forms.Select(
-                attrs={
-                    "class": "form-select",
-                    "hx-trigger": "change",
-                    "hx-target": "#board-preview",
-                }
-            ),
             "is_public": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         labels = {
             "name": "Nom du modèle",
             "description": "Description",
-            "board": "Support",
             "is_public": "Rendre public",
         }
 

@@ -119,6 +119,47 @@ def reduce_colors(
     return reduced_pixels.astype("uint8")
 
 
+def _detect_background_color(
+    reduced_pixels: np.ndarray,
+    content_mask: Optional[np.ndarray] = None,
+) -> Optional[tuple]:
+    """Detect the background color by sampling edge pixels.
+
+    Heuristic: the most frequent color among the 1-pixel border of the grid
+    is likely the background.  If that color represents > 15% of all content
+    pixels it is flagged as background.
+    """
+    h, w = reduced_pixels.shape[:2]
+    if h < 3 or w < 3:
+        return None
+
+    # Collect border pixels (top, bottom, left, right rows/cols)
+    border = np.concatenate(
+        [
+            reduced_pixels[0, :],  # top row
+            reduced_pixels[-1, :],  # bottom row
+            reduced_pixels[1:-1, 0],  # left col (excl. corners)
+            reduced_pixels[1:-1, -1],  # right col (excl. corners)
+        ]
+    )
+
+    # Most frequent border color
+    unique, counts = np.unique(border, axis=0, return_counts=True)
+    bg_color = tuple(unique[np.argmax(counts)])
+
+    # Verify it is significant inside the content area
+    if content_mask is not None:
+        content_pixels = reduced_pixels[content_mask]
+    else:
+        content_pixels = reduced_pixels.reshape(-1, 3)
+
+    matches = np.all(content_pixels == bg_color, axis=1)
+    ratio = matches.sum() / content_pixels.shape[0]
+    if ratio > 0.15:
+        return bg_color
+    return None
+
+
 def compute_palette(
     total_beads: int = 0,
     reduced_pixels: Optional[np.ndarray] = None,
@@ -137,18 +178,25 @@ def compute_palette(
     else:
         return []
 
+    # Detect background
+    bg_color = None
+    if reduced_pixels is not None:
+        bg_color = _detect_background_color(reduced_pixels, content_mask)
+
     unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
     safe_total = total_beads if total_beads > 0 else pixels.shape[0]
     palette = []
     for color, count in zip(unique_colors, counts):
         r, g, b = int(color[0]), int(color[1]), int(color[2])
         percentage = (int(count) / safe_total) * 100
+        is_bg = bg_color is not None and (r, g, b) == bg_color
         palette.append(
             {
                 "color": f"rgb({r}, {g}, {b})",
                 "hex": f"#{r:02x}{g:02x}{b:02x}",
                 "count": int(count),
                 "percentage": round(percentage, 1),
+                "is_background": is_bg,
             }
         )
     palette.sort(key=lambda x: x["count"], reverse=True)

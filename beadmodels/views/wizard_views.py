@@ -356,6 +356,12 @@ class SaveModel(WizardStep):
             final_model.get("palette", []), user_beads
         )
 
+        # Compute bead counts excluding background
+        total_beads = final_model.get("total_beads", 0)
+        bg_beads = sum(c["count"] for c in palette if c.get("is_background"))
+        useful_beads = total_beads - bg_beads
+        useful_colors = sum(1 for c in palette if not c.get("is_background"))
+
         context = {
             "image_base64": final_image_base64,
             "grid_width": final_model.get("grid_width", 29),
@@ -363,21 +369,13 @@ class SaveModel(WizardStep):
             "shape_id": final_model.get("shape_id"),
             "shape_name": shape_name,
             "shape_type": shape_type,
-            "total_beads": final_model.get("total_beads", 0),
+            "total_beads": useful_beads,
             "palette": palette,
-            "beads_count": len(final_model.get("palette", [])),
+            "beads_count": useful_colors,
             "wizard_step": self.position,
             "total_steps": 3,
             "form": form,
-            "boards": BeadBoard.objects.all(),
             "user_has_beads": user_beads.exists(),
-            "default_board": default_board,
-            "board_preview_url": (
-                f"/media/board_previews/{default_board.pk}.png"
-                if default_board
-                else None
-            ),
-            "excluded_colors": final_model.get("excluded_colors", []),
         }
         return self.render_template(context)
 
@@ -407,6 +405,11 @@ class SaveModel(WizardStep):
                 new_model = save_bead_model_from_wizard(
                     self.wizard.request.user, wizard_data, form
                 )
+                # Set board from session (not in form anymore)
+                board_id = wizard_data.get("board_id")
+                if board_id:
+                    new_model.board_id = board_id
+                    new_model.save(update_fields=["board"])
             except Exception as e:
                 logger.exception("Erreur lors de la sauvegarde du modele: %s", e)
                 messages.error(
@@ -440,6 +443,12 @@ class SaveModel(WizardStep):
             except BeadShape.DoesNotExist:
                 pass
 
+        palette = final_model.get("palette", [])
+        total_beads = final_model.get("total_beads", 0)
+        bg_beads = sum(c["count"] for c in palette if c.get("is_background"))
+        useful_beads = total_beads - bg_beads
+        useful_colors = sum(1 for c in palette if not c.get("is_background"))
+
         context = {
             "image_base64": final_model.get("image_base64", ""),
             "grid_width": final_model.get("grid_width", 29),
@@ -447,14 +456,12 @@ class SaveModel(WizardStep):
             "shape_id": final_model.get("shape_id"),
             "shape_name": shape_name,
             "shape_type": shape_type,
-            "total_beads": final_model.get("total_beads", 0),
-            "palette": final_model.get("palette", []),
-            "beads_count": len(final_model.get("palette", [])),
+            "total_beads": useful_beads,
+            "palette": palette,
+            "beads_count": useful_colors,
             "wizard_step": self.position,
             "total_steps": 3,
             "form": form,
-            "boards": BeadBoard.objects.all(),
-            "excluded_colors": final_model.get("excluded_colors", []),
         }
         return self.render_template(context)
 
