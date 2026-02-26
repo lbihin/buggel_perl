@@ -2,6 +2,7 @@
 
 {% block extra_css %}
   <style>
+    /* Inline edit */
     .editable-field .edit-icon {
       opacity: 0;
       transition: opacity 0.2s;
@@ -11,60 +12,127 @@
     }
     .editable-field {
       cursor: pointer;
+      transition: background 0.15s;
     }
     .editable-field:hover {
-      background: rgba(0, 0, 0, 0.03);
-      border-radius: 0.25rem;
-      padding: 2px 6px;
-      margin: -2px -6px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 0.375rem;
+      padding: 2px 8px;
+      margin: -2px -8px;
     }
-    .hover-overlay {
+    
+    /* Pattern image showcase */
+    .pattern-showcase {
       position: relative;
-    }
-    .hover-overlay .hover-actions {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      opacity: 0;
-      transition: opacity 0.2s;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 1rem;
+      padding: 1.5rem;
       display: flex;
-      gap: 4px;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
     }
-    .hover-overlay:hover .hover-actions {
+    .pattern-showcase img {
+      image-rendering: pixelated;
+      max-height: 550px;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+    .pattern-showcase .overlay-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .pattern-showcase:hover .overlay-btn {
       opacity: 1;
+    }
+    
+    /* Download bar */
+    .download-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+    }
+    
+    /* Original image thumbnail */
+    .original-thumb {
+      width: 100%;
+      max-height: 140px;
+      object-fit: contain;
+      border-radius: 0.5rem;
+    }
+    
+    /* Stat items */
+    .stat-item {
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #212529;
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    
+    /* Palette swatch */
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      display: inline-block;
+      transition: transform 0.15s;
+      cursor: default;
+    }
+    .color-swatch:hover {
+      transform: scale(1.25);
+      z-index: 1;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="row">
-    {# === Colonne principale : modèle en perles === #}
-    <div class="col-md-8">
+  {# === En-tête === #}
+  <div class="d-flex align-items-start justify-content-between mb-4">
+    <div class="flex-grow-1">
       {% if user == model.creator %}
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div id="inline-name" class="flex-grow-1">
-            <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
-              {{ model.name }}
-              <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.6em;"></i>
-            </h2>
-          </div>
-          <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer ce modèle"><i class="bi bi-trash"></i></a>
+        <div id="inline-name">
+          <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-1" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
+            {{ model.name }}
+            <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.55em;"></i>
+          </h2>
         </div>
       {% else %}
-        <h2>{{ model.name }}</h2>
+        <h2 class="mb-1">{{ model.name }}</h2>
       {% endif %}
 
-      <p class="text-muted">
-        Créé par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}
-        {% if model.updated_at != model.created_at %}
-          (Modifié le {{ model.updated_at|date:'d/m/Y' }})
+      <div class="text-muted small">
+        <i class="bi bi-person"></i> {{ model.creator.username }}
+        <span class="mx-1">&middot;</span>
+        <i class="bi bi-calendar3"></i> {{ model.created_at|date:'d/m/Y' }}
+        <span class="mx-1">&middot;</span>
+        {% if model.is_public %}
+          <span class="badge bg-success-subtle text-success">Public</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary">Privé</span>
         {% endif %}
-      </p>
+      </div>
 
       {% if user == model.creator %}
-        <div id="inline-description" class="mb-3">
+        <div id="inline-description" class="mt-2">
           {% if model.description %}
-            <p class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour modifier la description">
+            <p class="editable-field d-inline-flex align-items-center gap-2 mb-0 text-secondary" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour modifier la description">
               {{ model.description }}
               <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.8em;"></i>
             </p>
@@ -76,103 +144,114 @@
         </div>
       {% else %}
         {% if model.description %}
-          <p>{{ model.description }}</p>
+          <p class="text-secondary mt-2 mb-0">{{ model.description }}</p>
         {% endif %}
       {% endif %}
+    </div>
 
+    {% if user == model.creator %}
+      <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-sm btn-outline-danger ms-3 mt-1" title="Supprimer ce modèle"><i class="bi bi-trash"></i></a>
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    {# === Colonne principale === #}
+    <div class="col-lg-8">
       {% if model.bead_pattern %}
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Modèle en perles</h5>
-          </div>
-          <div class="card-body text-center hover-overlay">
-            <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" style="image-rendering: pixelated; max-height: 600px;" />
-            {% if user == model.creator %}
-              <div class="hover-actions">
-                <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-sm btn-light shadow-sm" title="Régénérer le motif"><i class="bi bi-arrow-repeat"></i></a>
+        {# Showcase du motif #}
+        <div class="pattern-showcase mb-3">
+          <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" />
+          {% if user == model.creator %}
+            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="overlay-btn btn btn-light btn-sm shadow-sm rounded-pill" title="Régénérer le motif avec d'autres paramètres"><i class="bi bi-arrow-repeat me-1"></i> Régénérer</a>
+          {% endif %}
+        </div>
+
+        {# Barre de téléchargement #}
+        <div class="download-bar">
+          <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary rounded-pill px-4"><i class="bi bi-download me-1"></i> Télécharger PDF</a>
+          <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-image me-1"></i> PNG</a>
+        </div>
+      {% else %}
+        <div class="pattern-showcase mb-3 flex-column text-center text-muted">
+          <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: .3;"></i>
+          <p class="mt-2 mb-0">Pas encore de motif en perles.</p>
+          {% if user == model.creator %}
+            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-primary rounded-pill mt-3"><i class="bi bi-magic me-1"></i> Générer le modèle</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# === Colonne latérale === #}
+    <div class="col-lg-4">
+      {# Image originale — petit rappel #}
+      <div class="mb-4">
+        <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-image me-1"></i> Image originale</h6>
+        <div class="bg-light rounded-3 p-3 text-center">
+          <img src="{{ model.original_image.url }}" class="original-thumb" alt="Image originale" />
+        </div>
+      </div>
+
+      {# Statistiques #}
+      {% if model.metadata.total_beads or model.metadata.grid_width %}
+        <div class="mb-4">
+          <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-bar-chart me-1"></i> Statistiques</h6>
+          <div class="row g-2">
+            {% if model.metadata.grid_width %}
+              <div class="col-4">
+                <div class="stat-item bg-light rounded-3 py-2">
+                  <div class="stat-value">{{ model.metadata.grid_width }}×{{ model.metadata.grid_height }}</div>
+                  <div class="stat-label">Grille</div>
+                </div>
+              </div>
+            {% endif %}
+            {% if model.metadata.total_beads %}
+              <div class="col-4">
+                <div class="stat-item bg-light rounded-3 py-2">
+                  <div class="stat-value">{{ model.metadata.total_beads }}</div>
+                  <div class="stat-label">Perles</div>
+                </div>
+              </div>
+            {% endif %}
+            {% if model.metadata.palette %}
+              <div class="col-4">
+                <div class="stat-item bg-light rounded-3 py-2">
+                  <div class="stat-value">{{ model.metadata.palette|length }}</div>
+                  <div class="stat-label">Couleurs</div>
+                </div>
               </div>
             {% endif %}
           </div>
-          <div class="card-footer bg-white d-flex justify-content-center gap-2">
-            <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary"><i class="bi bi-download"></i> Télécharger PDF</a>
-            <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> PNG</a>
-          </div>
-        </div>
-      {% else %}
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i>
-          Ce modèle n'a pas encore de motif en perles.{% if user == model.creator %}
-            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}">Générer le modèle</a>
+          {% if model.board %}
+            <div class="mt-2 small text-muted">
+              <i class="bi bi-grid me-1"></i> Support : {{ model.board.name }} ({{ model.board.width_pegs }}×{{ model.board.height_pegs }})
+            </div>
           {% endif %}
         </div>
       {% endif %}
 
-      {# Image originale en petit rappel #}
-      <div class="card">
-        <div class="card-header">
-          <h6 class="card-title mb-0 text-muted">Image originale</h6>
-        </div>
-        <div class="card-body">
-          <img src="{{ model.original_image.url }}" class="img-fluid" alt="Image originale" style="max-height: 200px;" />
-        </div>
-      </div>
-    </div>
-
-    {# === Colonne latérale : infos + palette === #}
-    <div class="col-md-4">
-      <div class="card mb-3">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Informations</h5>
-        </div>
-        <div class="card-body">
-          <ul class="list-unstyled mb-0">
-            {% if model.board %}
-              <li>
-                <strong>Support :</strong> {{ model.board.name }} ({{ model.board.width_pegs }}×{{ model.board.height_pegs }})
-              </li>
-            {% endif %}
-            {% if model.metadata.grid_width %}
-              <li>
-                <strong>Grille :</strong> {{ model.metadata.grid_width }}×{{ model.metadata.grid_height }} picots
-              </li>
-            {% endif %}
-            {% if model.metadata.total_beads %}
-              <li>
-                <strong>Perles :</strong> {{ model.metadata.total_beads }}
-              </li>
-            {% endif %}
-            <li>
-              <strong>Visibilité :</strong>
-              {% if model.is_public %}
-                <span class="badge bg-success">Public</span>
-              {% else %}
-                <span class="badge bg-secondary">Privé</span>
-              {% endif %}
-            </li>
-          </ul>
-        </div>
-      </div>
-
       {# Palette de couleurs #}
       {% if model.metadata.palette %}
-        <div class="card mb-3">
-          <div class="card-header">
-            <h6 class="card-title mb-0">Palette ({{ model.metadata.palette|length }} couleurs)</h6>
-          </div>
-          <div class="card-body p-2">
-            <div class="d-flex flex-wrap gap-1">
-              {% for color in model.metadata.palette %}
-                {% if not color.is_background %}
-                  <div class="text-center" style="width: 48px;" title="{{ color.hex }} — {{ color.count }} perles">
-                    <div style="width: 32px; height: 32px; margin: 0 auto; border-radius: 50%; border: 1px solid #ccc; background-color: {{ color.hex }};"></div>
-                    <small class="text-muted" style="font-size: .65rem;">{{ color.count }}</small>
-                  </div>
-                {% endif %}
-              {% endfor %}
-            </div>
+        <div class="mb-4">
+          <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-palette me-1"></i> Palette</h6>
+          <div class="d-flex flex-wrap gap-1">
+            {% for color in model.metadata.palette %}
+              {% if not color.is_background %}
+                <span class="color-swatch" style="background-color: {{ color.hex }};" title="{{ color.hex }} — {{ color.count }} perles ({{ color.percentage }}%)" data-bs-toggle="tooltip"></span>
+              {% endif %}
+            {% endfor %}
           </div>
         </div>
       {% endif %}
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    // Init Bootstrap tooltips on palette swatches
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      new bootstrap.Tooltip(el)
+    })
+  </script>
 {% endblock %}
