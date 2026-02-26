@@ -147,13 +147,14 @@ class BeadModelInlineEditView(LoginRequiredMixin, View):
     """HTMX inline editing for model name and description."""
 
     def get(self, request, pk, field):
-        """Return an edit form for the given field."""
+        """Return an edit form, or the display version on cancel."""
         model = get_object_or_404(BeadModel, pk=pk, creator=request.user)
-        return render(
-            request,
-            "beadmodels/partials/inline_edit.html",
-            {"model": model, "field": field},
+        template = (
+            "beadmodels/partials/inline_display.html"
+            if "cancel" in request.GET
+            else "beadmodels/partials/inline_edit.html"
         )
+        return render(request, template, {"model": model, "field": field})
 
     def post(self, request, pk, field):
         """Save the field and return the display version."""

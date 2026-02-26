@@ -18,6 +18,21 @@
       padding: 2px 6px;
       margin: -2px -6px;
     }
+    .hover-overlay {
+      position: relative;
+    }
+    .hover-overlay .hover-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      display: flex;
+      gap: 4px;
+    }
+    .hover-overlay:hover .hover-actions {
+      opacity: 1;
+    }
   </style>
 {% endblock %}
 
@@ -26,11 +41,14 @@
     {# === Colonne principale : modèle en perles === #}
     <div class="col-md-8">
       {% if user == model.creator %}
-        <div id="inline-name">
-          <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
-            {{ model.name }}
-            <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.6em;"></i>
-          </h2>
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div id="inline-name" class="flex-grow-1">
+            <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
+              {{ model.name }}
+              <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.6em;"></i>
+            </h2>
+          </div>
+          <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer ce modèle"><i class="bi bi-trash"></i></a>
         </div>
       {% else %}
         <h2>{{ model.name }}</h2>
@@ -63,7 +81,7 @@
       {% endif %}
 
       {% if model.bead_pattern %}
-        <div class="card mb-4">
+        <div class="card mb-4 hover-overlay">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Modèle en perles</h5>
             <div class="btn-group btn-group-sm">
@@ -74,6 +92,11 @@
           <div class="card-body text-center">
             <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" style="image-rendering: pixelated; max-height: 600px;" />
           </div>
+          {% if user == model.creator %}
+            <div class="hover-actions">
+              <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-sm btn-light shadow-sm" title="Régénérer le motif"><i class="bi bi-pencil"></i></a>
+            </div>
+          {% endif %}
         </div>
       {% else %}
         <div class="alert alert-info">
@@ -95,7 +118,7 @@
       </div>
     </div>
 
-    {# === Colonne latérale : infos + palette + actions === #}
+    {# === Colonne latérale : infos + palette === #}
     <div class="col-md-4">
       <div class="card mb-3">
         <div class="card-header">
@@ -146,24 +169,6 @@
                   </div>
                 {% endif %}
               {% endfor %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      {# Actions propriétaire #}
-      {% if user == model.creator %}
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Actions</h5>
-          </div>
-          <div class="card-body">
-            <div class="d-grid gap-2">
-              {% if model.bead_pattern %}
-                <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary"><i class="bi bi-file-earmark-pdf"></i> Télécharger PDF</a>
-                <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-outline-primary"><i class="bi bi-arrow-repeat"></i> Régénérer le motif</a>
-              {% endif %}
-              <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Supprimer</a>
             </div>
           </div>
         </div>
