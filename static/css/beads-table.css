@@ -90,13 +90,13 @@
   justify-content: center;
 }
 
-/* Low quantity indicator — uses box-shadow to avoid layout shift */
+/* Low quantity indicator — background-image avoids any layout shift */
 .low-quantity {
   background-color: #fffcf0;
 }
 
 .low-quantity td:first-child {
-  box-shadow: inset 3px 0 0 #ffa500;
+  background: linear-gradient(to right, #ffa500 3px, #fffcf0 3px);
 }
 
 /* Inline editing */
