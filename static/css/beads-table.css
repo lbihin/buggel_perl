@@ -30,6 +30,44 @@
   background: #f8f9fb;
 }
 
+/* Row-level actions column (pencil on hover) */
+.th-row-actions,
+.td-row-actions {
+  width: 120px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn-row-edit {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: all 0.15s ease;
+  font-size: .9rem;
+}
+
+.bead-row:hover .btn-row-edit {
+  opacity: 1;
+}
+
+.btn-row-edit:hover {
+  color: #4f46e5;
+  background: rgba(79, 70, 229, 0.08);
+}
+
+/* Editing row */
+.bead-row-editing td {
+  background-color: #f8f9ff !important;
+}
+
+.bead-row-editing .form-control-sm {
+  font-size: .85rem;
+}
+
 .color-preview {
   display: inline-block;
   width: 24px;
@@ -46,51 +84,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
-/* Floating action button */
-.floating-add-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: #007bff;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 1000;
-}
-
-.floating-add-btn:hover {
-  background-color: #0069d9;
-  transform: scale(1.05);
-}
-
-.floating-delete-btn {
-  background: none;
-  border: none;
-  color: #dc3545;
-  cursor: pointer;
-  padding: 5px;
-}
-
-.floating-delete-btn:hover {
-  color: #bd2130;
-}
-
-/* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Low quantity indicator — background-image avoids any layout shift */
+/* Low quantity indicator */
 .low-quantity {
   background-color: #fffcf0;
 }
@@ -99,82 +93,13 @@
   background: linear-gradient(to right, #ffa500 3px, #fffcf0 3px);
 }
 
-/* Inline editing */
-.quantity-value {
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.quantity-value:hover {
-  opacity: .8;
-}
-
-.hex-code {
-  cursor: pointer;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-  font-size: .78rem;
-}
-
-.hex-code:hover {
-  border-color: #4f46e5;
-  background-color: rgba(79, 70, 229, 0.05);
-  color: #4f46e5;
-}
-
-.color-display,
-.quantity-display {
-  width: 100%;
-}
-
-.edit-icon {
-  cursor: pointer;
-  opacity: 0.7;
-  transition: all 0.2s;
-}
-
-.edit-icon:hover {
-  opacity: 1;
-  transform: scale(1.2);
-}
-
-/* HTMX indicators */
-.htmx-indicator {
-  display: none;
-}
-
-.htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator {
-  display: inline-block;
-}
-
 /* HTMX swap transitions */
 .htmx-swapping {
   opacity: 0;
-  transition: opacity 0.3s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 
 .htmx-settling {
   opacity: 1;
-  transition: opacity 0.2s ease-in;
-}
-
-.htmx-request {
-  pointer-events: none;
-}
-
-/* Edit forms */
-.edit-quantity-form,
-.edit-color-form {
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-.color-btn-edit {
-  width: 20px;
-  height: 20px;
-  padding: 0 !important;
-  border-radius: 3px;
+  transition: opacity 0.15s ease-in;
 }

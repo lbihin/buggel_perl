@@ -12,7 +12,13 @@
       <h2><i class="bi bi-palette2 me-2 text-muted"></i>Ma collection de perles</h2>
       <p class="subtitle">Gérez vos perles et suivez vos stocks</p>
     </div>
-    <a href="{% url 'beads:create' %}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Ajouter</a>
+    <button class="btn btn-primary btn-sm rounded-pill px-3"
+            hx-get="{% url 'beads:bead_new_row_htmx' %}"
+            hx-target="#beads-tbody"
+            hx-swap="beforeend"
+            onclick="var n=document.getElementById('bead-row-new'); if(n){n.querySelector('input[name=name]').focus();event.preventDefault();return;} var e=document.getElementById('empty-state-row'); if(e) e.remove();">
+      <i class="bi bi-plus-lg me-1"></i>Ajouter
+    </button>
   </div>
 
   <!-- Messages -->
@@ -26,51 +32,36 @@
     {% endif %}
   </div>
 
-  {% if beads %}
-    <div class="table-modern">
-      <table class="beads-table w-100 mb-0">
-        <thead>
-          <tr>
-            <th>Couleur</th>
-            <th>Nom</th>
-            <th>Quantité</th>
-            <th>Notes</th>
-            <th class="text-end" style="width:80px;">Actions</th>
+  <div class="table-modern">
+    <table class="beads-table w-100 mb-0">
+      <thead>
+        <tr>
+          <th>Couleur</th>
+          <th>Nom</th>
+          <th>Quantité</th>
+          <th>Notes</th>
+          <th class="th-row-actions"></th>
+        </tr>
+      </thead>
+      <tbody id="beads-tbody">
+        {% for bead in beads %}
+          {% include 'beads/partials/bead_row_display.html' with bead=bead threshold=threshold %}
+        {% empty %}
+          <tr id="empty-state-row">
+            <td colspan="5" class="text-center py-5">
+              <div class="py-3">
+                <i class="bi bi-palette2 fs-1 text-muted d-block mb-2"></i>
+                <p class="text-muted mb-0">Aucune perle. Cliquez « Ajouter » pour commencer.</p>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {% for bead in beads %}
-            <tr id="bead-row-{{ bead.pk }}" class="{% if bead.quantity is not None and bead.quantity < threshold %}low-quantity{% endif %}">
-              <td>
-                <div id="clr-{{ bead.pk }}">
-                  {% include 'beads/partials/bead_color_display.html' with bead=bead %}
-                </div>
-              </td>
-              <td class="fw-medium">{{ bead.name }}</td>
-              <td>
-                <div id="qty-{{ bead.pk }}">
-                  {% include 'beads/partials/bead_quantity_display.html' with bead=bead threshold=threshold %}
-                </div>
-              </td>
-              <td class="text-muted" style="font-size:.85rem;">{{ bead.notes|default:'-'|truncatewords:8 }}</td>
-              <td class="text-end">
-                <a href="{% url 'beads:edit' bead.pk %}" class="btn btn-sm btn-light" title="Modifier"><i class="bi bi-pencil"></i></a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <p class="text-muted mt-3" style="font-size:.82rem;">
-      <i class="bi bi-info-circle me-1"></i>Cliquez sur la couleur ou la quantité pour les modifier directement.
-    </p>
-  {% else %}
-    <div class="empty-state-card">
-      <i class="bi bi-palette2"></i>
-      <p>Vous n'avez pas encore ajouté de perles.</p>
-      <a href="{% url 'beads:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-plus-lg me-1"></i>Ajouter ma première perle</a>
-    </div>
-  {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-muted mt-3" style="font-size:.82rem;">
+    <i class="bi bi-info-circle me-1"></i>Survolez une ligne et cliquez sur le stylo pour modifier.
+  </p>
 {% endblock %}
 
 {% block extra_js %}

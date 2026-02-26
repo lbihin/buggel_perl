@@ -1,0 +1,23 @@
+<tr id="bead-row-{{ bead.pk }}" class="bead-row {% if bead.quantity is not None and bead.quantity < threshold %}low-quantity{% endif %}">
+  <td>
+    <div class="d-inline-flex align-items-center gap-2">
+      <span class="color-preview" style="background-color: {{ bead.get_rgb_color }};"></span>
+      <code class="text-muted" style="font-size:.78rem;">{{ bead.get_hex_color }}</code>
+    </div>
+  </td>
+  <td class="fw-medium">{{ bead.name }}</td>
+  <td>
+    <span class="badge {% if bead.quantity is not None and bead.quantity <= threshold %}
+        bg-warning-subtle text-warning
+      {% else %}
+        bg-primary-subtle text-primary
+      {% endif %}"
+      style="font-size:.82rem;">
+      {{ bead.quantity|default_if_none:'–' }}
+    </span>
+  </td>
+  <td class="text-muted" style="font-size:.85rem;">{{ bead.notes|default:'-'|truncatewords:8 }}</td>
+  <td class="td-row-actions">
+    <button class="btn-row-edit" hx-get="{% url 'beads:bead_edit_row_htmx' bead.pk %}" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" title="Modifier"><i class="bi bi-pencil"></i></button>
+  </td>
+</tr>

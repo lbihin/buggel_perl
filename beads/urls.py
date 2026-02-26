@@ -1,8 +1,13 @@
 from django.urls import path
 
 from .view_htmx import (
+    bead_create_inline_htmx,
+    bead_delete_inline_htmx,
     bead_edit_color_htmx,
     bead_edit_quantity_htmx,
+    bead_edit_row_htmx,
+    bead_new_row_htmx,
+    bead_save_row_htmx,
     bead_update_color_htmx,
     bead_update_quantity_htmx,
     stock_alert_htmx,
@@ -42,6 +47,32 @@ htmx_urlpatterns = [
         "stock-alert/",
         stock_alert_htmx,
         name="stock_alert_htmx",
+    ),
+    # Row-level inline editing
+    path(
+        "<int:pk>/edit-row/",
+        bead_edit_row_htmx,
+        name="bead_edit_row_htmx",
+    ),
+    path(
+        "<int:pk>/save-row/",
+        bead_save_row_htmx,
+        name="bead_save_row_htmx",
+    ),
+    path(
+        "<int:pk>/delete/",
+        bead_delete_inline_htmx,
+        name="bead_delete_inline_htmx",
+    ),
+    path(
+        "new-row/",
+        bead_new_row_htmx,
+        name="bead_new_row_htmx",
+    ),
+    path(
+        "create-inline/",
+        bead_create_inline_htmx,
+        name="bead_create_inline_htmx",
     ),
 ]
 urlpatterns += htmx_urlpatterns
