@@ -1,42 +1,45 @@
-<div class="card h-100">
-  <div class="card-img-container" style="height: 200px; overflow: hidden;">
-    {% if model.bead_pattern %}
-      <img src="{{ model.bead_pattern.url }}" class="card-img-top img-fluid h-100 object-fit-cover" alt="{{ model.title }}" />
-    {% else %}
-      <img src="{{ model.original_image.url }}" class="card-img-top img-fluid h-100 object-fit-cover" alt="{{ model.title }}" />
-    {% endif %}
-  </div>
-  <div class="card-body d-flex flex-column">
-    <h5 class="card-title">{{ model.title }}</h5>
-    <p class="card-text flex-grow-1">{{ model.description|truncatewords:20 }}</p>
-    <div class="d-flex justify-content-between align-items-center mt-auto">
-      <a href="{% url 'beadmodels:details' model.pk %}" class="btn btn-primary">{{ button_text|default:'Voir le modèle' }}</a>
-      {% if show_privacy_badge %}
-        <span class="badge {% if model.is_public %}
-            
-            bg-success
-
-          {% else %}
-            
-            bg-secondary
-
-          {% endif %}">
-          {% if model.is_public %}
-            Public
-          {% else %}
-            Privé
-          {% endif %}
-        </span>
-      {% endif %}
-    </div>
-  </div>
-  {% if show_footer|default:True %}
-    <div class="card-footer text-muted">
-      {% if show_privacy_badge %}
-        Créé le {{ model.created_at|date:'d/m/Y' }}
+<a href="{% url 'beadmodels:details' model.pk %}" class="text-decoration-none">
+  <div class="model-card">
+    <div class="card-img-wrap">
+      {% if model.bead_pattern %}
+        <img src="{{ model.bead_pattern.url }}" alt="{{ model.title }}" style="image-rendering: pixelated;" />
+      {% elif model.original_image %}
+        <img src="{{ model.original_image.url }}" alt="{{ model.title }}" />
       {% else %}
-        Par {{ model.creator.username }} le {{ model.created_at|date:'d/m/Y' }}
+        <i class="bi bi-image text-muted" style="font-size:2.5rem;"></i>
       {% endif %}
     </div>
-  {% endif %}
-</div>
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between gap-2">
+        <h6 class="card-title text-truncate mb-0">{{ model.title }}</h6>
+        {% if show_privacy_badge %}
+          <span class="badge rounded-pill {% if model.is_public %}
+              bg-success-subtle text-success
+            {% else %}
+              bg-secondary-subtle text-secondary
+            {% endif %}"
+            style="font-size:.68rem; white-space:nowrap;">
+            {% if model.is_public %}
+              Public
+            {% else %}
+              Privé
+            {% endif %}
+          </span>
+        {% endif %}
+      </div>
+      {% if model.description %}
+        <p class="card-text mt-1 mb-0">{{ model.description|truncatewords:15 }}</p>
+      {% endif %}
+    </div>
+    <div class="card-footer d-flex align-items-center gap-2">
+      <i class="bi bi-calendar3" style="font-size:.7rem;"></i>
+      {% if show_privacy_badge %}
+        {{ model.created_at|date:'d/m/Y' }}
+      {% else %}
+        <span>{{ model.creator.username }}</span>
+        <span class="mx-1">&middot;</span>
+        {{ model.created_at|date:'d/m/Y' }}
+      {% endif %}
+    </div>
+  </div>
+</a>

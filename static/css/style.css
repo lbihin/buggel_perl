@@ -1,324 +1,257 @@
-/* General Styles */
+/* ========================================
+   Buggel — Global Design System
+   Modern, clean, consistent
+   ======================================== */
+
+/* Base */
 body {
-    background-color: #f8f9fa;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: #f8f9fb;
+    color: #1a1a2e;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Navbar Styles */
+/* ---- Navbar ---- */
 .navbar {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: .6rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.nav-link-modern {
+    color: #495057 !important;
+    font-size: .88rem;
+    font-weight: 500;
+    padding: .4rem .75rem !important;
+    border-radius: .5rem;
+    transition: all .15s;
+}
+.nav-link-modern:hover,
+.nav-link-modern:focus {
+    color: #4f46e5 !important;
+    background: #f0efff;
+}
+.avatar-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Card Styles */
+/* ---- Cards ---- */
 .card {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border: none;
-    transition: transform 0.2s ease-in-out;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: .875rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    transition: box-shadow .2s, transform .2s;
 }
-
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    transform: translateY(-2px);
 }
-
 .card-header {
     background-color: #fff;
-    border-bottom: 1px solid rgba(0, 0, 0, .125);
+    border-bottom: 1px solid rgba(0,0,0,.06);
 }
 
-/* Styles des onglets */
-.nav-tabs .nav-link {
-    color: #6c757d;
-    border: none;
-    padding: 0.5rem 1rem;
-    margin-right: 0.5rem;
+/* ---- Page Headers ---- */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+.page-header h1, .page-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1a1a2e;
+}
+.page-header .subtitle {
+    font-size: .88rem;
+    color: #868e96;
+    margin-top: .15rem;
 }
 
-.nav-tabs .nav-link.active {
-    color: #0d6efd;
-    border-bottom: 2px solid #0d6efd;
+/* ---- Empty State ---- */
+.empty-state-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    border: 2px dashed #dee2e6;
+    border-radius: 1rem;
+    background: #fff;
+}
+.empty-state-card i {
+    font-size: 2.5rem;
+    color: #adb5bd;
+}
+.empty-state-card p {
+    color: #868e96;
+    margin: .75rem 0 1rem;
 }
 
-/* Form Styles */
-.form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+/* ---- Buttons ---- */
+.btn {
+    font-weight: 500;
+    border-radius: .5rem;
+    transition: all .15s;
 }
-
-/* Button Styles */
 .btn-primary {
-    padding: 0.5rem 1.5rem;
+    background: #4f46e5;
+    border-color: #4f46e5;
+}
+.btn-primary:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+}
+.btn-outline-primary {
+    color: #4f46e5;
+    border-color: #4f46e5;
+}
+.btn-outline-primary:hover {
+    background: #4f46e5;
+    border-color: #4f46e5;
 }
 
-/* Messages */
-.messages {
-    margin-bottom: 2rem;
-}
-
+/* ---- Alerts ---- */
 .alert {
     border: none;
-    border-radius: 0.5rem;
+    border-radius: .75rem;
+    font-size: .9rem;
 }
 
-/* Styles de la grille */
-.grid-container {
-    background-color: #fff;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+/* ---- Model Card (grid) ---- */
+.model-card {
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    transition: box-shadow .2s, transform .2s;
 }
-
-/* Styles du menu latéral des paramètres */
-.settings-container {
+.model-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    transform: translateY(-3px);
+}
+.model-card .card-img-wrap {
+    height: 180px;
+    background: linear-gradient(135deg, #f1f3f5, #e9ecef);
     display: flex;
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.settings-sidebar {
-    flex: 0 0 250px;
-}
-
-.settings-content {
-    flex: 1;
-}
-
-.settings-nav {
-    background-color: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
-}
-
-.nav-section {
-    padding: 1rem 0;
-}
-
-.nav-section small {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.settings-nav .nav-link {
-    color: #24292f;
-    padding: 0.75rem 1rem;
-    border-radius: 0;
-    border-left: 3px solid transparent;
-}
-
-.settings-nav .nav-link:hover {
-    background-color: #f6f8fa;
-}
-
-.settings-nav .nav-link.active {
-    color: #0d6efd;
-    background-color: #f6f8fa;
-    border-left-color: #0d6efd;
-}
-
-.settings-divider {
-    height: 1px;
-    background-color: #d0d7de;
-    margin: 0;
-}
-
-/* Styles des formes */
-.shape-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
-
-.shape-card {
-    border: 1px solid #d0d7de;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    background-color: #fff;
-    transition: all 0.2s ease-in-out;
-}
-
-.shape-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
-}
-
-.shape-card.saved {
-    border-color: #0d6efd;
-}
-
-.shape-header {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-}
-
-.shape-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin: 0;
-}
-
-.shape-preview {
-    border: 1px solid #d0d7de;
-    border-radius: 0.25rem;
-    padding: 1rem;
-    margin: 1rem 0;
-    background-color: #f8f9fa;
-    min-height: 200px;
-    display: flex;
     justify-content: center;
-    align-items: center;
-    overflow: auto;
-    position: relative;
-    width: 100%;
-    padding-top: 100%;
-    border-radius: 0.5rem;
     overflow: hidden;
 }
-
-.shape-canvas {
-    position: relative;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.model-card .card-img-wrap img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+.model-card .card-body {
+    padding: 1rem 1.25rem;
+}
+.model-card .card-title {
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: .35rem;
+    color: #1a1a2e;
+}
+.model-card .card-text {
+    font-size: .82rem;
+    color: #868e96;
+    line-height: 1.4;
+}
+.model-card .card-footer {
+    background: transparent;
+    border-top: 1px solid rgba(0,0,0,.05);
+    padding: .6rem 1.25rem;
+    font-size: .78rem;
+    color: #adb5bd;
 }
 
-.peg-point {
-    width: 6px;
-    height: 6px;
-    background-color: #0d6efd;
+/* ---- Floating Action Button ---- */
+.fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    position: absolute;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
-    background-color: #6c757d;
-}
-
-/* Styles des cartes */
-.card {
-    transition: transform 0.2s ease-in-out;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.btn-group {
-    gap: 0.25rem;
-}
-
-.shape-info {
-    font-size: 0.875rem;
-    color: #6c757d;
-}
-
-/* Styles des cartes de perles */
-.bead-card {
-    position: relative;
-    transition: all 0.3s ease;
-    min-height: 100px;
-    transform: scale(1);
-    cursor: pointer;
-}
-
-.bead-card:hover {
-    transform: scale(1.05);
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.bead-card .btn-group {
-    opacity: 0;
-    transition: all 0.3s ease;
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    z-index: 1;
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    font-size: 1.5rem;
     display: flex;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(79,70,229,.3);
+    transition: all .2s;
+    z-index: 1000;
+    text-decoration: none;
+}
+.fab:hover {
+    background: #4338ca;
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(79,70,229,.4);
+    color: #fff;
 }
 
-.bead-card:hover .btn-group {
-    opacity: 1;
+/* ---- Form Controls ---- */
+.form-control:focus,
+.form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 .2rem rgba(79,70,229,.15);
 }
 
-.bead-card .color-preview {
-    transition: all 0.3s ease;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+/* ---- Table Modern ---- */
+.table-modern {
+    background: #fff;
+    border-radius: .875rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.table-modern thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #868e96;
+    font-weight: 600;
+    padding: .75rem 1rem;
+}
+.table-modern tbody td {
+    padding: .75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f5;
+    font-size: .9rem;
+}
+.table-modern tbody tr:last-child td {
+    border-bottom: none;
+}
+.table-modern tbody tr:hover {
+    background: #f8f9fb;
 }
 
-.bead-card:hover .color-preview {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* ---- Dropdown Modern ---- */
+.dropdown-menu {
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: .75rem;
+    padding: .5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+.dropdown-item {
+    border-radius: .5rem;
+    font-size: .88rem;
 }
 
-.bead-card .card-body {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.bead-card .badge {
-    font-size: 0.8rem;
-    padding: 0.4em 0.6em;
-    background-color: rgba(13, 110, 253, 0.9);
-}
-
-.bead-card .card-text {
-    margin-bottom: 0;
-    font-size: 0.85rem;
-    flex-grow: 1;
-}
-
-.bead-card .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.bead-card .btn-sm:hover {
-    background-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Animation pour les points */
-@keyframes pegPulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    50% {
-        transform: translate(-50%, -50%) scale(1.2);
-    }
-
-    100% {
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-
-.peg-point.pulse {
-    animation: pegPulse 1s infinite;
-}
-
-/* Styles des messages toast */
-.toast-container {
-    z-index: 1050;
-}
-
+/* ---- Toast ---- */
+.toast-container { z-index: 1050; }
 .toast {
     background-color: #fff;
     border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }

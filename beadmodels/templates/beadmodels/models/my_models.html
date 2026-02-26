@@ -1,23 +1,27 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Mes modèles</h2>
-    <a href="{% url 'beadmodels:create' %}" class="btn btn-primary">Créer un nouveau modèle</a>
+  <div class="page-header">
+    <div>
+      <h2>Mes modèles</h2>
+      <p class="subtitle">{{ models|length }} modèle{{ models|length|pluralize }} créé{{ models|length|pluralize }}</p>
+    </div>
+    <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nouveau modèle</a>
   </div>
 
-  <div class="row">
-    {% for model in models %}
-      <div class="col-md-4 mb-4">
-        {% include 'beadmodels/partials/inline-card.html' with model=model show_privacy_badge=True %}
-      </div>
-    {% empty %}
-      <div class="col-12">
-        <div class="alert alert-info">
-          Vous n'avez pas encore créé de modèle.
-          <a href="{% url 'beadmodels:create' %}" class="alert-link">Créez votre premier modèle</a> !
+  {% if models %}
+    <div class="row g-4">
+      {% for model in models %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+          {% include 'beadmodels/partials/inline-card.html' with model=model show_privacy_badge=True %}
         </div>
-      </div>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card">
+      <i class="bi bi-collection"></i>
+      <p>Vous n'avez pas encore créé de modèle.</p>
+      <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-magic me-1"></i>Créer mon premier modèle</a>
+    </div>
+  {% endif %}
 {% endblock %}
