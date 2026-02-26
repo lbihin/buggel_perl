@@ -62,4 +62,30 @@ urlpatterns = [
         views.shape_type_update,
         name="shape_type_update",
     ),
+    # HTMX — Row-level inline editing (new table approach)
+    path(
+        "<int:shape_id>/hx/edit-row/",
+        views.shape_edit_row_htmx,
+        name="shape_edit_row_htmx",
+    ),
+    path(
+        "<int:shape_id>/hx/save-row/",
+        views.shape_save_row_htmx,
+        name="shape_save_row_htmx",
+    ),
+    path(
+        "<int:shape_id>/hx/delete-row/",
+        views.shape_delete_row_htmx,
+        name="shape_delete_row_htmx",
+    ),
+    path(
+        "hx/new-row/",
+        views.shape_new_row_htmx,
+        name="shape_new_row_htmx",
+    ),
+    path(
+        "hx/create-inline/",
+        views.shape_create_inline_htmx,
+        name="shape_create_inline_htmx",
+    ),
 ]

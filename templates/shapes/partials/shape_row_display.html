@@ -1,0 +1,28 @@
+<tr id="shape-row-{{ shape.id }}" class="shape-row">
+  <td class="text-center">
+    <span class="shape-icon-pill pill-{{ shape.shape_type }}"><i class="bi {{ shape.shape_type_icon }}"></i></span>
+  </td>
+  <td>
+    <div class="fw-medium">{{ shape.name }}</div>
+    {% if shape.is_default or shape.is_shared %}
+      <div class="mt-1">
+        {% if shape.is_default %}
+          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.65rem;">Défaut</span>
+        {% endif %}
+        {% if shape.is_shared %}
+          <span class="badge bg-info-subtle text-info" style="font-size:.65rem;">Partagée</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </td>
+  <td>
+    <span class="type-badge type-{{ shape.shape_type }}">{{ shape.shape_type_label }}</span>
+  </td>
+  <td class="dim-display">{{ shape.get_dimensions_display }}</td>
+  <td class="peg-count">≈ {{ shape.peg_count }}</td>
+  <td class="td-row-actions">
+    {% if not shape.is_default %}
+      <button class="btn-row-edit" hx-get="{% url 'shapes:shape_edit_row_htmx' shape.id %}" hx-target="#shape-row-{{ shape.id }}" hx-swap="outerHTML" title="Modifier"><i class="bi bi-pencil"></i></button>
+    {% endif %}
+  </td>
+</tr>

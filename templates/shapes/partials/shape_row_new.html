@@ -1,0 +1,61 @@
+<tr id="shape-row-new" class="shape-row shape-row-editing">
+  <td class="text-center">
+    <span class="shape-icon-pill pill-rectangle">
+      <i class="bi bi-square"></i>
+    </span>
+  </td>
+  <td>
+    <input type="text" name="name" value="{{ name|default:'' }}"
+           class="form-control form-control-sm" placeholder="Nom de la plaque" autofocus />
+  </td>
+  <td>
+    <select name="shape_type" class="form-select form-select-sm" style="max-width:140px;">
+      <option value="rectangle" {% if shape_type == 'rectangle' or not shape_type %}selected{% endif %}>Rectangle</option>
+      <option value="square" {% if shape_type == 'square' %}selected{% endif %}>Carré</option>
+      <option value="circle" {% if shape_type == 'circle' %}selected{% endif %}>Cercle</option>
+    </select>
+  </td>
+  <td>
+    <!-- Rectangle dims -->
+    <div class="dim-fields dim-rectangle {% if shape_type and shape_type != 'rectangle' %}d-none{% endif %}">
+      <div class="d-flex align-items-center gap-1">
+        <input type="number" name="width" value="{{ width|default:'29' }}" min="1" class="form-control form-control-sm" style="max-width:70px;" placeholder="L" />
+        <span class="text-muted">×</span>
+        <input type="number" name="height" value="{{ height|default:'29' }}" min="1" class="form-control form-control-sm" style="max-width:70px;" placeholder="H" />
+      </div>
+    </div>
+    <!-- Square dims -->
+    <div class="dim-fields dim-square {% if not shape_type or shape_type != 'square' %}d-none{% endif %}">
+      <input type="number" name="size" value="{{ size|default:'29' }}" min="1" class="form-control form-control-sm" style="max-width:70px;" placeholder="Côté" />
+    </div>
+    <!-- Circle dims -->
+    <div class="dim-fields dim-circle {% if not shape_type or shape_type != 'circle' %}d-none{% endif %}">
+      <div class="d-flex align-items-center gap-1">
+        <span class="text-muted">∅</span>
+        <input type="number" name="diameter" value="{{ diameter|default:'29' }}" min="1" class="form-control form-control-sm" style="max-width:70px;" placeholder="Dia" />
+      </div>
+    </div>
+  </td>
+  <td></td>
+  <td class="td-row-actions">
+    <div class="d-flex gap-1 align-items-center">
+      <button class="btn btn-sm btn-primary"
+              hx-post="{% url 'shapes:shape_create_inline_htmx' %}"
+              hx-include="#shape-row-new"
+              hx-target="#shape-row-new"
+              hx-swap="outerHTML"
+              title="Créer">
+        <i class="bi bi-check-lg"></i>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary"
+              type="button"
+              onclick="this.closest('tr').remove()"
+              title="Annuler">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    {% if error %}
+      <div class="text-danger mt-1 small">{{ error }}</div>
+    {% endif %}
+  </td>
+</tr>

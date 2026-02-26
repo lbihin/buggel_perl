@@ -66,6 +66,32 @@ class BeadShape(models.Model):
             return f"∅{self.diameter}"
         return ""
 
+    @property
+    def peg_count(self):
+        """Approximate number of pegs on this board."""
+        import math
+
+        if self.shape_type == "rectangle" and self.width and self.height:
+            return self.width * self.height
+        elif self.shape_type == "square" and self.size:
+            return self.size * self.size
+        elif self.shape_type == "circle" and self.diameter:
+            r = self.diameter / 2
+            return int(math.pi * r * r)
+        return 0
+
+    @property
+    def shape_type_icon(self):
+        return {
+            "rectangle": "bi-square",
+            "square": "bi-square-fill",
+            "circle": "bi-circle",
+        }.get(self.shape_type, "bi-question-circle")
+
+    @property
+    def shape_type_label(self):
+        return dict(self.SHAPE_TYPES).get(self.shape_type, self.shape_type)
+
     def get_parameters(self):
         if self.shape_type == "rectangle":
             return {"width": self.width, "height": self.height}

@@ -73,45 +73,23 @@ class ShapeListView(LoginRequiredMixin, ListView):
 
 
 class ShapeListColumnsView(LoginRequiredMixin, ListView):
-    """Affiche la liste des formes disponibles en colonnes par type."""
+    """Affiche la liste des plaques à picots en tableau simple."""
 
     template_name = "shapes/shape_list_columns.html"
     context_object_name = "user_shapes"
 
     def get_queryset(self):
         return BeadShape.objects.filter(
-            Q(creator=self.request.user) | Q(is_shared=True)
+            Q(creator=self.request.user) | Q(is_default=True) | Q(is_shared=True)
         ).select_related("creator")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        qs = context["user_shapes"]
-
-        context["rectangles"] = qs.filter(shape_type="rectangle")
-        context["squares"] = qs.filter(shape_type="square")
-        context["circles"] = qs.filter(shape_type="circle")
+        context["all_shapes"] = context["user_shapes"]
 
         # Messages flash stockés en session (pour compatibilité HTMX)
         context["success_message"] = self.request.session.pop("success_message", None)
         context["error_message"] = self.request.session.pop("error_message", None)
-
-        # Mode édition
-        edit_shape_id = self.request.GET.get("edit")
-        if edit_shape_id:
-            try:
-                edit_shape = BeadShape.objects.get(id=edit_shape_id)
-                if (
-                    edit_shape.creator != self.request.user
-                    and not edit_shape.is_default
-                ):
-                    messages.error(
-                        self.request,
-                        "Vous n'avez pas l'autorisation de modifier cette forme",
-                    )
-                    edit_shape = None
-            except BeadShape.DoesNotExist:
-                edit_shape = None
-            context["edit_shape"] = edit_shape
 
         return context
 
@@ -491,3 +469,139 @@ def shape_type_update(request, shape_id):
 
     except Exception as e:
         return HttpResponse(f"Erreur lors de la mise à jour du type: {e}", status=400)
+
+
+# ---------------------------------------------------------------------------
+# Vues HTMX — Row-level inline editing (new table approach)
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def shape_edit_row_htmx(request, shape_id):
+    """GET: returns edit row; GET?cancel=true: returns display row."""
+    shape = get_object_or_404(BeadShape, id=shape_id)
+    if request.GET.get("cancel"):
+        return render(
+            request, "shapes/partials/shape_row_display.html", {"shape": shape}
+        )
+    error_response = _check_shape_permission(request, shape)
+    if error_response:
+        return error_response
+    return render(request, "shapes/partials/shape_row_edit.html", {"shape": shape})
+
+
+@login_required
+def shape_save_row_htmx(request, shape_id):
+    """POST: saves all fields, returns display row."""
+    shape = get_object_or_404(BeadShape, id=shape_id)
+    error_response = _check_shape_permission(request, shape)
+    if error_response:
+        return error_response
+
+    if request.method != "POST":
+        return shape_edit_row_htmx(request, shape_id)
+
+    name = request.POST.get("name", "").strip()
+    if name:
+        shape.name = name
+
+    shape_type = request.POST.get("shape_type", shape.shape_type)
+    shape.shape_type = shape_type
+
+    try:
+        if shape_type == "rectangle":
+            shape.width = int(request.POST.get("width") or 10)
+            shape.height = int(request.POST.get("height") or 10)
+            shape.size = None
+            shape.diameter = None
+        elif shape_type == "square":
+            shape.size = int(request.POST.get("size") or 10)
+            shape.width = None
+            shape.height = None
+            shape.diameter = None
+        elif shape_type == "circle":
+            shape.diameter = int(request.POST.get("diameter") or 10)
+            shape.width = None
+            shape.height = None
+            shape.size = None
+
+        shape.save()
+    except (ValueError, TypeError):
+        return render(
+            request,
+            "shapes/partials/shape_row_edit.html",
+            {"shape": shape, "error": "Dimensions invalides."},
+        )
+
+    return render(request, "shapes/partials/shape_row_display.html", {"shape": shape})
+
+
+@login_required
+def shape_new_row_htmx(request):
+    """GET: returns an empty new row for inline creation."""
+    return render(request, "shapes/partials/shape_row_new.html")
+
+
+@login_required
+def shape_create_inline_htmx(request):
+    """POST: creates a new shape inline, returns display row."""
+    if request.method != "POST":
+        return shape_new_row_htmx(request)
+
+    name = request.POST.get("name", "").strip()
+    shape_type = request.POST.get("shape_type", "rectangle")
+
+    try:
+        width = height = size = diameter = None
+        if shape_type == "rectangle":
+            width = int(request.POST.get("width") or 10)
+            height = int(request.POST.get("height") or 10)
+        elif shape_type == "square":
+            size = int(request.POST.get("size") or 10)
+        elif shape_type == "circle":
+            diameter = int(request.POST.get("diameter") or 10)
+
+        if not name:
+            dims = ""
+            if shape_type == "rectangle":
+                dims = f"{width}×{height}"
+            elif shape_type == "square":
+                dims = f"{size}×{size}"
+            elif shape_type == "circle":
+                dims = f"∅{diameter}"
+            name = f"Plaque {dict(BeadShape.SHAPE_TYPES).get(shape_type, '')} {dims}"
+
+        shape = BeadShape.objects.create(
+            creator=request.user,
+            name=name,
+            shape_type=shape_type,
+            width=width,
+            height=height,
+            size=size,
+            diameter=diameter,
+        )
+    except (ValueError, TypeError):
+        return render(
+            request,
+            "shapes/partials/shape_row_new.html",
+            {"error": "Dimensions invalides.", "name": name, "shape_type": shape_type},
+        )
+
+    return render(request, "shapes/partials/shape_row_display.html", {"shape": shape})
+
+
+@login_required
+def shape_delete_row_htmx(request, shape_id):
+    """DELETE: deletes shape, returns empty to remove the row."""
+    shape = get_object_or_404(BeadShape, id=shape_id)
+    error_response = _check_shape_permission(request, shape, action="supprimer")
+    if error_response:
+        return error_response
+
+    if shape.is_default:
+        return HttpResponse(
+            "Les plaques par défaut ne peuvent pas être supprimées", status=403
+        )
+
+    shape.delete()
+    return HttpResponse("")
