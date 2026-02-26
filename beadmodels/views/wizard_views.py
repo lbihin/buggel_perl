@@ -196,18 +196,15 @@ class ConfigureModel(WizardStep):
 
         # ---------- HTMX live-preview (checkbox "use_available_colors") ----------
         if getattr(request, "htmx", False) and direction != "next":
-            # Use POST values with session fallback (checkbox HTMX may
-            # not include all form fields)
+            # This HTMX path is only reached by the checkbox toggle
+            # (shape/color radios use dedicated endpoints).
+            # An unchecked checkbox is simply absent from POST → False.
             shape_id = request.POST.get("shape_id") or wizard_data.get("shape_id", "")
             color_reduction = _safe_int(
                 request.POST.get("color_reduction"),
                 _safe_int(wizard_data.get("color_reduction"), 16),
             )
-            use_available = (
-                request.POST.get("use_available_colors") == "on"
-                if "use_available_colors" in request.POST
-                else wizard_data.get("use_available_colors", False)
-            )
+            use_available = request.POST.get("use_available_colors") == "on"
 
             self.wizard.update_session_data(
                 {
