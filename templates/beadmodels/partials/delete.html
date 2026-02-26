@@ -1,15 +1,16 @@
+{% load i18n %}
 <div class="modal fade show" id="deleteModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Supprimer "{{ object.name }}" ?</h5>
+        <h5 class="modal-title">{% blocktrans with name=object.name %}Supprimer "{{ name }}" ?{% endblocktrans %}</h5>
         <button type="button" class="btn-close" hx-get="{% url 'beadmodels:details' object.pk %}" hx-target="body" hx-swap="outerHTML"></button>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" hx-get="{% url 'beadmodels:details' object.pk %}" hx-target="body" hx-swap="outerHTML">Annuler</button>
+        <button type="button" class="btn btn-secondary" hx-get="{% url 'beadmodels:details' object.pk %}" hx-target="body" hx-swap="outerHTML">{% trans 'Annuler' %}</button>
         <form method="post" action="{% url 'beadmodels:delete' object.pk %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-danger">Supprimer</button>
+          <button type="submit" class="btn btn-danger">{% trans 'Supprimer' %}</button>
         </form>
       </div>
     </div>

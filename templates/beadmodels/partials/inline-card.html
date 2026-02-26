@@ -1,3 +1,4 @@
+{% load i18n %}
 <a href="{% url 'beadmodels:details' model.pk %}" class="text-decoration-none">
   <div class="model-card">
     <div class="card-img-wrap">
@@ -14,15 +15,19 @@
         <h6 class="card-title text-truncate mb-0">{{ model.title }}</h6>
         {% if show_privacy_badge %}
           <span class="badge rounded-pill {% if model.is_public %}
+              
               bg-success-subtle text-success
+
             {% else %}
+              
               bg-secondary-subtle text-secondary
+
             {% endif %}"
             style="font-size:.68rem; white-space:nowrap;">
             {% if model.is_public %}
-              Public
+              {% trans 'Public' %}
             {% else %}
-              Privé
+              {% trans 'Privé' %}
             {% endif %}
           </span>
         {% endif %}

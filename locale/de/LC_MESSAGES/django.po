@@ -1,0 +1,1439 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-26 15:04+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: accounts/models.py:31
+msgid "Public par défaut"
+msgstr "Standardmäßig öffentlich"
+
+#: accounts/views.py:29
+msgid "Vous avez été déconnecté avec succès."
+msgstr "Sie wurden erfolgreich abgemeldet."
+
+#: accounts/views.py:41
+msgid "Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter."
+msgstr "Ihr Konto wurde erfolgreich erstellt! Sie können sich jetzt anmelden."
+
+#: accounts/views.py:82
+msgid "Votre mot de passe a été mis à jour avec succès!"
+msgstr "Ihr Passwort wurde erfolgreich aktualisiert!"
+
+#: accounts/views.py:94
+msgid "Votre profil a été mis à jour avec succès!"
+msgstr "Ihr Profil wurde erfolgreich aktualisiert!"
+
+#: accounts/views.py:127
+msgid "Vos préférences et les préférences de l'application ont été mises à jour avec succès!"
+msgstr "Ihre Einstellungen und die Anwendungseinstellungen wurden erfolgreich aktualisiert!"
+
+#: accounts/views.py:132
+msgid "Vos préférences ont été mises à jour avec succès!"
+msgstr "Ihre Einstellungen wurden erfolgreich aktualisiert!"
+
+#: beadmodels/forms.py:12
+msgid "Image à transformer"
+msgstr "Bild zum Umwandeln"
+
+#: beadmodels/forms.py:13
+msgid "Téléchargez une image pour créer un modèle de perles à repasser"
+msgstr "Laden Sie ein Bild hoch, um ein Bügelperlen-Muster zu erstellen"
+
+#: beadmodels/forms.py:22 beadmodels/forms.py:128
+#: templates/beadmodels/wizard/configure_model.html:97
+msgid "Nombre de couleurs"
+msgstr "Anzahl der Farben"
+
+#: beadmodels/forms.py:28
+msgid "Nombre de couleurs à utiliser dans le modèle final"
+msgstr "Anzahl der Farben im fertigen Muster"
+
+#: beadmodels/forms.py:31
+msgid "Utiliser mes couleurs disponibles"
+msgstr "Meine verfügbaren Farben verwenden"
+
+#: beadmodels/forms.py:51
+msgid "Tags"
+msgstr "Tags"
+
+#: beadmodels/forms.py:52
+msgid "Séparez les tags par des virgules"
+msgstr "Tags mit Kommas trennen"
+
+#: beadmodels/forms.py:56
+msgid "ex: animaux, mario, cadeau"
+msgstr "z.B.: Tiere, Mario, Geschenk"
+
+#: beadmodels/forms.py:68 beadmodels/forms.py:81
+msgid "Nom du modèle"
+msgstr "Modellname"
+
+#: beadmodels/forms.py:75
+msgid "Description (optionnelle)"
+msgstr "Beschreibung (optional)"
+
+#: beadmodels/forms.py:82 beadmodels/models.py:9 beadmodels/models.py:54
+msgid "Description"
+msgstr "Beschreibung"
+
+#: beadmodels/forms.py:83
+msgid "Rendre public"
+msgstr "Öffentlich machen"
+
+#: beadmodels/forms.py:123 beadmodels/models.py:29 beadmodels/models.py:60
+msgid "Support de perles"
+msgstr "Steckplatte"
+
+#: beadmodels/forms.py:125
+msgid "Choisissez le support de perles à utiliser"
+msgstr "Wählen Sie die zu verwendende Steckplatte"
+
+#: beadmodels/forms.py:133
+msgid "Nombre de couleurs à utiliser (entre 2 et 256)"
+msgstr "Anzahl der Farben (zwischen 2 und 256)"
+
+#: beadmodels/forms.py:136
+msgid "Détection des contours"
+msgstr "Kantenerkennung"
+
+#: beadmodels/forms.py:140
+msgid "Activer la détection des contours pour faciliter la reproduction"
+msgstr "Kantenerkennung aktivieren, um die Reproduktion zu erleichtern"
+
+#: beadmodels/models.py:8 beadmodels/models.py:51 beads/models.py:10
+#: shapes/models.py:15 templates/beads/partials/bead_row_edit.html:7
+#: templates/beads/table.html:41
+#: templates/shapes/partials/create_edit_shape.html:17
+#: templates/shapes/partials/shape_field_name_edit.html:4
+#: templates/shapes/partials/shape_list_content.html:13
+#: templates/shapes/partials/shape_name_edit.html:4
+#: templates/shapes/partials/shape_row_edit.html:10
+#: templates/shapes/shape_list_columns.html:62
+#: templates/shapes/shape_row_list.html:7
+msgid "Nom"
+msgstr "Name"
+
+#: beadmodels/models.py:10 shapes/models.py:42
+msgid "Créateur"
+msgstr "Ersteller"
+
+#: beadmodels/models.py:12
+msgid "Date de création"
+msgstr "Erstellungsdatum"
+
+#: beadmodels/models.py:15
+msgid "Date de modification"
+msgstr "Änderungsdatum"
+
+#: beadmodels/models.py:17 templates/beadmodels/details.html:266
+#: templates/beadmodels/partials/inline-card.html:28
+msgid "Public"
+msgstr "Öffentlich"
+
+#: beadmodels/models.py:19 templates/beadmodels/details.html:337
+#: templates/beadmodels/wizard/configure_model.html:44
+#: templates/beadmodels/wizard/configure_model.html:47
+msgid "Image originale"
+msgstr "Originalbild"
+
+#: beadmodels/models.py:22
+msgid "Motif en perles"
+msgstr "Perlenmuster"
+
+#: beadmodels/models.py:34
+msgid "Métadonnées"
+msgstr "Metadaten"
+
+#: beadmodels/models.py:35
+msgid "Paramètres de génération (palette, dimensions, etc.)"
+msgstr "Generierungseinstellungen (Palette, Abmessungen usw.)"
+
+#: beadmodels/models.py:42
+msgid "Modèle de perles"
+msgstr "Bügelperlen-Muster"
+
+#: beadmodels/models.py:43
+msgid "Modèles de perles"
+msgstr "Bügelperlen-Muster"
+
+#: beadmodels/models.py:52
+msgid "Nombre de picots en largeur"
+msgstr "Anzahl der Stifte in der Breite"
+
+#: beadmodels/models.py:53
+msgid "Nombre de picots en hauteur"
+msgstr "Anzahl der Stifte in der Höhe"
+
+#: beadmodels/models.py:61
+msgid "Supports de perles"
+msgstr "Steckplatten"
+
+#: beadmodels/models.py:69
+msgid "Seuil d'alerte pour les perles en faible quantité"
+msgstr "Warnschwelle für geringe Perlenanzahl"
+
+#: beadmodels/models.py:70
+msgid "Quantité minimale de perles en dessous de laquelle une alerte sera affichée"
+msgstr "Mindestanzahl an Perlen, unter der eine Warnung angezeigt wird"
+
+#: beadmodels/models.py:77
+msgid "Préférence de l'application"
+msgstr "Anwendungseinstellung"
+
+#: beadmodels/models.py:78 templates/accounts/settings.html:61
+msgid "Préférences de l'application"
+msgstr "Anwendungseinstellungen"
+
+#: beadmodels/views/model_views.py:48
+msgid "Vous n'avez pas accès à ce modèle."
+msgstr "Sie haben keinen Zugriff auf dieses Muster."
+
+#: beadmodels/views/model_views.py:65
+msgid "Votre modèle a été créé avec succès!"
+msgstr "Ihr Muster wurde erfolgreich erstellt!"
+
+#: beadmodels/views/model_views.py:80
+msgid "Vous n'avez pas le droit de modifier ce modèle."
+msgstr "Sie haben keine Berechtigung, dieses Muster zu bearbeiten."
+
+#: beadmodels/views/model_views.py:86
+msgid "Votre modèle a été modifié avec succès!"
+msgstr "Ihr Muster wurde erfolgreich aktualisiert!"
+
+#: beadmodels/views/model_views.py:101
+msgid "Vous n'avez pas le droit de supprimer ce modèle."
+msgstr "Sie haben keine Berechtigung, dieses Muster zu löschen."
+
+#: beadmodels/views/model_views.py:106
+msgid "Votre modèle a été supprimé avec succès!"
+msgstr "Ihr Muster wurde erfolgreich gelöscht!"
+
+#: beadmodels/views/model_views.py:122
+msgid "Ce modèle n'a pas encore de motif en perles."
+msgstr "Dieses Muster hat noch kein Perlendesign."
+
+#: beadmodels/views/wizard_htmx_views.py:46 shapes/views.py:46
+msgid "Cette vue est uniquement accessible via HTMX."
+msgstr "Diese Ansicht ist nur über HTMX zugänglich."
+
+#: beadmodels/views/wizard_views.py:105
+msgid "Chargement de l'image"
+msgstr "Bild hochladen"
+
+#: beadmodels/views/wizard_views.py:137
+msgid "Configuration du modèle"
+msgstr "Muster-Konfiguration"
+
+#: beadmodels/views/wizard_views.py:150
+msgid "Veuillez d'abord charger une image."
+msgstr "Bitte laden Sie zuerst ein Bild hoch."
+
+#: beadmodels/views/wizard_views.py:297
+#: templates/beadmodels/wizard/configure_model.html:24
+#: templates/beadmodels/wizard/final_step.html:25
+#: templates/beadmodels/wizard/upload_image.html:28
+msgid "Finalisation"
+msgstr "Fertigstellung"
+
+#: beadmodels/views/wizard_views.py:306
+msgid "Standard"
+msgstr "Standard"
+
+#: beadmodels/views/wizard_views.py:328
+#, python-format
+msgid "Modèle du %(date)s"
+msgstr "Muster vom %(date)s"
+
+#: beadmodels/views/wizard_views.py:419
+msgid "Une erreur est survenue lors de la sauvegarde du modèle."
+msgstr "Beim Speichern des Musters ist ein Fehler aufgetreten."
+
+#: beadmodels/views/wizard_views.py:513
+msgid "Image introuvable."
+msgstr "Bild nicht gefunden."
+
+#: beadmodels/views/wizard_views.py:547
+#: templates/beadmodels/models/my_models.html:12
+msgid "Nouveau modèle"
+msgstr "Neues Muster"
+
+#: beadmodels/views/wizard_views.py:563
+msgid "Création de modèle de perles"
+msgstr "Bügelperlen-Muster erstellen"
+
+#: beadmodels/views/wizard_views.py:615
+msgid "Modèle introuvable."
+msgstr "Muster nicht gefunden."
+
+#: beads/forms.py:34
+msgid "La valeur doit être entre 0 et 255."
+msgstr ""
+
+#: beads/models.py:12 beads/models.py:82
+msgid "Rouge"
+msgstr "Rot"
+
+#: beads/models.py:15 beads/models.py:78 beads/models.py:88
+msgid "Vert"
+msgstr "Grün"
+
+#: beads/models.py:18 beads/models.py:92
+msgid "Bleu"
+msgstr "Blau"
+
+#: beads/models.py:21 templates/beadmodels/wizard/instructions.html:63
+#: templates/beads/table.html:42
+msgid "Quantité"
+msgstr "Menge"
+
+#: beads/models.py:23 templates/beads/table.html:43
+msgid "Notes"
+msgstr "Notizen"
+
+#: beads/models.py:24 shapes/models.py:34
+msgid "Créé le"
+msgstr "Erstellt am"
+
+#: beads/models.py:25 shapes/models.py:35
+msgid "Modifié le"
+msgstr "Geändert am"
+
+#: beads/models.py:30
+msgid "Perle"
+msgstr "Perle"
+
+#: beads/models.py:31 templates/base.html:43
+msgid "Perles"
+msgstr "Perlen"
+
+#: beads/models.py:56
+msgid "Noir"
+msgstr "Schwarz"
+
+#: beads/models.py:58
+msgid "Gris foncé"
+msgstr "Dunkelgrau"
+
+#: beads/models.py:60
+msgid "Gris"
+msgstr "Grau"
+
+#: beads/models.py:61
+msgid "Blanc"
+msgstr "Weiß"
+
+#: beads/models.py:84
+msgid "Orange"
+msgstr "Orange"
+
+#: beads/models.py:86
+msgid "Jaune"
+msgstr "Gelb"
+
+#: beads/models.py:90
+msgid "Cyan"
+msgstr "Cyan"
+
+#: beads/models.py:94
+msgid "Violet"
+msgstr "Lila"
+
+#: beads/models.py:96
+msgid "Autres"
+msgstr "Andere"
+
+#: beads/view_htmx.py:90
+msgid "La quantité doit être un nombre entier positif."
+msgstr "Die Menge muss eine positive ganze Zahl sein."
+
+#: beads/view_htmx.py:140
+msgid "Couleur invalide."
+msgstr "Ungültige Farbe."
+
+#: beads/view_htmx.py:224 beads/view_htmx.py:292
+msgid "Une perle avec ce nom existe déjà."
+msgstr "Eine Perle mit diesem Namen existiert bereits."
+
+#: beads/views.py:45
+msgid "Perle ajoutée avec succès!"
+msgstr "Perle erfolgreich hinzugefügt!"
+
+#: beads/views.py:59
+msgid "Perle mise à jour avec succès!"
+msgstr "Perle erfolgreich aktualisiert!"
+
+#: buggel/settings.py:124
+msgid "Français"
+msgstr "Französisch"
+
+#: buggel/settings.py:125
+msgid "Deutsch"
+msgstr "Deutsch"
+
+#: buggel/settings.py:126
+msgid "English"
+msgstr "Englisch"
+
+#: shapes/forms.py:18 shapes/models.py:20
+#: templates/shapes/partials/create_edit_shape.html:52
+#: templates/shapes/partials/shape_field_dimensions_edit.html:6
+#: templates/shapes/partials/shape_inline_add_form.html:24
+#: templates/shapes/partials/shape_inline_edit.html:32
+msgid "Largeur"
+msgstr "Breite"
+
+#: shapes/forms.py:24 shapes/models.py:23
+#: templates/shapes/partials/create_edit_shape.html:56
+#: templates/shapes/partials/shape_field_dimensions_edit.html:8
+#: templates/shapes/partials/shape_inline_add_form.html:26
+#: templates/shapes/partials/shape_inline_edit.html:36
+msgid "Hauteur"
+msgstr "Höhe"
+
+#: shapes/forms.py:30 shapes/models.py:26
+#: templates/shapes/partials/create_edit_shape.html:70
+#: templates/shapes/partials/shape_field_dimensions_edit.html:11
+#: templates/shapes/partials/shape_inline_add_form.html:39
+msgid "Taille"
+msgstr "Größe"
+
+#: shapes/forms.py:36 shapes/models.py:32
+#: templates/shapes/partials/create_edit_shape.html:82
+#: templates/shapes/partials/shape_field_dimensions_edit.html:13
+#: templates/shapes/partials/shape_inline_add_form.html:52
+#: templates/shapes/partials/shape_inline_edit.html:80
+msgid "Diamètre"
+msgstr "Durchmesser"
+
+#: shapes/forms.py:60
+msgid "La largeur est requise pour un rectangle."
+msgstr "Die Breite ist für ein Rechteck erforderlich."
+
+#: shapes/forms.py:62
+msgid "La hauteur est requise pour un rectangle."
+msgstr "Die Höhe ist für ein Rechteck erforderlich."
+
+#: shapes/forms.py:65
+msgid "La taille est requise pour un carré."
+msgstr "Die Größe ist für ein Quadrat erforderlich."
+
+#: shapes/forms.py:68
+msgid "Le diamètre est requis pour un cercle."
+msgstr "Der Durchmesser ist für einen Kreis erforderlich."
+
+#: shapes/models.py:10 templates/shapes/partials/create_edit_shape.html:26
+#: templates/shapes/partials/create_edit_shape.html:47
+#: templates/shapes/partials/shape_display_field.html:19
+#: templates/shapes/partials/shape_display_field.html:25
+#: templates/shapes/partials/shape_display_field.html:28
+#: templates/shapes/partials/shape_field_type_edit.html:5
+#: templates/shapes/partials/shape_inline_add_form.html:20
+#: templates/shapes/partials/shape_inline_edit.html:25
+#: templates/shapes/partials/shape_row_edit.html:14
+#: templates/shapes/partials/shape_row_new.html:14
+#: templates/shapes/partials/shape_type.html:3
+#: templates/shapes/partials/shape_type_edit.html:8
+#: templates/shapes/shape_list.html:37 templates/shapes/shape_row_list.html:33
+msgid "Rectangle"
+msgstr "Rechteck"
+
+#: shapes/models.py:11 templates/shapes/partials/create_edit_shape.html:27
+#: templates/shapes/partials/create_edit_shape.html:67
+#: templates/shapes/partials/shape_display_field.html:21
+#: templates/shapes/partials/shape_field_type_edit.html:6
+#: templates/shapes/partials/shape_inline_add_form.html:34
+#: templates/shapes/partials/shape_inline_edit.html:51
+#: templates/shapes/partials/shape_row_edit.html:15
+#: templates/shapes/partials/shape_row_new.html:15
+#: templates/shapes/partials/shape_type.html:5
+#: templates/shapes/partials/shape_type_edit.html:9
+#: templates/shapes/shape_list.html:38 templates/shapes/shape_row_list.html:35
+msgid "Carré"
+msgstr "Quadrat"
+
+#: shapes/models.py:12
+msgid "Rond"
+msgstr "Rund"
+
+#: shapes/models.py:17 templates/shapes/partials/create_edit_shape.html:22
+msgid "Type de forme"
+msgstr "Formtyp"
+
+#: shapes/models.py:44
+msgid "Forme par défaut"
+msgstr "Standardform"
+
+#: shapes/models.py:45
+msgid "Forme partagée"
+msgstr "Geteilte Form"
+
+#: shapes/models.py:48
+msgid "Forme de perles"
+msgstr "Steckplattenform"
+
+#: shapes/models.py:49
+msgid "Formes de perles"
+msgstr "Steckplattenformen"
+
+#: shapes/views.py:33
+#, python-format
+msgid "Vous n'avez pas l'autorisation de %(action)s cette forme"
+msgstr "Sie sind nicht berechtigt, diese Form zu %(action)s"
+
+#: shapes/views.py:118
+msgid "Forme créée avec succès!"
+msgstr "Form erfolgreich erstellt!"
+
+#: shapes/views.py:124
+msgid "Erreur lors de la création de la forme."
+msgstr "Fehler beim Erstellen der Form."
+
+#: shapes/views.py:150
+msgid "Forme mise à jour avec succès!"
+msgstr "Form erfolgreich aktualisiert!"
+
+#: shapes/views.py:153
+msgid "Erreur lors de la mise à jour de la forme."
+msgstr "Fehler beim Aktualisieren der Form."
+
+#: shapes/views.py:168 shapes/views.py:272
+msgid "Les formes par défaut ne peuvent pas être supprimées"
+msgstr "Standardformen können nicht gelöscht werden"
+
+#: shapes/views.py:175 shapes/views.py:279
+#, python-format
+msgid "Forme %(name)s supprimée avec succès!"
+msgstr "Form %(name)s erfolgreich gelöscht!"
+
+#: shapes/views.py:215
+msgid "Méthode non autorisée"
+msgstr "Methode nicht erlaubt"
+
+#: shapes/views.py:231
+#, python-format
+msgid "Erreur : %(errors)s"
+msgstr "Fehler: %(errors)s"
+
+#: shapes/views.py:241
+#, python-format
+msgid "Forme %(name)s créée avec succès!"
+msgstr "Form %(name)s erfolgreich erstellt!"
+
+#: shapes/views.py:252
+#, python-format
+msgid "Forme %(name)s mise à jour avec succès!"
+msgstr "Form %(name)s erfolgreich aktualisiert!"
+
+#: shapes/views.py:267
+msgid "Vous n'avez pas l'autorisation de supprimer cette forme"
+msgstr "Sie sind nicht berechtigt, diese Form zu löschen"
+
+#: shapes/views.py:360
+#, python-format
+msgid "Erreur lors de la mise à jour des dimensions : %(error)s"
+msgstr "Fehler beim Aktualisieren der Abmessungen: %(error)s"
+
+#: shapes/views.py:409
+#, python-format
+msgid "Erreur lors de la mise à jour du nom : %(error)s"
+msgstr "Fehler beim Aktualisieren des Namens: %(error)s"
+
+#: shapes/views.py:487
+#, python-format
+msgid "Erreur lors de la mise à jour du type : %(error)s"
+msgstr "Fehler beim Aktualisieren des Typs: %(error)s"
+
+#: shapes/views.py:551 shapes/views.py:609
+msgid "Dimensions invalides."
+msgstr "Ungültige Abmessungen."
+
+#: shapes/views.py:590
+#, python-format
+msgid "Plaque %(type)s %(dims)s"
+msgstr "Platte %(type)s %(dims)s"
+
+#: shapes/views.py:628
+msgid "Les plaques par défaut ne peuvent pas être supprimées"
+msgstr "Standardplatten können nicht gelöscht werden"
+
+#: templates/accounts/login.html:10 templates/base.html:71
+#: templates/home.html:11
+msgid "Connexion"
+msgstr "Anmeldung"
+
+#: templates/accounts/login.html:17 templates/accounts/register.html:23
+msgid "Se connecter"
+msgstr "Anmelden"
+
+#: templates/accounts/login.html:22
+msgid "Pas encore de compte ?"
+msgstr "Noch kein Konto?"
+
+#: templates/accounts/login.html:23 templates/accounts/register.html:17
+#: templates/base.html:74
+msgid "S'inscrire"
+msgstr "Registrieren"
+
+#: templates/accounts/register.html:10
+msgid "Inscription"
+msgstr "Registrierung"
+
+#: templates/accounts/register.html:22
+msgid "Déjà un compte ?"
+msgstr "Schon ein Konto?"
+
+#: templates/accounts/settings.html:20
+msgid "Compte"
+msgstr "Konto"
+
+#: templates/accounts/settings.html:21 templates/accounts/settings.html:39
+msgid "Profil"
+msgstr "Profil"
+
+#: templates/accounts/settings.html:22
+msgid "Mot de passe"
+msgstr "Passwort"
+
+#: templates/accounts/settings.html:28
+msgid "Application"
+msgstr "Anwendung"
+
+#: templates/accounts/settings.html:29 templates/accounts/settings.html:53
+msgid "Préférences"
+msgstr "Einstellungen"
+
+#: templates/accounts/settings.html:43
+msgid "Enregistrer les modifications"
+msgstr "Änderungen speichern"
+
+#: templates/accounts/settings.html:46 templates/accounts/settings.html:50
+msgid "Changer le mot de passe"
+msgstr "Passwort ändern"
+
+#: templates/accounts/settings.html:56
+msgid "Préférences utilisateur"
+msgstr "Benutzereinstellungen"
+
+#: templates/accounts/settings.html:63
+msgid "Ces paramètres s'appliquent à tous les utilisateurs de l'application."
+msgstr "Diese Einstellungen gelten für alle Benutzer der Anwendung."
+
+#: templates/accounts/settings.html:68
+msgid "Enregistrer les préférences"
+msgstr "Einstellungen speichern"
+
+#: templates/base.html:10
+msgid "Buggel — Modèles de Perles à Repasser"
+msgstr "Buggel — Bügelperlen-Muster"
+
+#: templates/base.html:37 templates/beads/partials/bead_row_new.html:17
+#: templates/shapes/partials/shape_row_new.html:48
+msgid "Créer"
+msgstr "Erstellen"
+
+#: templates/base.html:40
+msgid "Modèles"
+msgstr "Muster"
+
+#: templates/base.html:46
+msgid "Plaques"
+msgstr "Steckplatten"
+
+#: templates/base.html:59
+msgid "Paramètres"
+msgstr "Einstellungen"
+
+#: templates/base.html:65
+msgid "Déconnexion"
+msgstr "Abmelden"
+
+#: templates/base.html:114 templates/beadmodels/details.html:360
+#: templates/beads/table.html:31
+msgid "Fermer"
+msgstr "Schließen"
+
+#: templates/beadmodels/details.html:208
+#, python-format
+msgid "Modèle en perles — %(name)s"
+msgstr "Perlenmuster — %(name)s"
+
+#: templates/beadmodels/details.html:211
+msgid "Régénérer le motif"
+msgstr "Muster neu generieren"
+
+#: templates/beadmodels/details.html:211
+msgid "Régénérer"
+msgstr "Neu generieren"
+
+#: templates/beadmodels/details.html:219
+msgid "Pas encore de motif"
+msgstr "Noch kein Muster"
+
+#: templates/beadmodels/details.html:222
+msgid "Générer"
+msgstr "Generieren"
+
+#: templates/beadmodels/details.html:233
+msgid "Cliquer pour modifier"
+msgstr "Klicken zum Bearbeiten"
+
+#: templates/beadmodels/details.html:251
+msgid "Description…"
+msgstr "Beschreibung…"
+
+#: templates/beadmodels/details.html:268
+#: templates/beadmodels/partials/inline-card.html:30
+msgid "Privé"
+msgstr "Privat"
+
+#: templates/beadmodels/details.html:286
+msgid "Statistiques"
+msgstr "Statistiken"
+
+#: templates/beadmodels/details.html:291
+msgid "grille"
+msgstr "Raster"
+
+#: templates/beadmodels/details.html:296
+#: templates/beadmodels/wizard/final_step.html:53
+#: templates/beadmodels/wizard/instructions.html:78
+msgid "perles"
+msgstr "Perlen"
+
+#: templates/beadmodels/details.html:301
+#: templates/beadmodels/wizard/final_step.html:57
+msgid "couleurs"
+msgstr "Farben"
+
+#: templates/beadmodels/details.html:317
+#: templates/beadmodels/wizard/final_step.html:67
+msgid "Palette"
+msgstr "Farbpalette"
+
+#: templates/beadmodels/details.html:322
+#: templates/beadmodels/wizard/final_step.html:71
+#, python-format
+msgid "%(hex)s — %(count)s perles (%(pct)s%%)"
+msgstr "%(hex)s — %(count)s Perlen (%(pct)s%%)"
+
+#: templates/beadmodels/details.html:332
+msgid "Originale"
+msgstr "Original"
+
+#: templates/beadmodels/details.html:333
+msgid "Aperçu de l'image originale"
+msgstr "Vorschau des Originalbildes"
+
+#: templates/beadmodels/details.html:340
+msgid "Survoler pour agrandir"
+msgstr "Zum Vergrößern überfahren"
+
+#: templates/beadmodels/details.html:348 templates/beadmodels/details.html:371
+#: templates/beadmodels/partials/delete.html:13
+#: templates/beads/partials/bead_row_edit.html:19
+#: templates/shapes/partials/shape_row_edit.html:63
+msgid "Supprimer"
+msgstr "Löschen"
+
+#: templates/beadmodels/details.html:359
+msgid "Supprimer ce modèle ?"
+msgstr "Dieses Muster löschen?"
+
+#: templates/beadmodels/details.html:364
+#, python-format
+msgid "Le modèle <strong>« %(name)s »</strong> sera supprimé définitivement."
+msgstr "Das Muster <strong>„%(name)s\"</strong> wird endgültig gelöscht."
+
+#: templates/beadmodels/details.html:368 templates/beadmodels/edit.html:17
+#: templates/beadmodels/partials/delete.html:10
+#: templates/beadmodels/wizard/upload_image.html:79
+#: templates/beads/create_or_update.html:73
+#: templates/beads/partials/bead_edit_color.html:18
+#: templates/beads/partials/bead_edit_quantity.html:7
+#: templates/beads/partials/bead_row_edit.html:18
+#: templates/beads/partials/bead_row_new.html:18
+#: templates/shapes/partials/create_edit_shape.html:108
+#: templates/shapes/partials/shape_field_dimensions_edit.html:18
+#: templates/shapes/partials/shape_field_name_edit.html:7
+#: templates/shapes/partials/shape_field_type_edit.html:11
+#: templates/shapes/partials/shape_inline_add_form.html:59
+#: templates/shapes/partials/shape_inline_edit.html:97
+#: templates/shapes/partials/shape_name_edit.html:7
+#: templates/shapes/partials/shape_row_edit.html:55
+#: templates/shapes/partials/shape_row_new.html:54
+#: templates/shapes/partials/shape_type_edit.html:20
+msgid "Annuler"
+msgstr "Abbrechen"
+
+#: templates/beadmodels/edit.html:8
+msgid "Retour au modèle"
+msgstr "Zurück zum Muster"
+
+#: templates/beadmodels/edit.html:9
+msgid "Modifier le modèle"
+msgstr "Muster bearbeiten"
+
+#: templates/beadmodels/edit.html:18
+#: templates/beadmodels/wizard/final_step.html:147
+#: templates/beads/partials/bead_edit_quantity.html:6
+#: templates/beads/partials/bead_row_edit.html:17
+#: templates/shapes/partials/shape_row_edit.html:48
+msgid "Enregistrer"
+msgstr "Speichern"
+
+#: templates/beadmodels/models/my_models.html:7
+msgid "Mes modèles"
+msgstr "Meine Muster"
+
+#: templates/beadmodels/models/my_models.html:9
+#, python-format
+msgid "%(counter)s modèle créé"
+msgid_plural "%(counter)s modèles créés"
+msgstr[0] "%(counter)s Muster erstellt"
+msgstr[1] "%(counter)s Muster erstellt"
+
+#: templates/beadmodels/models/my_models.html:27
+msgid "Vous n'avez pas encore créé de modèle."
+msgstr "Sie haben noch keine Muster erstellt."
+
+#: templates/beadmodels/models/my_models.html:29
+msgid "Créer mon premier modèle"
+msgstr "Mein erstes Muster erstellen"
+
+#: templates/beadmodels/partials/delete.html:6
+#, python-format
+msgid "Supprimer \"%(name)s\" ?"
+msgstr "\"%(name)s\" löschen?"
+
+#: templates/beadmodels/partials/inline_display.html:3
+msgid "Cliquer pour modifier le nom"
+msgstr "Klicken, um den Namen zu bearbeiten"
+
+#: templates/beadmodels/partials/inline_display.html:9
+msgid "Cliquer pour modifier la description"
+msgstr "Klicken, um die Beschreibung zu bearbeiten"
+
+#: templates/beadmodels/partials/inline_display.html:14
+msgid "Cliquer pour ajouter une description"
+msgstr "Klicken, um eine Beschreibung hinzuzufügen"
+
+#: templates/beadmodels/partials/inline_display.html:15
+#: templates/beadmodels/partials/inline_edit.html:12
+msgid "Ajouter une description…"
+msgstr "Beschreibung hinzufügen…"
+
+#: templates/beadmodels/wizard/configure_model.html:16
+#: templates/beadmodels/wizard/final_step.html:17
+#: templates/beadmodels/wizard/upload_image.html:16
+msgid "Image"
+msgstr "Bild"
+
+#: templates/beadmodels/wizard/configure_model.html:20
+#: templates/beadmodels/wizard/final_step.html:21
+#: templates/beadmodels/wizard/upload_image.html:22
+msgid "Configuration"
+msgstr "Konfiguration"
+
+#: templates/beadmodels/wizard/configure_model.html:35
+#: templates/beadmodels/wizard/upload_image.html:42
+msgid "Veuillez corriger les erreurs ci-dessous."
+msgstr "Bitte korrigieren Sie die folgenden Fehler."
+
+#: templates/beadmodels/wizard/configure_model.html:50
+msgid "Aucune image chargée."
+msgstr "Kein Bild geladen."
+
+#: templates/beadmodels/wizard/configure_model.html:50
+#: templates/beadmodels/wizard/configure_model.html:132
+#: templates/beadmodels/wizard/final_step.html:156
+msgid "Retour"
+msgstr "Zurück"
+
+#: templates/beadmodels/wizard/configure_model.html:59
+#: templates/beadmodels/wizard/partials/preview.html:3
+msgid "Aperçu pixelisé"
+msgstr "Pixelierte Vorschau"
+
+#: templates/beadmodels/wizard/configure_model.html:76
+msgid "Forme de la plaque"
+msgstr "Plattenform"
+
+#: templates/beadmodels/wizard/configure_model.html:135
+msgid "Générer le modèle"
+msgstr "Muster generieren"
+
+#: templates/beadmodels/wizard/final_step.html:9
+msgid "Finalisation du modèle"
+msgstr "Muster finalisieren"
+
+#: templates/beadmodels/wizard/final_step.html:39
+msgid "Prévisualisation finale"
+msgstr "Endvorschau"
+
+#: templates/beadmodels/wizard/final_step.html:41
+msgid "Image finale introuvable."
+msgstr "Endbild nicht gefunden."
+
+#: templates/beadmodels/wizard/final_step.html:49
+#: templates/shapes/shape_list_columns.html:34
+msgid "dimensions"
+msgstr "Abmessungen"
+
+#: templates/beadmodels/wizard/final_step.html:78
+msgid "Détails de la palette"
+msgstr "Palettendetails"
+
+#: templates/beadmodels/wizard/final_step.html:99
+msgid "Fond détecté :"
+msgstr "Hintergrund erkannt:"
+
+#: templates/beadmodels/wizard/final_step.html:101
+#, python-format
+msgid "%(count)s perles exclues"
+msgstr "%(count)s Perlen ausgeschlossen"
+
+#: templates/beadmodels/wizard/final_step.html:133
+msgid "Rendre visible aux autres utilisateurs"
+msgstr "Für andere Benutzer sichtbar machen"
+
+#: templates/beadmodels/wizard/final_step.html:150
+msgid "Télécharger PNG"
+msgstr "PNG herunterladen"
+
+#: templates/beadmodels/wizard/final_step.html:159
+#: templates/beadmodels/wizard/instructions.html:88
+msgid "Instructions"
+msgstr "Anleitung"
+
+#: templates/beadmodels/wizard/instructions.html:12
+#, python-format
+msgid "Instructions pour \"%(name)s\""
+msgstr "Anleitung für \"%(name)s\""
+
+#: templates/beadmodels/wizard/instructions.html:14
+#, python-format
+msgid "Modèle de perles à repasser - Généré le %(d)s"
+msgstr "Bügelperlen-Muster - Erstellt am %(d)s"
+
+#: templates/beadmodels/wizard/instructions.html:23
+msgid "Modèle"
+msgstr "Muster"
+
+#: templates/beadmodels/wizard/instructions.html:25
+#, python-format
+msgid "Dimensions: %(w)s×%(h)s perles (%(total)s perles au total)"
+msgstr "Abmessungen: %(w)s×%(h)s Perlen (%(total)s Perlen insgesamt)"
+
+#: templates/beadmodels/wizard/instructions.html:30
+msgid "Matériel nécessaire"
+msgstr "Benötigtes Material"
+
+#: templates/beadmodels/wizard/instructions.html:32
+msgid "Pour réaliser ce modèle, vous aurez besoin de :"
+msgstr "Für dieses Muster benötigen Sie:"
+
+#: templates/beadmodels/wizard/instructions.html:36
+#, python-format
+msgid "%(total)s perles à repasser au total, réparties en %(count)s couleurs"
+msgstr "%(total)s Bügelperlen insgesamt, verteilt auf %(count)s Farben"
+
+#: templates/beadmodels/wizard/instructions.html:39
+#, python-format
+msgid "Une plaque de %(w)s×%(h)s plots"
+msgstr "Eine Platte mit %(w)s×%(h)s Stiften"
+
+#: templates/beadmodels/wizard/instructions.html:42
+msgid "Du papier sulfurisé"
+msgstr "Backpapier"
+
+#: templates/beadmodels/wizard/instructions.html:45
+msgid "Un fer à repasser"
+msgstr "Ein Bügeleisen"
+
+#: templates/beadmodels/wizard/instructions.html:51
+msgid "Palette de couleurs"
+msgstr "Farbpalette"
+
+#: templates/beadmodels/wizard/instructions.html:53
+msgid "Voici les couleurs nécessaires pour réaliser ce modèle :"
+msgstr "Hier sind die benötigten Farben für dieses Muster:"
+
+#: templates/beadmodels/wizard/instructions.html:60
+#: templates/beads/create_or_update.html:26 templates/beads/table.html:40
+msgid "Couleur"
+msgstr "Farbe"
+
+#: templates/beadmodels/wizard/instructions.html:66
+msgid "Pourcentage"
+msgstr "Prozentsatz"
+
+#: templates/beadmodels/wizard/instructions.html:91
+#, python-format
+msgid "Placez votre plaque de %(w)s×%(h)s plots sur une surface plane."
+msgstr "Legen Sie Ihre %(w)s×%(h)s Steckplatte auf eine ebene Fläche."
+
+#: templates/beadmodels/wizard/instructions.html:94
+msgid "Commencez par les perles du centre pour éviter les décalages."
+msgstr "Beginnen Sie mit den Perlen in der Mitte, um Verschiebungen zu vermeiden."
+
+#: templates/beadmodels/wizard/instructions.html:97
+msgid "Suivez le modèle en plaçant les perles couleur par couleur."
+msgstr "Folgen Sie dem Muster, indem Sie die Perlen Farbe für Farbe platzieren."
+
+#: templates/beadmodels/wizard/instructions.html:100
+msgid "Une fois toutes les perles placées, vérifiez que le motif correspond bien au modèle."
+msgstr "Überprüfen Sie nach dem Platzieren aller Perlen, ob das Design dem Muster entspricht."
+
+#: templates/beadmodels/wizard/instructions.html:103
+msgid "Placez une feuille de papier sulfurisé sur les perles."
+msgstr "Legen Sie ein Blatt Backpapier über die Perlen."
+
+#: templates/beadmodels/wizard/instructions.html:106
+msgid "Repassez doucement en faisant des mouvements circulaires pendant environ 15-20 secondes."
+msgstr "Bügeln Sie vorsichtig in kreisenden Bewegungen für etwa 15-20 Sekunden."
+
+#: templates/beadmodels/wizard/instructions.html:109
+msgid "Laissez refroidir avant de retirer délicatement la création."
+msgstr "Lassen Sie es abkühlen, bevor Sie die Kreation vorsichtig entfernen."
+
+#: templates/beadmodels/wizard/instructions.html:116
+msgid "Modèle généré avec l'application Buggel - Tous droits réservés"
+msgstr "Muster erstellt mit der Buggel-App - Alle Rechte vorbehalten"
+
+#: templates/beadmodels/wizard/instructions.html:121
+msgid "Imprimer les instructions"
+msgstr "Anleitung drucken"
+
+#: templates/beadmodels/wizard/partials/preview.html:6
+msgid "Ajustez les paramètres pour voir l'aperçu."
+msgstr "Passen Sie die Einstellungen an, um die Vorschau zu sehen."
+
+#: templates/beadmodels/wizard/upload_image.html:58
+msgid "Glissez votre image ici"
+msgstr "Ziehen Sie Ihr Bild hierher"
+
+#: templates/beadmodels/wizard/upload_image.html:61
+msgid "ou"
+msgstr "oder"
+
+#: templates/beadmodels/wizard/upload_image.html:61
+msgid "parcourez vos fichiers"
+msgstr "durchsuchen Sie Ihre Dateien"
+
+#: templates/beadmodels/wizard/upload_image.html:64
+msgid "PNG, JPG, WEBP — max 10 Mo"
+msgstr "PNG, JPG, WEBP — max. 10 MB"
+
+#: templates/beadmodels/wizard/upload_image.html:72
+#: templates/shapes/partials/create_edit_shape.html:97
+msgid "Aperçu"
+msgstr "Vorschau"
+
+#: templates/beadmodels/wizard/upload_image.html:73
+msgid "Retirer l'image"
+msgstr "Bild entfernen"
+
+#: templates/beadmodels/wizard/upload_image.html:80
+msgid "Suivant"
+msgstr "Weiter"
+
+#: templates/beads/create_or_update.html:12
+msgid "Retour à la collection"
+msgstr "Zurück zur Sammlung"
+
+#: templates/beads/create_or_update.html:15
+#: templates/beads/partials/bead_row_display.html:22
+#: templates/shapes/partials/create_edit_shape.html:106
+#: templates/shapes/partials/shape_row_display.html:26
+msgid "Modifier"
+msgstr "Bearbeiten"
+
+#: templates/beads/create_or_update.html:15
+#: templates/beads/create_or_update.html:77 templates/beads/table.html:21
+#: templates/shapes/partials/create_edit_shape.html:106
+#: templates/shapes/partials/shape_inline_add_form.html:58
+msgid "Ajouter"
+msgstr "Hinzufügen"
+
+#: templates/beads/create_or_update.html:15
+msgid "une perle"
+msgstr "eine Perle"
+
+#: templates/beads/create_or_update.html:34
+msgid "Couleurs rapides"
+msgstr "Schnellfarben"
+
+#: templates/beads/create_or_update.html:62
+msgid "Informations"
+msgstr "Informationen"
+
+#: templates/beads/create_or_update.html:77
+msgid "Mettre à jour"
+msgstr "Aktualisieren"
+
+#: templates/beads/partials/bead_color_display.html:3
+msgid "Cliquez pour modifier la couleur"
+msgstr "Klicken, um die Farbe zu bearbeiten"
+
+#: templates/beads/partials/bead_edit_color.html:7
+#: templates/beads/partials/bead_edit_color.html:8
+#: templates/beads/partials/bead_row_edit.html:4
+#: templates/beads/partials/bead_row_new.html:4
+msgid "Choisir une couleur"
+msgstr "Farbe auswählen"
+
+#: templates/beads/partials/bead_edit_color.html:10
+msgid "Couleurs courantes"
+msgstr "Übliche Farben"
+
+#: templates/beads/partials/bead_edit_color.html:17
+msgid "Valider"
+msgstr "Bestätigen"
+
+#: templates/beads/partials/bead_edit_quantity.html:5
+#: templates/beads/partials/bead_row_edit.html:10
+#: templates/beads/partials/bead_row_new.html:10
+msgid "Qté"
+msgstr "Anz."
+
+#: templates/beads/partials/bead_quantity_display.html:12
+msgid "Cliquez pour modifier"
+msgstr "Klicken zum Bearbeiten"
+
+#: templates/beads/partials/bead_row_edit.html:13
+#: templates/beads/partials/bead_row_new.html:13
+msgid "Notes..."
+msgstr "Notizen..."
+
+#: templates/beads/partials/bead_row_edit.html:19
+msgid "Supprimer cette perle ?"
+msgstr "Diese Perle löschen?"
+
+#: templates/beads/partials/bead_row_new.html:7
+msgid "Nom de la perle"
+msgstr "Perlenname"
+
+#: templates/beads/partials/stock_alert.html:5 templates/beads/table.html:30
+msgid "Stock faible :"
+msgstr "Niedriger Bestand:"
+
+#: templates/beads/partials/stock_alert.html:5 templates/beads/table.html:30
+#, python-format
+msgid "%(counter)s perle en dessous de %(threshold)s unités."
+msgid_plural "%(counter)s perles en dessous de %(threshold)s unités."
+msgstr[0] "%(counter)s Perle unter %(threshold)s Einheiten."
+msgstr[1] "%(counter)s Perlen unter %(threshold)s Einheiten."
+
+#: templates/beads/partials/stock_alert.html:6
+#: templates/shapes/partials/shape_list_content.html:5
+#: templates/shapes/shape_list.html:24
+#: templates/shapes/shape_list_columns.html:46
+msgid "Close"
+msgstr "Schließen"
+
+#: templates/beads/table.html:13
+msgid "Ma collection de perles"
+msgstr "Meine Perlensammlung"
+
+#: templates/beads/table.html:14
+msgid "Gérez vos perles et suivez vos stocks"
+msgstr "Verwalten Sie Ihre Perlen und verfolgen Sie Ihren Bestand"
+
+#: templates/beads/table.html:55
+msgid "Aucune perle. Cliquez « Ajouter » pour commencer."
+msgstr "Keine Perlen. Klicken Sie auf „Hinzufügen\", um zu beginnen."
+
+#: templates/beads/table.html:64
+msgid "Survolez une ligne et cliquez sur le stylo pour modifier."
+msgstr "Fahren Sie über eine Zeile und klicken Sie auf den Stift zum Bearbeiten."
+
+#: templates/home.html:7
+msgid "Créez des modèles de perles"
+msgstr "Erstellen Sie Perlenmuster"
+
+#: templates/home.html:7
+msgid "à partir de vos images"
+msgstr "aus Ihren Bildern"
+
+#: templates/home.html:8
+msgid "Transformez n'importe quelle image en patron de perles à repasser en quelques clics."
+msgstr "Verwandeln Sie jedes Bild in wenigen Klicks in ein Bügelperlen-Muster."
+
+#: templates/home.html:10
+msgid "S'inscrire gratuitement"
+msgstr "Kostenlos registrieren"
+
+#: templates/home.html:13
+msgid "Assistant de création"
+msgstr "Erstellungsassistent"
+
+#: templates/home.html:20
+msgid "Derniers modèles publics"
+msgstr "Neueste öffentliche Muster"
+
+#: templates/home.html:32
+msgid "Aucun modèle public n'a encore été créé."
+msgstr "Es wurden noch keine öffentlichen Muster erstellt."
+
+#: templates/shapes/partials/create_edit_shape.html:7
+msgid "Modifier une forme"
+msgstr "Form bearbeiten"
+
+#: templates/shapes/partials/create_edit_shape.html:7
+msgid "Ajouter une forme"
+msgstr "Form hinzufügen"
+
+#: templates/shapes/partials/create_edit_shape.html:28
+#: templates/shapes/partials/create_edit_shape.html:79
+#: templates/shapes/partials/shape_display_field.html:23
+#: templates/shapes/partials/shape_field_type_edit.html:7
+#: templates/shapes/partials/shape_inline_add_form.html:47
+#: templates/shapes/partials/shape_inline_edit.html:73
+#: templates/shapes/partials/shape_row_edit.html:16
+#: templates/shapes/partials/shape_row_new.html:16
+#: templates/shapes/partials/shape_type.html:7
+#: templates/shapes/partials/shape_type_edit.html:10
+#: templates/shapes/shape_list.html:39 templates/shapes/shape_row_list.html:37
+msgid "Cercle"
+msgstr "Kreis"
+
+#: templates/shapes/partials/create_edit_shape.html:31
+#: templates/shapes/partials/shape_inline_add_form.html:10
+msgid "Sera déterminé automatiquement"
+msgstr "Wird automatisch bestimmt"
+
+#: templates/shapes/partials/create_edit_shape.html:34
+msgid "(déterminé par les dimensions)"
+msgstr "(durch die Abmessungen bestimmt)"
+
+#: templates/shapes/partials/create_edit_shape.html:41
+#: templates/shapes/partials/shape_list_content.html:15
+#: templates/shapes/shape_list_columns.html:64
+#: templates/shapes/shape_row_list.html:13
+msgid "Dimensions"
+msgstr "Abmessungen"
+
+#: templates/shapes/partials/create_edit_shape.html:92
+msgid "Partager cette forme avec les autres utilisateurs"
+msgstr "Diese Form mit anderen Benutzern teilen"
+
+#: templates/shapes/partials/shape_dimensions.html:9
+#: templates/shapes/partials/shape_display_field.html:56
+#: templates/shapes/shape_row_list.html:45
+msgid "Modifier les dimensions"
+msgstr "Abmessungen bearbeiten"
+
+#: templates/shapes/partials/shape_display_field.html:9
+msgid "Nouvelle forme"
+msgstr "Neue Form"
+
+#: templates/shapes/partials/shape_display_field.html:12
+#: templates/shapes/partials/shape_name.html:3
+#: templates/shapes/shape_row_list.html:27
+msgid "Modifier le nom"
+msgstr "Name bearbeiten"
+
+#: templates/shapes/partials/shape_display_field.html:31
+msgid "Modifier le type"
+msgstr "Typ bearbeiten"
+
+#: templates/shapes/partials/shape_field_dimensions_edit.html:17
+#: templates/shapes/partials/shape_field_name_edit.html:6
+#: templates/shapes/partials/shape_field_type_edit.html:10
+#: templates/shapes/partials/shape_inline_edit.html:96
+#: templates/shapes/partials/shape_name_edit.html:6
+#: templates/shapes/partials/shape_type_edit.html:13
+msgid "Sauvegarder"
+msgstr "Speichern"
+
+#: templates/shapes/partials/shape_inline_add_form.html:5
+msgid "Nom de la forme"
+msgstr "Formname"
+
+#: templates/shapes/partials/shape_inline_add_form.html:38
+#: templates/shapes/partials/shape_inline_edit.html:58
+#: templates/shapes/partials/shape_row_edit.html:30
+#: templates/shapes/partials/shape_row_new.html:30
+msgid "Côté"
+msgstr "Seite"
+
+#: templates/shapes/partials/shape_inline_edit.html:12
+msgid "Choisissez un type de forme :"
+msgstr "Wählen Sie einen Formtyp:"
+
+#: templates/shapes/partials/shape_list_content.html:14
+#: templates/shapes/shape_list_columns.html:63
+#: templates/shapes/shape_row_list.html:10
+msgid "Type"
+msgstr "Typ"
+
+#: templates/shapes/partials/shape_list_content.html:26
+msgid "Aucune forme personnalisée"
+msgstr "Keine benutzerdefinierten Formen"
+
+#: templates/shapes/partials/shape_list_content.html:27
+#: templates/shapes/shape_row_list.html:60
+msgid "Cliquez sur le bouton + pour ajouter une nouvelle forme"
+msgstr "Klicken Sie auf die Schaltfläche +, um eine neue Form hinzuzufügen"
+
+#: templates/shapes/partials/shape_list_content.html:36
+#: templates/shapes/shape_row_list.html:72
+msgid "Créer une nouvelle forme"
+msgstr "Neue Form erstellen"
+
+#: templates/shapes/partials/shape_row.html:23
+#: templates/shapes/shape_row_list.html:50
+#, python-format
+msgid "Voulez-vous vraiment supprimer la forme %(name)s ?"
+msgstr "Möchten Sie die Form %(name)s wirklich löschen?"
+
+#: templates/shapes/partials/shape_row.html:23
+#: templates/shapes/shape_row_list.html:50
+msgid "Supprimer cette forme"
+msgstr "Diese Form löschen"
+
+#: templates/shapes/partials/shape_row_display.html:11
+msgid "Défaut"
+msgstr "Standard"
+
+#: templates/shapes/partials/shape_row_display.html:14
+msgid "Partagée"
+msgstr "Geteilt"
+
+#: templates/shapes/partials/shape_row_edit.html:23
+#: templates/shapes/partials/shape_row_new.html:23
+msgid "L"
+msgstr "B"
+
+#: templates/shapes/partials/shape_row_edit.html:25
+#: templates/shapes/partials/shape_row_new.html:25
+msgid "H"
+msgstr "H"
+
+#: templates/shapes/partials/shape_row_edit.html:36
+#: templates/shapes/partials/shape_row_new.html:36
+msgid "Dia"
+msgstr "Dm"
+
+#: templates/shapes/partials/shape_row_edit.html:62
+#, python-format
+msgid "Supprimer la plaque « %(name)s » ?"
+msgstr "Platte \"%(name)s\" löschen?"
+
+#: templates/shapes/partials/shape_row_new.html:10
+msgid "Nom de la plaque"
+msgstr "Plattenname"
+
+#: templates/shapes/partials/shape_type.html:10
+msgid "(Automatique)"
+msgstr "(Automatisch)"
+
+#: templates/shapes/shape_list.html:16
+msgid "Gestion des formes"
+msgstr "Formenverwaltung"
+
+#: templates/shapes/shape_list.html:34
+msgid "Rechercher..."
+msgstr "Suchen..."
+
+#: templates/shapes/shape_list.html:36
+msgid "Tous types"
+msgstr "Alle Typen"
+
+#: templates/shapes/shape_list_columns.html:12
+msgid "Mes plaques"
+msgstr "Meine Steckplatten"
+
+#: templates/shapes/shape_list_columns.html:13
+msgid "Gérez vos plaques à picots — la base physique pour poser vos perles à repasser"
+msgstr "Verwalten Sie Ihre Steckplatten — die physische Grundlage für Ihre Bügelperlen"
+
+#: templates/shapes/shape_list_columns.html:20
+msgid "Nouvelle plaque"
+msgstr "Neue Platte"
+
+#: templates/shapes/shape_list_columns.html:31
+msgid "Comment ça marche ?"
+msgstr "Wie funktioniert es?"
+
+#: templates/shapes/shape_list_columns.html:33
+msgid "Les plaques à picots sont la base physique sur laquelle vous posez les perles à repasser."
+msgstr "Steckplatten sind die physische Grundlage, auf die Sie die Bügelperlen setzen."
+
+#: templates/shapes/shape_list_columns.html:34
+msgid "Chaque plaque a une"
+msgstr "Jede Platte hat eine"
+
+#: templates/shapes/shape_list_columns.html:34
+msgid "forme"
+msgstr "Form"
+
+#: templates/shapes/shape_list_columns.html:34
+msgid "et des"
+msgstr "und"
+
+#: templates/shapes/shape_list_columns.html:34
+msgid "(en nombre de picots)."
+msgstr "(in Anzahl der Stifte)."
+
+#: templates/shapes/shape_list_columns.html:35
+msgid "Quand vous créez un modèle, l'image est adaptée à la grille de la plaque"
+msgstr "Wenn Sie ein Muster erstellen, wird das Bild an das Raster der Platte angepasst"
+
+#: templates/shapes/shape_list_columns.html:35
+msgid "1 pixel = 1 picot = 1 perle"
+msgstr "1 Pixel = 1 Stift = 1 Perle"
+
+#: templates/shapes/shape_list_columns.html:65
+msgid "Picots"
+msgstr "Stifte"
+
+#: templates/shapes/shape_list_columns.html:77
+msgid "Aucune plaque. Cliquez « Nouvelle plaque » pour commencer."
+msgstr "Keine Platten. Klicken Sie auf „Neue Platte\", um zu beginnen."
+
+#: templates/shapes/shape_list_columns.html:87
+msgid "Survolez une ligne et cliquez sur le stylo pour modifier. Les plaques par défaut ne sont pas modifiables."
+msgstr "Fahren Sie über eine Zeile und klicken Sie auf den Stift zum Bearbeiten. Standardplatten können nicht bearbeitet werden."
+
+#: templates/shapes/shape_row_list.html:39
+msgid "(déterminé automatiquement)"
+msgstr "(automatisch bestimmt)"
+
+#: templates/shapes/shape_row_list.html:58
+msgid "Aucune forme disponible"
+msgstr "Keine Formen verfügbar"
+
+#: templates/shapes/shape_row_list.html:102
+#: templates/shapes/shape_row_list.html:133
+msgid "Première"
+msgstr "Erste"
+
+#: templates/shapes/shape_row_list.html:128
+#: templates/shapes/shape_row_list.html:136
+msgid "Précédente"
+msgstr "Vorherige"
+
+#: templates/shapes/shape_row_list.html:199
+#: templates/shapes/shape_row_list.html:230
+msgid "Suivante"
+msgstr "Nächste"
+
+#: templates/shapes/shape_row_list.html:225
+#: templates/shapes/shape_row_list.html:233
+msgid "Dernière"
+msgstr "Letzte"

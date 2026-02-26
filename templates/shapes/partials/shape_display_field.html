@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if field_name == 'name' %}
   <span class="shape-name-display">
     {% if shape %}
@@ -5,29 +6,29 @@
     {% elif session_data %}
       {{ session_data.name }}
     {% else %}
-      Nouvelle forme
+      {% trans 'Nouvelle forme' %}
     {% endif %}
   </span>
-  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'name' %}" hx-target="#shape-name-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'name' %}" hx-target="#shape-name-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="{% trans 'Modifier le nom' %}"><i class="bi bi-pencil-square"></i></button>
 {% elif field_name == 'type' %}
   <span class="shape-type-display">
     {% if shape %}
       {{ shape.get_shape_type_display }}
     {% elif session_data %}
       {% if session_data.shape_type == 'rectangle' %}
-        Rectangle
+        {% trans 'Rectangle' %}
       {% elif session_data.shape_type == 'square' %}
-        Carré
+        {% trans 'Carré' %}
       {% elif session_data.shape_type == 'circle' %}
-        Cercle
+        {% trans 'Cercle' %}
       {% else %}
-        Rectangle
+        {% trans 'Rectangle' %}
       {% endif %}
     {% else %}
-      Rectangle
+      {% trans 'Rectangle' %}
     {% endif %}
   </span>
-  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'type' %}" hx-target="#shape-type-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier le type"><i class="bi bi-pencil-square"></i></button>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'type' %}" hx-target="#shape-type-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="{% trans 'Modifier le type' %}"><i class="bi bi-pencil-square"></i></button>
 {% elif field_name == 'dimensions' %}
   <span class="shape-dimensions-display">
     {% if shape %}
@@ -52,5 +53,5 @@
       10 × 10
     {% endif %}
   </span>
-  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'dimensions' %}" hx-target="#shape-dimensions-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
+  <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_edit_field' shape.id|default:'new' 'dimensions' %}" hx-target="#shape-dimensions-{{ shape.id|default:'new' }}" hx-swap="innerHTML" title="{% trans 'Modifier les dimensions' %}"><i class="bi bi-pencil-square"></i></button>
 {% endif %}

@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils.translation import gettext as _
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -44,7 +45,7 @@ class BeadModelDetailView(DetailView):
         obj = self.get_object()
         is_owner = request.user.is_authenticated and obj.creator == request.user
         if not obj.is_public and not is_owner:
-            messages.error(request, "Vous n'avez pas accès à ce modèle.")
+            messages.error(request, _("Vous n'avez pas accès à ce modèle."))
             return redirect("beadmodels:my_models")
         return super().dispatch(request, *args, **kwargs)
 
@@ -61,7 +62,7 @@ class BeadModelCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.creator = self.request.user
-        messages.success(self.request, "Votre modèle a été créé avec succès!")
+        messages.success(self.request, _("Votre modèle a été créé avec succès!"))
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -76,13 +77,13 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         model = self.get_object()
         if model.creator != request.user:
-            messages.error(request, "Vous n'avez pas le droit de modifier ce modèle.")
+            messages.error(request, _("Vous n'avez pas le droit de modifier ce modèle."))
             return redirect("beadmodels:details", pk=model.pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         # Supprimer l'ancienne image si nécessaire est géré ailleurs
-        messages.success(self.request, "Votre modèle a été modifié avec succès!")
+        messages.success(self.request, _("Votre modèle a été modifié avec succès!"))
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -97,12 +98,12 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
         if obj.creator != request.user:
-            messages.error(request, "Vous n'avez pas le droit de supprimer ce modèle.")
+            messages.error(request, _("Vous n'avez pas le droit de supprimer ce modèle."))
             return redirect("beadmodels:details", pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        messages.success(self.request, "Votre modèle a été supprimé avec succès!")
+        messages.success(self.request, _("Votre modèle a été supprimé avec succès!"))
         return super().form_valid(form)
 
 
@@ -118,7 +119,7 @@ class BeadModelDownloadView(LoginRequiredMixin, View):
             raise Http404
 
         if not model.bead_pattern:
-            messages.error(request, "Ce modèle n'a pas encore de motif en perles.")
+            messages.error(request, _("Ce modèle n'a pas encore de motif en perles."))
             return redirect("beadmodels:details", pk=pk)
 
         img = Image.open(model.bead_pattern.path)

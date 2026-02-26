@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from django.views.generic import ListView
 
 from .forms import BeadShapeForm
@@ -29,7 +30,9 @@ def _check_shape_permission(request, shape, action="modifier"):
     Retourne une HttpResponse si non autorisé, None sinon.
     """
     if shape.creator != request.user and not shape.is_default:
-        msg = f"Vous n'avez pas l'autorisation de {action} cette forme"
+        msg = _("Vous n'avez pas l'autorisation de %(action)s cette forme") % {
+            "action": action
+        }
         if getattr(request, "htmx", False):
             return HttpResponse(msg, status=403)
         request.session["error_message"] = msg
@@ -40,7 +43,7 @@ def _check_shape_permission(request, shape, action="modifier"):
 def _require_htmx(request):
     """Lève Http404 si la requête n'est pas HTMX."""
     if not getattr(request, "htmx", False):
-        raise Http404("Cette vue est uniquement accessible via HTMX.")
+        raise Http404(_("Cette vue est uniquement accessible via HTMX."))
 
 
 def _get_shapes_context(user):
@@ -112,13 +115,13 @@ def create_shape(request):
         shape.update_from_dimensions()
         shape.save()
 
-        msg = "Forme créée avec succès!"
+        msg = _("Forme créée avec succès!")
         if getattr(request, "htmx", False):
             request.session["success_message"] = msg
         else:
             messages.success(request, msg)
     else:
-        msg = "Erreur lors de la création de la forme."
+        msg = _("Erreur lors de la création de la forme.")
         if getattr(request, "htmx", False):
             request.session["error_message"] = msg
         else:
@@ -144,10 +147,10 @@ def update_shape(request, shape_id):
         shape.update_from_dimensions()
         shape.save()
 
-        msg = "Forme mise à jour avec succès!"
+        msg = _("Forme mise à jour avec succès!")
         request.session["success_message"] = msg
     else:
-        msg = "Erreur lors de la mise à jour de la forme."
+        msg = _("Erreur lors de la mise à jour de la forme.")
         request.session["error_message"] = msg
 
     return redirect("shapes:shape_list_columns")
@@ -162,14 +165,14 @@ def delete_shape(request, shape_id):
         return error_response
 
     if shape.is_default:
-        msg = "Les formes par défaut ne peuvent pas être supprimées"
+        msg = _("Les formes par défaut ne peuvent pas être supprimées")
         request.session["error_message"] = msg
         return redirect("shapes:shape_list_columns")
 
     shape_name = shape.name
     shape.delete()
 
-    msg = f"Forme {shape_name} supprimée avec succès!"
+    msg = _("Forme %(name)s supprimée avec succès!") % {"name": shape_name}
     request.session["success_message"] = msg
 
     return redirect("shapes:shape_list_columns")
@@ -209,7 +212,7 @@ def shape_save_or_update_hx_view(request, shape_id=None):
     _require_htmx(request)
 
     if request.method != "POST":
-        return HttpResponse("Méthode non autorisée", status=405)
+        return HttpResponse(_("Méthode non autorisée"), status=405)
 
     is_new = shape_id is None
     instance = None
@@ -225,7 +228,7 @@ def shape_save_or_update_hx_view(request, shape_id=None):
         errors = "; ".join(
             e for field_errors in form.errors.values() for e in field_errors
         )
-        return HttpResponse(f"Erreur : {errors}", status=400)
+        return HttpResponse(_("Erreur : %(errors)s") % {"errors": errors}, status=400)
 
     shape = form.save(commit=False)
     if is_new:
@@ -235,7 +238,9 @@ def shape_save_or_update_hx_view(request, shape_id=None):
 
     if is_new:
         context = _get_shapes_context(request.user)
-        context["success_message"] = f"Forme {shape.name} créée avec succès!"
+        context["success_message"] = _("Forme %(name)s créée avec succès!") % {
+            "name": shape.name
+        }
         return render(request, "shapes/shape_row_list.html", context)
     else:
         return render(
@@ -244,7 +249,8 @@ def shape_save_or_update_hx_view(request, shape_id=None):
             {
                 "shape": shape,
                 "success": True,
-                "message": f"Forme {shape.name} mise à jour avec succès!",
+                "message": _("Forme %(name)s mise à jour avec succès!")
+                % {"name": shape.name},
             },
         )
 
@@ -258,19 +264,21 @@ def shape_delete_hx_view(request, shape_id):
 
     if shape.creator != request.user:
         return HttpResponse(
-            "Vous n'avez pas l'autorisation de supprimer cette forme", status=403
+            _("Vous n'avez pas l'autorisation de supprimer cette forme"), status=403
         )
 
     if shape.is_default:
         return HttpResponse(
-            "Les formes par défaut ne peuvent pas être supprimées", status=403
+            _("Les formes par défaut ne peuvent pas être supprimées"), status=403
         )
 
     shape_name = shape.name
     shape.delete()
 
     context = _get_shapes_context(request.user)
-    context["success_message"] = f"Forme {shape_name} supprimée avec succès!"
+    context["success_message"] = _("Forme %(name)s supprimée avec succès!") % {
+        "name": shape_name
+    }
 
     return render(request, "shapes/partials/shape_list_content.html", context)
 
@@ -349,7 +357,9 @@ def shape_inline_update(request, shape_id):
 
     except (ValueError, TypeError) as e:
         return HttpResponse(
-            f"Erreur lors de la mise à jour des dimensions: {e}", status=400
+            _("Erreur lors de la mise à jour des dimensions : %(error)s")
+            % {"error": e},
+            status=400,
         )
 
 
@@ -395,7 +405,10 @@ def shape_name_update(request, shape_id):
         shape.save()
         return render(request, "shapes/partials/shape_name.html", {"shape": shape})
     except Exception as e:
-        return HttpResponse(f"Erreur lors de la mise à jour du nom: {e}", status=400)
+        return HttpResponse(
+            _("Erreur lors de la mise à jour du nom : %(error)s") % {"error": e},
+            status=400,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -470,7 +483,10 @@ def shape_type_update(request, shape_id):
         return response
 
     except Exception as e:
-        return HttpResponse(f"Erreur lors de la mise à jour du type: {e}", status=400)
+        return HttpResponse(
+            _("Erreur lors de la mise à jour du type : %(error)s") % {"error": e},
+            status=400,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -532,7 +548,7 @@ def shape_save_row_htmx(request, shape_id):
         return render(
             request,
             "shapes/partials/shape_row_edit.html",
-            {"shape": shape, "error": "Dimensions invalides."},
+            {"shape": shape, "error": _("Dimensions invalides.")},
         )
 
     return render(request, "shapes/partials/shape_row_display.html", {"shape": shape})
@@ -571,7 +587,10 @@ def shape_create_inline_htmx(request):
                 dims = f"{size}×{size}"
             elif shape_type == "circle":
                 dims = f"∅{diameter}"
-            name = f"Plaque {dict(BeadShape.SHAPE_TYPES).get(shape_type, '')} {dims}"
+            name = _("Plaque %(type)s %(dims)s") % {
+                "type": dict(BeadShape.SHAPE_TYPES).get(shape_type, ""),
+                "dims": dims,
+            }
 
         shape = BeadShape.objects.create(
             creator=request.user,
@@ -586,7 +605,11 @@ def shape_create_inline_htmx(request):
         return render(
             request,
             "shapes/partials/shape_row_new.html",
-            {"error": "Dimensions invalides.", "name": name, "shape_type": shape_type},
+            {
+                "error": _("Dimensions invalides."),
+                "name": name,
+                "shape_type": shape_type,
+            },
         )
 
     return render(request, "shapes/partials/shape_row_display.html", {"shape": shape})
@@ -602,7 +625,7 @@ def shape_delete_row_htmx(request, shape_id):
 
     if shape.is_default:
         return HttpResponse(
-            "Les plaques par défaut ne peuvent pas être supprimées", status=403
+            _("Les plaques par défaut ne peuvent pas être supprimées"), status=403
         )
 
     shape.delete()

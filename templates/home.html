@@ -1,22 +1,23 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block content %}
   <!-- Hero -->
   <section class="text-center py-5 mb-5" style="background: linear-gradient(135deg, #f0efff 0%, #e8f4fd 100%); margin: -1.5rem -0.75rem 2rem; padding: 3.5rem 1rem; border-radius: 1rem;">
-    <h1 class="fw-bold mb-2" style="font-size:2rem; color:#1a1a2e;">Créez des modèles de perles<br />à partir de vos images</h1>
-    <p class="text-muted mb-4 mx-auto" style="max-width:480px; font-size:.95rem;">Transformez n'importe quelle image en patron de perles à repasser en quelques clics.</p>
+    <h1 class="fw-bold mb-2" style="font-size:2rem; color:#1a1a2e;">{% trans "Créez des modèles de perles" %}<br />{% trans "à partir de vos images" %}</h1>
+    <p class="text-muted mb-4 mx-auto" style="max-width:480px; font-size:.95rem;">{% trans "Transformez n'importe quelle image en patron de perles à repasser en quelques clics." %}</p>
     {% if not user.is_authenticated %}
-      <a class="btn btn-primary rounded-pill px-4" href="{% url 'accounts:register' %}"><i class="bi bi-person-plus me-1"></i>S'inscrire gratuitement</a>
-      <a class="btn btn-outline-primary rounded-pill px-4 ms-2" href="{% url 'login' %}">Connexion</a>
+      <a class="btn btn-primary rounded-pill px-4" href="{% url 'accounts:register' %}"><i class="bi bi-person-plus me-1"></i>{% trans "S'inscrire gratuitement" %}</a>
+      <a class="btn btn-outline-primary rounded-pill px-4 ms-2" href="{% url 'login' %}">{% trans "Connexion" %}</a>
     {% else %}
-      <a class="btn btn-primary rounded-pill px-4" href="{% url 'beadmodels:create' %}?reset=1&step_id=1"><i class="bi bi-magic me-1"></i>Assistant de création</a>
+      <a class="btn btn-primary rounded-pill px-4" href="{% url 'beadmodels:create' %}?reset=1&step_id=1"><i class="bi bi-magic me-1"></i>{% trans "Assistant de création" %}</a>
     {% endif %}
   </section>
 
   <!-- Public models -->
   {% if models %}
     <div class="d-flex align-items-center justify-content-between mb-3">
-      <h5 class="fw-semibold mb-0">Derniers modèles publics</h5>
+      <h5 class="fw-semibold mb-0">{% trans "Derniers modèles publics" %}</h5>
     </div>
     <div class="row g-4">
       {% for model in models %}
@@ -28,7 +29,7 @@
   {% else %}
     <div class="empty-state-card mt-4">
       <i class="bi bi-grid-3x3-gap"></i>
-      <p>Aucun modèle public n'a encore été créé.</p>
+      <p>{% trans "Aucun modèle public n'a encore été créé." %}</p>
     </div>
   {% endif %}
 {% endblock %}

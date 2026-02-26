@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
 {% endblock %}
 
-{% block title %}Finalisation du modèle{% endblock %}
+{% block title %}{% trans "Finalisation du modèle" %}{% endblock %}
 
 {% block content %}
   <div class="wizard-layout">
@@ -13,15 +14,15 @@
     <div class="wizard-stepper">
       <div class="wizard-step-item done">
         <div class="step-circle"><i class="bi bi-check2"></i></div>
-        <div class="step-label">Image</div>
+        <div class="step-label">{% trans "Image" %}</div>
       </div>
       <div class="wizard-step-item done">
         <div class="step-circle"><i class="bi bi-check2"></i></div>
-        <div class="step-label">Configuration</div>
+        <div class="step-label">{% trans "Configuration" %}</div>
       </div>
       <div class="wizard-step-item active">
         <div class="step-circle">3</div>
-        <div class="step-label">Finalisation</div>
+        <div class="step-label">{% trans "Finalisation" %}</div>
       </div>
     </div>
 
@@ -35,9 +36,9 @@
             {# Image #}
             <div class="finalize-preview">
               {% if image_base64 %}
-                <img src="data:image/png;base64,{{ image_base64 }}" alt="Prévisualisation finale" />
+                <img src="data:image/png;base64,{{ image_base64 }}" alt="{% trans "Prévisualisation finale" %}" />
               {% else %}
-                <div class="text-muted">Image finale introuvable.</div>
+                <div class="text-muted">{% trans "Image finale introuvable." %}</div>
               {% endif %}
             </div>
 
@@ -45,15 +46,15 @@
             <div class="stat-pills mt-3">
               <div class="stat-pill">
                 <strong>{{ grid_width }} × {{ grid_height }}</strong>
-                <span>dimensions</span>
+                <span>{% trans "dimensions" %}</span>
               </div>
               <div class="stat-pill">
                 <strong>{{ total_beads }}</strong>
-                <span>perles</span>
+                <span>{% trans "perles" %}</span>
               </div>
               <div class="stat-pill">
                 <strong>{{ beads_count }}</strong>
-                <span>couleurs</span>
+                <span>{% trans "couleurs" %}</span>
               </div>
               <div class="stat-pill">
                 <strong>{{ shape_name }}</strong>
@@ -63,18 +64,18 @@
 
             {# Palette swatches #}
             {% if palette %}
-              <div class="config-section-label">Palette</div>
+              <div class="config-section-label">{% trans "Palette" %}</div>
               <div class="palette-row">
                 {% for c in palette %}
                   {% if not c.is_background %}
-                    <div class="palette-dot" style="background:{{ c.color }};" title="{{ c.hex }} — {{ c.count }} perles ({{ c.percentage }}%)"></div>
+                    <div class="palette-dot" style="background:{{ c.color }};" title="{% blocktrans with hex=c.hex count=c.count pct=c.percentage %}{{ hex }} — {{ count }} perles ({{ pct }}%){% endblocktrans %}"></div>
                   {% endif %}
                 {% endfor %}
               </div>
 
               {# Expanded palette table #}
               <details class="mt-2">
-                <summary style="font-size:.82rem;color:#868e96;cursor:pointer;">Détails de la palette</summary>
+                <summary style="font-size:.82rem;color:#868e96;cursor:pointer;">{% trans "Détails de la palette" %}</summary>
                 <div class="mt-2">
                   {% for c in palette %}
                     {% if not c.is_background %}
@@ -95,9 +96,9 @@
                   {% for c in palette %}
                     {% if c.is_background %}
                       <div class="mt-2 text-muted" style="font-size:.78rem;">
-                        <i class="bi bi-info-circle me-1"></i>Fond détecté :
+                        <i class="bi bi-info-circle me-1"></i>{% trans "Fond détecté :" %}
                         <span style="display:inline-block;width:12px;height:12px;background:{{ c.color }};border:1px solid #ccc;border-radius:2px;"></span>
-                        {{ c.hex }} ({{ c.count }} perles exclues)
+                        {{ c.hex }} ({% blocktrans with count=c.count %}{{ count }} perles exclues{% endblocktrans %})
                       </div>
                     {% endif %}
                   {% endfor %}
@@ -129,7 +130,7 @@
                 <label for="{{ form.is_public.id_for_label }}" class="form-check-label">
                   {{ form.is_public.label }}
                 </label>
-                <small class="d-block form-text text-muted">Rendre visible aux autres utilisateurs</small>
+                <small class="d-block form-text text-muted">{% trans "Rendre visible aux autres utilisateurs" %}</small>
               </div>
 
               <div class="mb-3">
@@ -143,19 +144,19 @@
 
               <div class="d-grid gap-2 mt-4">
                 <button type="submit" name="save" class="btn btn-primary">
-                  <i class="bi bi-save me-1"></i> Enregistrer
+                  <i class="bi bi-save me-1"></i> {% trans "Enregistrer" %}
                 </button>
                 <button type="submit" name="download" value="png" class="btn btn-outline-secondary">
-                  <i class="bi bi-download me-1"></i> Télécharger PNG
+                  <i class="bi bi-download me-1"></i> {% trans "Télécharger PNG" %}
                 </button>
               </div>
 
               <div class="wizard-nav" style="border-top:none;margin-top:1rem;padding-top:0;">
                 <button type="submit" name="previous_step" class="btn btn-outline-secondary">
-                  <i class="bi bi-arrow-left me-1"></i> Retour
+                  <i class="bi bi-arrow-left me-1"></i> {% trans "Retour" %}
                 </button>
                 <button type="submit" name="download_instructions" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-file-earmark-text me-1"></i> Instructions
+                  <i class="bi bi-file-earmark-text me-1"></i> {% trans "Instructions" %}
                 </button>
               </div>
             </form>

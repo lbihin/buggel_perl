@@ -1,7 +1,12 @@
+{% load i18n %}
 <tr class="shape-row {% if forloop.counter|divisibleby:2 %}
+    
     even-row
+
   {% else %}
+    
     odd-row
+
   {% endif %}"
   id="shape-{{ shape.id }}">
   <!-- Nom de la forme -->
@@ -15,6 +20,6 @@
 
   <!-- Bouton de suppression flottant -->
   <td width="0" style="padding: 0; position: relative;">
-    <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?" hx-target="#shape-list-container" title="Supprimer cette forme"><i class="bi bi-trash"></i></button>
+    <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="{% blocktrans with name=shape.name %}Voulez-vous vraiment supprimer la forme {{ name }} ?{% endblocktrans %}" hx-target="#shape-list-container" title="{% trans 'Supprimer cette forme' %}"><i class="bi bi-trash"></i></button>
   </td>
 </tr>

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% csrf_token %}
 <form class="inline-edit-form" 
   hx-post="{% url 'shapes:shape_inline_update' shape.id %}" 
@@ -8,7 +9,7 @@
 
   <div class="simple-dimensions-edit">
     <div class="mb-2">
-      <label class="form-label fw-bold">Choisissez un type de forme:</label>
+      <label class="form-label fw-bold">{% trans "Choisissez un type de forme :" %}</label>
       
       <!-- Options de forme sous forme de boutons radio -->
       <div>
@@ -21,18 +22,18 @@
              hx-target="#shape-type-{{ shape.id }}"
              hx-swap="innerHTML">
           <label class="form-check-label" for="edit_option_rectangle_{{ shape.id }}">
-            Rectangle
+            {% trans "Rectangle" %}
           </label>
           
           <!-- Champs pour rectangle -->
           <div id="edit_rectangle_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4" 
                {% if shape.shape_type != 'rectangle' %}style="display: none"{% endif %}>
             <div class="input-group">
-              <span class="input-group-text">Largeur</span>
+              <span class="input-group-text">{% trans "Largeur" %}</span>
               <input type="number" name="width" value="{{ shape.width|default:'10' }}" min="1" required class="form-control form-control-sm" />
             </div>
             <div class="input-group mt-1">
-              <span class="input-group-text">Hauteur</span>
+              <span class="input-group-text">{% trans "Hauteur" %}</span>
               <input type="number" name="height" value="{{ shape.height|default:'10' }}" min="1" required class="form-control form-control-sm" />
             </div>
           </div>
@@ -47,14 +48,14 @@
              hx-target="#shape-type-{{ shape.id }}"
              hx-swap="innerHTML">
           <label class="form-check-label" for="edit_option_square_{{ shape.id }}">
-            Carré
+            {% trans "Carré" %}
           </label>
           
           <!-- Champs pour carré -->
           <div id="edit_square_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4"
                {% if shape.shape_type != 'square' %}style="display: none"{% endif %}>
             <div class="input-group">
-              <span class="input-group-text">Côté</span>
+              <span class="input-group-text">{% trans "Côté" %}</span>
               <input type="number" name="size" value="{{ shape.size|default:'10' }}" min="1" required class="form-control form-control-sm" />
             </div>
           </div>
@@ -69,14 +70,14 @@
                  hx-target="#shape-type-{{ shape.id }}"
                  hx-swap="innerHTML">
           <label class="form-check-label" for="edit_option_circle_{{ shape.id }}">
-            Cercle
+            {% trans "Cercle" %}
           </label>
           
           <!-- Champs pour cercle -->
           <div id="edit_circle_fields_{{ shape.id }}" class="edit-dimension-fields mt-1 ms-4"
                {% if shape.shape_type != 'circle' %}style="display: none"{% endif %}>
             <div class="input-group">
-              <span class="input-group-text">Diamètre</span>
+              <span class="input-group-text">{% trans "Diamètre" %}</span>
               <input type="number" name="diameter" value="{{ shape.diameter|default:'10' }}" min="1" required class="form-control form-control-sm" />
             </div>
           </div>
@@ -92,7 +93,7 @@
        consistent without client-side scripting. -->
 
   <div class="inline-edit-actions">
-    <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
-    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Annuler"><i class="bi bi-x"></i></button>
+    <button type="submit" class="save-inline-btn" title="{% trans "Sauvegarder" %}"><i class="bi bi-check"></i></button>
+    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_dimensions' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="{% trans "Annuler" %}"><i class="bi bi-x"></i></button>
   </div>
 </form>

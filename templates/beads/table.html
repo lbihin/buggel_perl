@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -9,15 +10,15 @@
 {% block content %}
   <div class="page-header">
     <div>
-      <h2><i class="bi bi-palette2 me-2 text-muted"></i>Ma collection de perles</h2>
-      <p class="subtitle">Gérez vos perles et suivez vos stocks</p>
+      <h2><i class="bi bi-palette2 me-2 text-muted"></i>{% trans "Ma collection de perles" %}</h2>
+      <p class="subtitle">{% trans "Gérez vos perles et suivez vos stocks" %}</p>
     </div>
     <button class="btn btn-primary btn-sm rounded-pill px-3"
             hx-get="{% url 'beads:bead_new_row_htmx' %}"
             hx-target="#beads-tbody"
             hx-swap="beforeend"
             onclick="var n=document.getElementById('bead-row-new'); if(n){n.querySelector('input[name=name]').focus();event.preventDefault();return;} var e=document.getElementById('empty-state-row'); if(e) e.remove();">
-      <i class="bi bi-plus-lg me-1"></i>Ajouter
+      <i class="bi bi-plus-lg me-1"></i>{% trans "Ajouter" %}
     </button>
   </div>
 
@@ -26,8 +27,8 @@
     {% if low_quantity_beads %}
       <div class="alert alert-warning alert-dismissible fade show" role="alert">
         <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>Stock faible :</strong> {{ low_quantity_beads|length }} perle{{ low_quantity_beads|length|pluralize }} en dessous de {{ threshold }} unités.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <strong>{% trans "Stock faible :" %}</strong> {% blocktrans count counter=low_quantity_beads|length with threshold=threshold %}{{ counter }} perle en dessous de {{ threshold }} unités.{% plural %}{{ counter }} perles en dessous de {{ threshold }} unités.{% endblocktrans %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans "Fermer" %}"></button>
       </div>
     {% endif %}
   </div>
@@ -36,10 +37,10 @@
     <table class="beads-table w-100 mb-0">
       <thead>
         <tr>
-          <th>Couleur</th>
-          <th>Nom</th>
-          <th>Quantité</th>
-          <th>Notes</th>
+          <th>{% trans "Couleur" %}</th>
+          <th>{% trans "Nom" %}</th>
+          <th>{% trans "Quantité" %}</th>
+          <th>{% trans "Notes" %}</th>
           <th class="th-row-actions"></th>
         </tr>
       </thead>
@@ -51,7 +52,7 @@
             <td colspan="5" class="text-center py-5">
               <div class="py-3">
                 <i class="bi bi-palette2 fs-1 text-muted d-block mb-2"></i>
-                <p class="text-muted mb-0">Aucune perle. Cliquez « Ajouter » pour commencer.</p>
+                <p class="text-muted mb-0">{% trans "Aucune perle. Cliquez « Ajouter » pour commencer." %}</p>
               </div>
             </td>
           </tr>
@@ -60,7 +61,7 @@
     </table>
   </div>
   <p class="text-muted mt-3" style="font-size:.82rem;">
-    <i class="bi bi-info-circle me-1"></i>Survolez une ligne et cliquez sur le stylo pour modifier.
+    <i class="bi bi-info-circle me-1"></i>{% trans "Survolez une ligne et cliquez sur le stylo pour modifier." %}
   </p>
 {% endblock %}
 

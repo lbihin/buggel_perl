@@ -1,17 +1,18 @@
+{% load i18n %}
 {% if field == 'name' %}
-  <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
+  <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="{% trans 'Cliquer pour modifier le nom' %}">
     {{ model.name }}
     <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.6em;"></i>
   </h2>
 {% elif field == 'description' %}
   {% if model.description %}
-    <p class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour modifier la description">
+    <p class="editable-field d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="{% trans 'Cliquer pour modifier la description' %}">
       {{ model.description }}
       <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.8em;"></i>
     </p>
   {% else %}
-    <p class="editable-field text-muted d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour ajouter une description">
-      <i class="bi bi-pencil" style="font-size: 0.8em;"></i> Ajouter une description…
+    <p class="editable-field text-muted d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="{% trans 'Cliquer pour ajouter une description' %}">
+      <i class="bi bi-pencil" style="font-size: 0.8em;"></i> {% trans 'Ajouter une description…' %}
     </p>
   {% endif %}
 {% endif %}

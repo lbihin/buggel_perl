@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import Bead
 
@@ -30,6 +31,6 @@ class BeadForm(forms.ModelForm):
             value = cleaned_data.get(color)
             if value is not None:
                 if value < 0 or value > 255:
-                    self.add_error(color, f"La valeur doit être entre 0 et 255.")
+                    self.add_error(color, _("La valeur doit être entre 0 et 255."))
 
         return cleaned_data

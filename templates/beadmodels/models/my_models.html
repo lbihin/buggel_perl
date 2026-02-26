@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block content %}
   <div class="page-header">
     <div>
-      <h2>Mes modèles</h2>
-      <p class="subtitle">{{ models|length }} modèle{{ models|length|pluralize }} créé{{ models|length|pluralize }}</p>
+      <h2>{% trans 'Mes modèles' %}</h2>
+      <p class="subtitle">
+        {% blocktrans count counter=models|length %}{{ counter }} modèle créé{% plural %}{{ counter }} modèles créés{% endblocktrans %}
+      </p>
     </div>
-    <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Nouveau modèle</a>
+    <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>{% trans 'Nouveau modèle' %}</a>
   </div>
 
   {% if models %}
@@ -20,8 +23,10 @@
   {% else %}
     <div class="empty-state-card">
       <i class="bi bi-collection"></i>
-      <p>Vous n'avez pas encore créé de modèle.</p>
-      <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-magic me-1"></i>Créer mon premier modèle</a>
+      <p>
+        {% trans "Vous n'avez pas encore créé de modèle." %}
+      </p>
+      <a href="{% url 'beadmodels:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-magic me-1"></i>{% trans 'Créer mon premier modèle' %}</a>
     </div>
   {% endif %}
 {% endblock %}

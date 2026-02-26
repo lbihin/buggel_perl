@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from shapes.models import BeadShape
 
@@ -14,25 +15,25 @@ class BeadShapeForm(forms.ModelForm):
 
     # Champs dynamiques ajoutés en fonction du type de forme
     width = forms.IntegerField(
-        label="Largeur",
+        label=_("Largeur"),
         min_value=1,
         required=False,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
     height = forms.IntegerField(
-        label="Hauteur",
+        label=_("Hauteur"),
         min_value=1,
         required=False,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
     size = forms.IntegerField(
-        label="Taille",
+        label=_("Taille"),
         min_value=1,
         required=False,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
     diameter = forms.IntegerField(
-        label="Diamètre",
+        label=_("Diamètre"),
         min_value=1,
         required=False,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
@@ -56,15 +57,15 @@ class BeadShapeForm(forms.ModelForm):
 
         if shape_type == "rectangle":
             if not cleaned_data.get("width"):
-                self.add_error("width", "La largeur est requise pour un rectangle.")
+                self.add_error("width", _("La largeur est requise pour un rectangle."))
             if not cleaned_data.get("height"):
-                self.add_error("height", "La hauteur est requise pour un rectangle.")
+                self.add_error("height", _("La hauteur est requise pour un rectangle."))
         elif shape_type == "square":
             if not cleaned_data.get("size"):
-                self.add_error("size", "La taille est requise pour un carré.")
+                self.add_error("size", _("La taille est requise pour un carré."))
         elif shape_type == "circle":
             if not cleaned_data.get("diameter"):
-                self.add_error("diameter", "Le diamètre est requis pour un cercle.")
+                self.add_error("diameter", _("Le diamètre est requis pour un cercle."))
 
         return cleaned_data
 

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block extra_css %}
@@ -8,15 +9,15 @@
 {% block content %}
   <div class="page-header">
     <div>
-      <h2><i class="bi bi-grid-3x3 me-2" style="color:#4f46e5;"></i>Mes plaques</h2>
-      <p class="subtitle">Gérez vos plaques à picots — la base physique pour poser vos perles à repasser</p>
+      <h2><i class="bi bi-grid-3x3 me-2" style="color:#4f46e5;"></i>{% trans "Mes plaques" %}</h2>
+      <p class="subtitle">{% trans "Gérez vos plaques à picots — la base physique pour poser vos perles à repasser" %}</p>
     </div>
     <button class="btn btn-primary btn-sm rounded-pill px-3"
             hx-get="{% url 'shapes:shape_new_row_htmx' %}"
             hx-target="#shapes-tbody"
             hx-swap="beforeend"
             onclick="var n=document.getElementById('shape-row-new'); if(n){n.querySelector('input[name=name]').focus();event.preventDefault();return;} var e=document.getElementById('empty-state-row'); if(e) e.remove();">
-      <i class="bi bi-plus-lg me-1"></i>Nouvelle plaque
+      <i class="bi bi-plus-lg me-1"></i>{% trans "Nouvelle plaque" %}
     </button>
   </div>
 
@@ -27,11 +28,11 @@
         <i class="bi bi-lightbulb-fill"></i>
       </div>
       <div>
-        <p class="mb-1 fw-semibold" style="color:#343a40;">Comment ça marche ?</p>
+        <p class="mb-1 fw-semibold" style="color:#343a40;">{% trans "Comment ça marche ?" %}</p>
         <p class="mb-0" style="font-size:.88rem; color:#495057; line-height:1.6;">
-          Les plaques à picots sont la base physique sur laquelle vous posez les perles à repasser.
-          Chaque plaque a une <strong>forme</strong> et des <strong>dimensions</strong> (en nombre de picots).
-          Quand vous créez un modèle, l'image est adaptée à la grille de la plaque&nbsp;: <strong>1 pixel = 1 picot = 1 perle</strong>.
+          {% trans "Les plaques à picots sont la base physique sur laquelle vous posez les perles à repasser." %}
+          {% trans "Chaque plaque a une" %} <strong>{% trans "forme" %}</strong> {% trans "et des" %} <strong>{% trans "dimensions" %}</strong> {% trans "(en nombre de picots)." %}
+          {% trans "Quand vous créez un modèle, l'image est adaptée à la grille de la plaque" %}&nbsp;: <strong>{% trans "1 pixel = 1 picot = 1 perle" %}</strong>.
         </p>
       </div>
     </div>
@@ -42,7 +43,7 @@
     {% if success_message %}
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i>{{ success_message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans "Close" %}"></button>
       </div>
     {% endif %}
     {% if error_message %}
@@ -58,10 +59,10 @@
       <thead>
         <tr>
           <th style="width:56px;"></th>
-          <th>Nom</th>
-          <th style="width:120px;">Type</th>
-          <th style="width:140px;">Dimensions</th>
-          <th style="width:110px;">Picots</th>
+          <th>{% trans "Nom" %}</th>
+          <th style="width:120px;">{% trans "Type" %}</th>
+          <th style="width:140px;">{% trans "Dimensions" %}</th>
+          <th style="width:110px;">{% trans "Picots" %}</th>
           <th class="th-row-actions" style="width:60px;"></th>
         </tr>
       </thead>
@@ -73,7 +74,7 @@
             <td colspan="6" class="text-center py-5">
               <div class="py-3">
                 <i class="bi bi-grid-3x3 fs-1 text-muted d-block mb-2"></i>
-                <p class="text-muted mb-0">Aucune plaque. Cliquez « Nouvelle plaque » pour commencer.</p>
+                <p class="text-muted mb-0">{% trans "Aucune plaque. Cliquez « Nouvelle plaque » pour commencer." %}</p>
               </div>
             </td>
           </tr>
@@ -83,7 +84,7 @@
   </div>
 
   <p class="text-muted mt-3" style="font-size:.82rem;">
-    <i class="bi bi-info-circle me-1"></i>Survolez une ligne et cliquez sur le stylo pour modifier. Les plaques par défaut ne sont pas modifiables.
+    <i class="bi bi-info-circle me-1"></i>{% trans "Survolez une ligne et cliquez sur le stylo pour modifier. Les plaques par défaut ne sont pas modifiables." %}
   </p>
 {% endblock %}
 

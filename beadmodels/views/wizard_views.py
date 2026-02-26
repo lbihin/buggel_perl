@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.utils.translation import gettext as _
 
 from beads.models import Bead
 
@@ -101,7 +102,7 @@ def _model_result_to_dict(result: ModelResult) -> dict:
 class UploadImage(WizardStep):
     """Premiere etape: Chargement de l'image."""
 
-    name = "Chargement de l'image"
+    name = _("Chargement de l'image")
     template = "beadmodels/wizard/upload_image.html"
     form_class = ImageUploadForm
     position = 1
@@ -133,7 +134,7 @@ class UploadImage(WizardStep):
 class ConfigureModel(WizardStep):
     """Deuxieme etape: Configuration et previsualisation du modele."""
 
-    name = "Configuration du modèle"
+    name = _("Configuration du modèle")
     template = "beadmodels/wizard/configure_model.html"
     form_class = ModelConfigurationForm
     position = 2
@@ -145,7 +146,9 @@ class ConfigureModel(WizardStep):
         image_data = wizard_data.get("image_data", {})
 
         if not image_data:
-            messages.error(self.wizard.request, "Veuillez d'abord charger une image.")
+            messages.error(
+                self.wizard.request, _("Veuillez d'abord charger une image.")
+            )
             return redirect("beadmodels:create")
 
         initial_data = {
@@ -291,7 +294,7 @@ class ConfigureModel(WizardStep):
 class SaveModel(WizardStep):
     """Troisieme etape: Sauvegarde du modele."""
 
-    name = "Finalisation"
+    name = _("Finalisation")
     template = "beadmodels/wizard/final_step.html"
     position = 3
 
@@ -300,7 +303,7 @@ class SaveModel(WizardStep):
         final_model = wizard_data.get("final_model", {})
 
         # Shape info
-        shape_name, shape_type = "Standard", "rectangle"
+        shape_name, shape_type = _("Standard"), "rectangle"
         if final_model.get("shape_id"):
             from shapes.models import BeadShape
 
@@ -322,7 +325,9 @@ class SaveModel(WizardStep):
         except locale.Error:
             pass
 
-        default_name = f"Modèle du {datetime.now().strftime('%d %B %Y')}"
+        default_name = _("Modèle du %(date)s") % {
+            "date": datetime.now().strftime("%d %B %Y")
+        }
 
         default_board = None
         board_id = final_model.get("board_id")
@@ -411,7 +416,7 @@ class SaveModel(WizardStep):
                 logger.exception("Erreur lors de la sauvegarde du modele: %s", e)
                 messages.error(
                     self.wizard.request,
-                    "Une erreur est survenue lors de la sauvegarde du modèle.",
+                    _("Une erreur est survenue lors de la sauvegarde du modèle."),
                 )
                 return self._render_with_final_model(final_model, form)
 
@@ -505,7 +510,7 @@ class SaveModel(WizardStep):
 
         image_b64 = final_model.get("image_base64", "")
         if not image_b64:
-            return HttpResponse("Image introuvable.", status=404)
+            return HttpResponse(_("Image introuvable."), status=404)
 
         img = Image.open(io.BytesIO(base64.b64decode(image_b64)))
         output = io.BytesIO()
@@ -539,7 +544,7 @@ class SaveModel(WizardStep):
             "total_beads": final_model.get("total_beads", 0),
             "palette": final_model.get("palette", []),
             "date": datetime.now().strftime("%d/%m/%Y"),
-            "model_name": "Nouveau modèle",
+            "model_name": _("Nouveau modèle"),
         }
         html = render_to_string("beadmodels/wizard/instructions.html", context)
         response = HttpResponse(html, content_type="text/html")
@@ -555,7 +560,7 @@ class SaveModel(WizardStep):
 class ModelCreatorWizard(LoginRequiredWizard):
     """Wizard complet de creation de modele a 3 etapes."""
 
-    name = "Création de modèle de perles"
+    name = _("Création de modèle de perles")
     steps = [UploadImage, ConfigureModel, SaveModel]
     session_key = "model_creation_wizard"
 
@@ -607,7 +612,7 @@ class ModelCreatorWizard(LoginRequiredWizard):
                 step = self.get_current_step()
                 return step.handle_get(**kwargs)
             except BeadModel.DoesNotExist:
-                messages.error(request, "Modèle introuvable.")
+                messages.error(request, _("Modèle introuvable."))
                 return redirect("beadmodels:my_models")
 
         return super().dispatch(request, *args, **kwargs)

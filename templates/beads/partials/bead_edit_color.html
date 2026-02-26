@@ -1,20 +1,21 @@
+{% load i18n %}
 <!-- Color edit: native picker + preset swatches -->
 <form hx-post="{% url 'beads:bead_update_color_htmx' bead.pk %}" hx-target="#clr-{{ bead.pk }}" hx-swap="innerHTML" class="edit-color-form">
   {% csrf_token %}
   <div class="color-edit-panel p-2 rounded-3 border bg-white shadow-sm" style="width:230px;">
     <div class="d-flex align-items-center gap-2 mb-2">
-      <input type="color" name="hex_color" value="{{ bead.get_hex_color }}" class="form-control form-control-color border-0 p-0" style="width:40px; height:40px; cursor:pointer;" title="Choisir une couleur" />
-      <span class="text-muted small">Choisir une couleur</span>
+      <input type="color" name="hex_color" value="{{ bead.get_hex_color }}" class="form-control form-control-color border-0 p-0" style="width:40px; height:40px; cursor:pointer;" title="{% trans "Choisir une couleur" %}" />
+      <span class="text-muted small">{% trans "Choisir une couleur" %}</span>
     </div>
-    <label class="form-label text-muted mb-1" style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em;">Couleurs courantes</label>
+    <label class="form-label text-muted mb-1" style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em;">{% trans "Couleurs courantes" %}</label>
     <div class="d-flex flex-wrap gap-1 mb-3">
       {% for hex in preset_colors %}
         <button type="submit" name="hex_color" value="{{ hex }}" class="rounded-circle border-0 p-0" style="width:22px; height:22px; background:{{ hex }}; cursor:pointer;" title="{{ hex }}"></button>
       {% endfor %}
     </div>
     <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-check-lg me-1"></i>Valider</button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}?cancel=true" hx-target="#clr-{{ bead.pk }}" hx-swap="innerHTML">Annuler</button>
+      <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-check-lg me-1"></i>{% trans "Valider" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}?cancel=true" hx-target="#clr-{{ bead.pk }}" hx-swap="innerHTML">{% trans "Annuler" %}</button>
     </div>
   </div>
 </form>

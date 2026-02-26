@@ -8,6 +8,7 @@ et renvoient le fragment HTML du preview-container.
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
+from django.utils.translation import gettext as _
 from django.template.loader import render_to_string
 
 from beadmodels.services.image_processing import generate_preview
@@ -42,7 +43,7 @@ def _render_preview(request) -> HttpResponse:
 def change_shape_hx_view(request, pk: int):
     """Handle HTMX request to change shape."""
     if not getattr(request, "htmx", False):
-        raise Http404("Cette vue est uniquement accessible via HTMX.")
+        raise Http404(_("Cette vue est uniquement accessible via HTMX."))
 
     _update_wizard_data(request, {"shape_id": pk})
     return _render_preview(request)

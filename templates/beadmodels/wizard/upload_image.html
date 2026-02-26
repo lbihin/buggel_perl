@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block extra_css %}
@@ -11,15 +12,21 @@
     <div class="wizard-stepper">
       <div class="wizard-step-item active">
         <div class="step-circle">1</div>
-        <div class="step-label">Image</div>
+        <div class="step-label">
+          {% trans 'Image' %}
+        </div>
       </div>
       <div class="wizard-step-item pending">
         <div class="step-circle">2</div>
-        <div class="step-label">Configuration</div>
+        <div class="step-label">
+          {% trans 'Configuration' %}
+        </div>
       </div>
       <div class="wizard-step-item pending">
         <div class="step-circle">3</div>
-        <div class="step-label">Finalisation</div>
+        <div class="step-label">
+          {% trans 'Finalisation' %}
+        </div>
       </div>
     </div>
 
@@ -32,9 +39,13 @@
           {% if form.errors %}
             <div class="alert alert-danger mb-3">
               <i class="bi bi-exclamation-triangle me-1"></i>
-              Veuillez corriger les erreurs ci-dessous.
-              {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-              {% for error in form.image.errors %}<div>{{ error }}</div>{% endfor %}
+              {% trans 'Veuillez corriger les erreurs ci-dessous.' %}
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+              {% for error in form.image.errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
             </div>
           {% endif %}
 
@@ -43,30 +54,30 @@
             <div class="drop-zone-icon">
               <i class="bi bi-cloud-arrow-up"></i>
             </div>
-            <div class="drop-zone-title">Glissez votre image ici</div>
-            <div class="drop-zone-subtitle">ou <span class="link" id="browseLink">parcourez vos fichiers</span></div>
-            <div class="mt-2" style="font-size:.78rem; color:#adb5bd;">PNG, JPG, WEBP — max 10 Mo</div>
+            <div class="drop-zone-title">
+              {% trans 'Glissez votre image ici' %}
+            </div>
+            <div class="drop-zone-subtitle">
+              {% trans 'ou' %} <span class="link" id="browseLink">{% trans 'parcourez vos fichiers' %}</span>
+            </div>
+            <div class="mt-2" style="font-size:.78rem; color:#adb5bd;">
+              {% trans 'PNG, JPG, WEBP — max 10 Mo' %}
+            </div>
             <div style="display:none;">{{ form.image }}</div>
           </div>
 
           {# Upload preview #}
           <div class="text-center" id="previewArea" style="display:none;">
             <div class="upload-preview">
-              <img id="previewImg" src="" alt="Aperçu" />
-              <button type="button" class="remove-btn" id="removeBtn" title="Retirer l'image">
-                <i class="bi bi-x"></i>
-              </button>
+              <img id="previewImg" src="" alt="{% trans 'Aperçu' %}" />
+              <button type="button" class="remove-btn" id="removeBtn" title="{% trans "Retirer l'image" %}"><i class="bi bi-x"></i></button>
             </div>
           </div>
 
           {# Navigation #}
           <div class="wizard-nav">
-            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-              <i class="bi bi-x-lg me-1"></i> Annuler
-            </a>
-            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
-              Suivant <i class="bi bi-arrow-right ms-1"></i>
-            </button>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i> {% trans 'Annuler' %}</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>{% trans 'Suivant' %} <i class="bi bi-arrow-right ms-1"></i></button>
           </div>
         </form>
       </div>

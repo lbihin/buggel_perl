@@ -1,8 +1,9 @@
+{% load i18n %}
 {% csrf_token %}
 <form class="inline-edit-form" hx-post="{% url 'shapes:shape_name_update' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML">
-  <input type="text" name="name" value="{{ shape.name }}" required placeholder="Nom" class="form-control form-control-sm" style="width: 100%; min-width: 120px;" />
+  <input type="text" name="name" value="{{ shape.name }}" required placeholder="{% trans "Nom" %}" class="form-control form-control-sm" style="width: 100%; min-width: 120px;" />
   <div class="inline-edit-actions">
-    <button type="submit" class="save-inline-btn" title="Sauvegarder"><i class="bi bi-check"></i></button>
-    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_name' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="Annuler"><i class="bi bi-x"></i></button>
+    <button type="submit" class="save-inline-btn" title="{% trans "Sauvegarder" %}"><i class="bi bi-check"></i></button>
+    <button type="button" class="cancel-inline-btn" hx-get="{% url 'shapes:shape_name' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="{% trans "Annuler" %}"><i class="bi bi-x"></i></button>
   </div>
 </form>

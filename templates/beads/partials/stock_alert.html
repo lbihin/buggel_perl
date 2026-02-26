@@ -1,7 +1,8 @@
+{% load i18n %}
 {% if low_quantity_beads %}
   <div class="alert alert-warning alert-dismissible fade show" role="alert">
     <i class="bi bi-exclamation-triangle me-2"></i>
-    <strong>Stock faible :</strong> {{ low_quantity_beads|length }} perle{{ low_quantity_beads|length|pluralize }} en dessous de {{ threshold }} unités.
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <strong>{% trans 'Stock faible :' %}</strong> {% blocktrans count counter=low_quantity_beads|length with threshold=threshold %}{{ counter }} perle en dessous de {{ threshold }} unités.{% plural %}{{ counter }} perles en dessous de {{ threshold }} unités.{% endblocktrans %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans 'Close' %}"></button>
   </div>
 {% endif %}

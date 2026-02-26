@@ -1,13 +1,14 @@
+{% load i18n %}
 <tr id="inline-add-shape-form" class="shape-row new-shape-row">
   <!-- Nom de la forme -->
   <td width="30%">
-    <input type="text" name="name" required placeholder="Nom de la forme" class="form-control form-control-sm" />
+    <input type="text" name="name" required placeholder="{% trans 'Nom de la forme' %}" class="form-control form-control-sm" />
   </td>
 
   <!-- Type de forme (non modifiable directement) -->
   <td width="20%">
-    <span class="text-muted"><em>Sera déterminé automatiquement</em></span>
-    <input type="hidden" name="shape_type" value="rectangle">
+    <span class="text-muted"><em>{% trans 'Sera déterminé automatiquement' %}</em></span>
+    <input type="hidden" name="shape_type" value="rectangle" />
   </td>
 
   <!-- Dimensions de la forme - Interface simplifiée -->
@@ -15,63 +16,47 @@
     <div class="simple-dimensions-form">
       <div class="mb-1">
         <div class="form-check">
-          <input class="form-check-input" type="radio" name="shape_option" id="option_rectangle" value="rectangle" checked>
-          <label class="form-check-label" for="option_rectangle">
-            Rectangle
-          </label>
+          <input class="form-check-input" type="radio" name="shape_option" id="option_rectangle" value="rectangle" checked />
+          <label class="form-check-label" for="option_rectangle">{% trans 'Rectangle' %}</label>
         </div>
         <div id="rectangle-fields" class="dimension-fields p-1">
           <div class="input-group input-group-sm">
-            <input type="number" name="width" min="1" required placeholder="Largeur" class="form-control form-control-sm" value="10" />
+            <input type="number" name="width" min="1" required placeholder="{% trans 'Largeur' %}" class="form-control form-control-sm" value="10" />
             <span class="input-group-text">×</span>
-            <input type="number" name="height" min="1" required placeholder="Hauteur" class="form-control form-control-sm" value="10" />
+            <input type="number" name="height" min="1" required placeholder="{% trans 'Hauteur' %}" class="form-control form-control-sm" value="10" />
           </div>
         </div>
       </div>
-      
+
       <div class="mb-1">
         <div class="form-check">
-          <input class="form-check-input" type="radio" name="shape_option" id="option_square" value="square">
-          <label class="form-check-label" for="option_square">
-            Carré
-          </label>
+          <input class="form-check-input" type="radio" name="shape_option" id="option_square" value="square" />
+          <label class="form-check-label" for="option_square">{% trans 'Carré' %}</label>
         </div>
         <div id="square-fields" class="dimension-fields p-1" style="display: none;">
           <div class="input-group input-group-sm">
-            <span class="input-group-text">Côté</span>
-            <input type="number" name="size" min="1" placeholder="Taille" class="form-control form-control-sm" value="10" />
+            <span class="input-group-text">{% trans 'Côté' %}</span>
+            <input type="number" name="size" min="1" placeholder="{% trans 'Taille' %}" class="form-control form-control-sm" value="10" />
           </div>
         </div>
       </div>
-      
+
       <div class="mb-1">
         <div class="form-check">
-          <input class="form-check-input" type="radio" name="shape_option" id="option_circle" value="circle">
-          <label class="form-check-label" for="option_circle">
-            Cercle
-          </label>
+          <input class="form-check-input" type="radio" name="shape_option" id="option_circle" value="circle" />
+          <label class="form-check-label" for="option_circle">{% trans 'Cercle' %}</label>
         </div>
         <div id="circle-fields" class="dimension-fields p-1" style="display: none;">
           <div class="input-group input-group-sm">
             <span class="input-group-text">Ø</span>
-            <input type="number" name="diameter" min="1" placeholder="Diamètre" class="form-control form-control-sm" value="10" />
+            <input type="number" name="diameter" min="1" placeholder="{% trans 'Diamètre' %}" class="form-control form-control-sm" value="10" />
           </div>
         </div>
       </div>
-      
+
       <div class="mt-2">
-        <button type="button" class="btn btn-sm btn-success" hx-post="{% url 'shapes:shape_save_new' %}"
-            hx-include="#inline-add-shape-form"
-            hx-target="#shape-list-container"
-            hx-swap="innerHTML">
-          <i class="bi bi-check"></i> Ajouter
-        </button>
-        <button type="button" class="btn btn-sm btn-secondary"
-            hx-get="{% url 'shapes:shape_list' %}"
-            hx-target="#shape-list-container"
-            hx-swap="innerHTML">
-          <i class="bi bi-x"></i> Annuler
-        </button>
+        <button type="button" class="btn btn-sm btn-success" hx-post="{% url 'shapes:shape_save_new' %}" hx-include="#inline-add-shape-form" hx-target="#shape-list-container" hx-swap="innerHTML"><i class="bi bi-check"></i> {% trans 'Ajouter' %}</button>
+        <button type="button" class="btn btn-sm btn-secondary" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-list-container" hx-swap="innerHTML"><i class="bi bi-x"></i> {% trans 'Annuler' %}</button>
       </div>
     </div>
   </td>

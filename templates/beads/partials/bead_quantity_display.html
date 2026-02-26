@@ -1,3 +1,4 @@
+{% load i18n %}
 <span class="quantity-value badge {% if bead.quantity is not None and bead.quantity <= threshold %}
     bg-warning-subtle text-warning
   {% else %}
@@ -8,6 +9,6 @@
   hx-target="#qty-{{ bead.pk }}"
   hx-swap="innerHTML"
   role="button"
-  title="Cliquez pour modifier">
+  title="{% trans "Cliquez pour modifier" %}">
   {{ bead.quantity|default_if_none:'–' }}
 </span>

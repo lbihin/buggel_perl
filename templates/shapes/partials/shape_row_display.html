@@ -1,3 +1,4 @@
+{% load i18n %}
 <tr id="shape-row-{{ shape.id }}" class="shape-row">
   <td class="text-center">
     <span class="shape-icon-pill pill-{{ shape.shape_type }}"><i class="bi {{ shape.shape_type_icon }}"></i></span>
@@ -7,10 +8,10 @@
     {% if shape.is_default or shape.is_shared %}
       <div class="mt-1">
         {% if shape.is_default %}
-          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.65rem;">Défaut</span>
+          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.65rem;">{% trans "Défaut" %}</span>
         {% endif %}
         {% if shape.is_shared %}
-          <span class="badge bg-info-subtle text-info" style="font-size:.65rem;">Partagée</span>
+          <span class="badge bg-info-subtle text-info" style="font-size:.65rem;">{% trans "Partagée" %}</span>
         {% endif %}
       </div>
     {% endif %}
@@ -22,7 +23,7 @@
   <td class="peg-count">≈ {{ shape.peg_count }}</td>
   <td class="td-row-actions">
     {% if not shape.is_default %}
-      <button class="btn-row-edit" hx-get="{% url 'shapes:shape_edit_row_htmx' shape.id %}" hx-target="#shape-row-{{ shape.id }}" hx-swap="outerHTML" title="Modifier"><i class="bi bi-pencil"></i></button>
+      <button class="btn-row-edit" hx-get="{% url 'shapes:shape_edit_row_htmx' shape.id %}" hx-target="#shape-row-{{ shape.id }}" hx-swap="outerHTML" title="{% trans "Modifier" %}"><i class="bi bi-pencil"></i></button>
     {% endif %}
   </td>
 </tr>

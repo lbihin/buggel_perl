@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils.translation import gettext as _
 
 from .models import Bead
 
@@ -86,7 +87,7 @@ def bead_update_quantity_htmx(request, pk):
                 "beads/partials/bead_edit_quantity.html",
                 {
                     "bead": bead,
-                    "error": "La quantité doit être un nombre entier positif.",
+                    "error": _("La quantité doit être un nombre entier positif."),
                 },
             )
 
@@ -136,7 +137,7 @@ def bead_update_color_htmx(request, pk):
                 {
                     "bead": bead,
                     "preset_colors": PRESET_COLORS,
-                    "error": "Couleur invalide.",
+                    "error": _("Couleur invalide."),
                 },
             )
 
@@ -220,7 +221,7 @@ def bead_save_row_htmx(request, pk):
         return render(
             request,
             "beads/partials/bead_row_edit.html",
-            {"bead": bead, "error": "Une perle avec ce nom existe déjà."},
+            {"bead": bead, "error": _("Une perle avec ce nom existe déjà.")},
         )
 
     threshold = _get_threshold(request)
@@ -288,7 +289,7 @@ def bead_create_inline_htmx(request):
             request,
             "beads/partials/bead_row_new.html",
             {
-                "error": "Une perle avec ce nom existe déjà.",
+                "error": _("Une perle avec ce nom existe déjà."),
                 "name": name,
                 "hex_color": f"#{hex_color}",
                 "quantity": quantity_str,

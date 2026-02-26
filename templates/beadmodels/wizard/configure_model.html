@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 {% load math_filters %}
 
@@ -12,15 +13,15 @@
     <div class="wizard-stepper">
       <div class="wizard-step-item done">
         <div class="step-circle"><i class="bi bi-check2"></i></div>
-        <div class="step-label">Image</div>
+        <div class="step-label">{% trans "Image" %}</div>
       </div>
       <div class="wizard-step-item active">
         <div class="step-circle">2</div>
-        <div class="step-label">Configuration</div>
+        <div class="step-label">{% trans "Configuration" %}</div>
       </div>
       <div class="wizard-step-item pending">
         <div class="step-circle">3</div>
-        <div class="step-label">Finalisation</div>
+        <div class="step-label">{% trans "Finalisation" %}</div>
       </div>
     </div>
 
@@ -31,7 +32,7 @@
         {% if form.errors %}
           <div class="alert alert-danger mb-3">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Veuillez corriger les erreurs ci-dessous.
+            {% trans "Veuillez corriger les erreurs ci-dessous." %}
             {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
           </div>
         {% endif %}
@@ -40,13 +41,13 @@
         <div class="config-panels">
           {# Left: original image #}
           <div class="config-panel">
-            <div class="config-panel-label">Image originale</div>
+            <div class="config-panel-label">{% trans "Image originale" %}</div>
             <div class="config-panel-img">
               {% if image_base64 %}
-                <img src="data:image/png;base64,{{ image_base64 }}" alt="Image originale" />
+                <img src="data:image/png;base64,{{ image_base64 }}" alt="{% trans "Image originale" %}" />
               {% else %}
                 <div class="text-muted p-3">
-                  Aucune image chargée. <a href="{% url 'beadmodels:create' %}">Retour</a>.
+                  {% trans "Aucune image chargée." %} <a href="{% url 'beadmodels:create' %}">{% trans "Retour" %}</a>.
                 </div>
               {% endif %}
             </div>
@@ -55,7 +56,7 @@
           {# Right: live preview #}
           <div class="config-panel" style="position:relative;">
             <div class="config-panel-label">
-              Aperçu pixelisé
+              {% trans "Aperçu pixelisé" %}
               <span class="htmx-indicator preview-spinner">
                 <span class="spinner-border spinner-border-sm" role="status"></span>
               </span>
@@ -72,7 +73,7 @@
 
           {# Shape selector #}
           <div class="config-section">
-            <div class="config-section-label">Forme de la plaque</div>
+            <div class="config-section-label">{% trans "Forme de la plaque" %}</div>
             <div class="chip-group">
               {% for shape in user_shapes %}
                 <input
@@ -93,7 +94,7 @@
 
           {# Color count selector #}
           <div class="config-section">
-            <div class="config-section-label">Nombre de couleurs</div>
+            <div class="config-section-label">{% trans "Nombre de couleurs" %}</div>
             {{ form.color_reduction }}
             <div class="chip-group">
               {% for value in color_values %}
@@ -128,10 +129,10 @@
           {# Navigation #}
           <div class="wizard-nav">
             <button type="submit" name="q" value="previous" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left me-1"></i> Retour
+              <i class="bi bi-arrow-left me-1"></i> {% trans "Retour" %}
             </button>
             <button type="submit" name="q" value="next" class="btn btn-primary">
-              Générer le modèle <i class="bi bi-arrow-right ms-1"></i>
+              {% trans "Générer le modèle" %} <i class="bi bi-arrow-right ms-1"></i>
             </button>
           </div>
         </form>

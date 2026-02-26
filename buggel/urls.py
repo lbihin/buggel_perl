@@ -16,6 +16,7 @@ Including another URLconf
 """
 
 from django.conf import settings
+from django.conf.urls.i18n import i18n_patterns
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -25,7 +26,13 @@ import accounts.views as accounts_views
 
 from .views import home
 
+# Non-prefixed URLs (language-independent)
 urlpatterns = [
+    path("i18n/", include("django.conf.urls.i18n")),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Language-prefixed URLs
+urlpatterns += i18n_patterns(
     path("", home, name="home"),
     path("admin/", admin.site.urls),
     path("beads/", include("beads.urls")),
@@ -38,4 +45,5 @@ urlpatterns = [
     path("logout/", accounts_views.logout, name="logout"),
     path("shapes/", include("shapes.urls")),
     path("account/", include("accounts.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    prefix_default_language=True,
+)

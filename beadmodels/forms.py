@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import AppPreference, BeadBoard, BeadModel
 
@@ -8,8 +9,8 @@ class ImageUploadForm(forms.Form):
     """Formulaire pour l'étape 1: Chargement de l'image."""
 
     image = forms.ImageField(
-        label="Image à transformer",
-        help_text="Téléchargez une image pour créer un modèle de perles à repasser",
+        label=_("Image à transformer"),
+        help_text=_("Téléchargez une image pour créer un modèle de perles à repasser"),
         widget=forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
     )
 
@@ -18,16 +19,16 @@ class ModelConfigurationForm(forms.Form):
     """Formulaire pour configurer un modèle de perles."""
 
     color_reduction = forms.IntegerField(
-        label="Nombre de couleurs",
+        label=_("Nombre de couleurs"),
         min_value=2,
         max_value=64,
         initial=16,
         required=False,  # Sera géré via les boutons radio
         widget=forms.HiddenInput(),  # Caché car géré par les boutons
-        help_text="Nombre de couleurs à utiliser dans le modèle final",
+        help_text=_("Nombre de couleurs à utiliser dans le modèle final"),
     )
     use_available_colors = forms.BooleanField(
-        label="Utiliser mes couleurs disponibles",
+        label=_("Utiliser mes couleurs disponibles"),
         required=False,
         initial=False,
         widget=forms.CheckboxInput(
@@ -47,12 +48,12 @@ class BeadModelFinalizeForm(forms.ModelForm):
 
     tags = forms.CharField(
         required=False,
-        label="Tags",
-        help_text="Séparez les tags par des virgules",
+        label=_("Tags"),
+        help_text=_("Séparez les tags par des virgules"),
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "ex: animaux, mario, cadeau",
+                "placeholder": _("ex: animaux, mario, cadeau"),
             }
         ),
     )
@@ -64,22 +65,22 @@ class BeadModelFinalizeForm(forms.ModelForm):
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Nom du modèle",
+                    "placeholder": _("Nom du modèle"),
                 }
             ),
             "description": forms.Textarea(
                 attrs={
                     "class": "form-control",
                     "rows": 3,
-                    "placeholder": "Description (optionnelle)",
+                    "placeholder": _("Description (optionnelle)"),
                 }
             ),
             "is_public": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         labels = {
-            "name": "Nom du modèle",
-            "description": "Description",
-            "is_public": "Rendre public",
+            "name": _("Nom du modèle"),
+            "description": _("Description"),
+            "is_public": _("Rendre public"),
         }
 
     def __init__(self, *args, **kwargs):
@@ -119,24 +120,24 @@ class BeadModelForm(forms.ModelForm):
 class TransformModelForm(forms.Form):
     board = forms.ModelChoiceField(
         queryset=BeadBoard.objects.all(),
-        label="Support de perles",
+        label=_("Support de perles"),
         widget=forms.Select(attrs={"class": "form-select"}),
-        help_text="Choisissez le support de perles à utiliser",
+        help_text=_("Choisissez le support de perles à utiliser"),
     )
     color_reduction = forms.IntegerField(
-        label="Nombre de couleurs",
+        label=_("Nombre de couleurs"),
         initial=16,
         min_value=2,
         max_value=256,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
-        help_text="Nombre de couleurs à utiliser (entre 2 et 256)",
+        help_text=_("Nombre de couleurs à utiliser (entre 2 et 256)"),
     )
     edge_detection = forms.BooleanField(
-        label="Détection des contours",
+        label=_("Détection des contours"),
         initial=True,
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
-        help_text="Activer la détection des contours pour faciliter la reproduction",
+        help_text=_("Activer la détection des contours pour faciliter la reproduction"),
     )
 
 

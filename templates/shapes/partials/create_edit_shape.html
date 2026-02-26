@@ -1,9 +1,10 @@
 {% load crispy_forms_tags %}
+{% load i18n %}
 {% load static %}
 
 <div class="card mb-4 shape-form">
   <div class="card-header bg-light">
-    <h5 class="mb-0">{% if shape %}Modifier{% else %}Ajouter{% endif %} une forme</h5>
+    <h5 class="mb-0">{% if shape %}{% trans "Modifier une forme" %}{% else %}{% trans "Ajouter une forme" %}{% endif %}</h5>
   </div>
   <div class="card-body">
     <form id="shapeForm" 
@@ -13,46 +14,46 @@
       {% csrf_token %}
       
       <div class="mb-3">
-        <label for="id_name" class="form-label">Nom</label>
+        <label for="id_name" class="form-label">{% trans "Nom" %}</label>
         <input type="text" class="form-control" id="id_name" name="name" value="{{ shape.name|default:'' }}" required>
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Type de forme</label>
+        <label class="form-label">{% trans "Type de forme" %}</label>
         <div class="bg-light p-2 rounded">
           <span id="auto_type_label" class="fw-bold">
             {% if shape %}
-              {% if shape.shape_type == 'rectangle' %}Rectangle
-              {% elif shape.shape_type == 'square' %}Carré
-              {% elif shape.shape_type == 'circle' %}Cercle
+              {% if shape.shape_type == 'rectangle' %}{% trans "Rectangle" %}
+              {% elif shape.shape_type == 'square' %}{% trans "Carré" %}
+              {% elif shape.shape_type == 'circle' %}{% trans "Cercle" %}
               {% endif %}
             {% else %}
-              Sera déterminé automatiquement
+              {% trans "Sera déterminé automatiquement" %}
             {% endif %}
           </span>
-          <small class="text-muted ms-2">(déterminé par les dimensions)</small>
+          <small class="text-muted ms-2">{% trans "(déterminé par les dimensions)" %}</small>
         </div>
         <!-- Champ caché pour compatibilité -->
         <input type="hidden" id="id_shape_type" name="shape_type" value="{{ shape.shape_type|default:'rectangle' }}">
       </div>
       
       <div class="mb-3">
-        <label class="form-label">Dimensions</label>
+        <label class="form-label">{% trans "Dimensions" %}</label>
         <div class="border rounded p-3">
           <div class="mb-3">
             <label class="form-check-label">
               <input type="radio" name="dimension_type" value="rectangle" class="form-check-input dimension-selector" 
                      {% if shape.shape_type == 'rectangle' or not shape %}checked{% endif %}>
-              Rectangle
+              {% trans "Rectangle" %}
             </label>
             <div class="dimension-fields rectangle-fields mt-2 ms-4 {% if shape.shape_type != 'rectangle' and shape %}d-none{% endif %}">
               <div class="row">
                 <div class="col-md-6">
-                  <label for="id_width" class="form-label">Largeur</label>
+                  <label for="id_width" class="form-label">{% trans "Largeur" %}</label>
                   <input type="number" class="form-control" id="id_width" name="width" min="1" value="{{ shape.width|default:'10' }}">
                 </div>
                 <div class="col-md-6">
-                  <label for="id_height" class="form-label">Hauteur</label>
+                  <label for="id_height" class="form-label">{% trans "Hauteur" %}</label>
                   <input type="number" class="form-control" id="id_height" name="height" min="1" value="{{ shape.height|default:'10' }}">
                 </div>
               </div>
@@ -63,10 +64,10 @@
             <label class="form-check-label">
               <input type="radio" name="dimension_type" value="square" class="form-check-input dimension-selector"
                      {% if shape.shape_type == 'square' %}checked{% endif %}>
-              Carré
+              {% trans "Carré" %}
             </label>
             <div class="dimension-fields square-fields mt-2 ms-4 {% if shape.shape_type != 'square' %}d-none{% endif %}">
-              <label for="id_size" class="form-label">Taille</label>
+              <label for="id_size" class="form-label">{% trans "Taille" %}</label>
               <input type="number" class="form-control" id="id_size" name="size" min="1" value="{{ shape.size|default:'10' }}">
             </div>
           </div>
@@ -75,10 +76,10 @@
             <label class="form-check-label">
               <input type="radio" name="dimension_type" value="circle" class="form-check-input dimension-selector"
                      {% if shape.shape_type == 'circle' %}checked{% endif %}>
-              Cercle
+              {% trans "Cercle" %}
             </label>
             <div class="dimension-fields circle-fields mt-2 ms-4 {% if shape.shape_type != 'circle' %}d-none{% endif %}">
-              <label for="id_diameter" class="form-label">Diamètre</label>
+              <label for="id_diameter" class="form-label">{% trans "Diamètre" %}</label>
               <input type="number" class="form-control" id="id_diameter" name="diameter" min="1" value="{{ shape.diameter|default:'10' }}">
             </div>
           </div>
@@ -88,12 +89,12 @@
       <!-- Option de partage -->
       <div class="mb-3 form-check">
         <input type="checkbox" class="form-check-input" id="id_share_shape" name="share_shape" {% if shape.is_shared %}checked{% endif %}>
-        <label class="form-check-label" for="id_share_shape">Partager cette forme avec les autres utilisateurs</label>
+        <label class="form-check-label" for="id_share_shape">{% trans "Partager cette forme avec les autres utilisateurs" %}</label>
       </div>
       
       <!-- Aperçu de la forme -->
       <div class="shape-preview-container mb-4">
-        <h6 class="mb-2">Aperçu</h6>
+        <h6 class="mb-2">{% trans "Aperçu" %}</h6>
         <div class="shape-preview bg-light border rounded d-flex align-items-center justify-content-center p-3">
           <canvas id="previewCanvas" width="200" height="200"></canvas>
         </div>
@@ -102,9 +103,9 @@
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">
           <span class="htmx-indicator spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-          {% if shape %}Modifier{% else %}Ajouter{% endif %}
+          {% if shape %}{% trans "Modifier" %}{% else %}{% trans "Ajouter" %}{% endif %}
         </button>
-        <button type="button" class="btn btn-secondary cancel-form-btn" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-{{ shape.id|default:'new' }}" hx-swap="outerHTML">Annuler</button>
+        <button type="button" class="btn btn-secondary cancel-form-btn" hx-get="{% url 'shapes:shape_list' %}" hx-target="#shape-{{ shape.id|default:'new' }}" hx-swap="outerHTML">{% trans "Annuler" %}</button>
       </div>
     </form>
   </div>

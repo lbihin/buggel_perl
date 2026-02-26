@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if shape.shape_type == 'rectangle' %}
   {{ shape.width }} × {{ shape.height }}
 {% elif shape.shape_type == 'square' %}
@@ -5,4 +6,4 @@
 {% elif shape.shape_type == 'circle' %}
   Ø {{ shape.diameter }}
 {% endif %}
-<button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
+<button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="{% trans "Modifier les dimensions" %}"><i class="bi bi-pencil-square"></i></button>

@@ -1,12 +1,13 @@
+{% load i18n %}
 {% if shape.shape_type == 'rectangle' %}
-  Rectangle
+  {% trans 'Rectangle' %}
 {% elif shape.shape_type == 'square' %}
-  Carré
+  {% trans 'Carré' %}
 {% elif shape.shape_type == 'circle' %}
-  Cercle
+  {% trans 'Cercle' %}
 {% endif %}
 <!-- Type déterminé automatiquement par les dimensions -->
-<small class="text-muted" style="font-style: italic; font-size: 0.8em;">(Automatique)</small>
-<!-- Removed inline JS: server returns updated fragments and HX-Trigger events.
+<small class="text-muted" style="font-style: italic; font-size: 0.8em;">{% trans '(Automatique)' %}</small>
+<!--  Removed inline JS: server returns updated fragments and HX-Trigger events.
      The surrounding element should use HTMX triggers (e.g. `shapeTypeChanged`) to
-     refresh related pieces like dimensions; no client-side script required here. -->
+     refresh related pieces like dimensions; no client-side script required here.  -->

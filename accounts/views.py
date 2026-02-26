@@ -4,6 +4,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.translation import gettext as _
 
 from accounts.forms import (
     UserPasswordChangeForm,
@@ -25,7 +26,7 @@ def logout(request):
     request.session.flush()
     # Optionally, you can add a message to inform the user
     # that they have been logged out successfully.
-    messages.success(request, "Vous avez été déconnecté avec succès.")
+    messages.success(request, _("Vous avez été déconnecté avec succès."))
     return redirect("home")
 
 
@@ -36,7 +37,9 @@ def register(request):
             form.save()
             messages.success(
                 request,
-                "Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.",
+                _(
+                    "Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter."
+                ),
             )
             return redirect("login")
     else:
@@ -76,7 +79,7 @@ def gerer_mise_a_jour_mot_de_passe(request, context):
     if form.is_valid():
         user = form.save()
         update_session_auth_hash(request, user)
-        messages.success(request, "Votre mot de passe a été mis à jour avec succès!")
+        messages.success(request, _("Votre mot de passe a été mis à jour avec succès!"))
         return redirect(reverse("accounts:user_settings") + "?tab=password")
     else:
         context["form"] = form
@@ -88,7 +91,7 @@ def gerer_mise_a_jour_profil(request, context):
     form = UserProfileForm(request.POST, instance=request.user)
     if form.is_valid():
         form.save()
-        messages.success(request, "Votre profil a été mis à jour avec succès!")
+        messages.success(request, _("Votre profil a été mis à jour avec succès!"))
         return redirect(reverse("accounts:user_settings") + "?tab=profile")
     context["form"] = form
     return None
@@ -120,11 +123,13 @@ def gerer_mise_a_jour_preferences(request, context=None):
         if app_preferences_updated:
             messages.success(
                 request,
-                "Vos préférences et les préférences de l'application ont été mises à jour avec succès!",
+                _(
+                    "Vos préférences et les préférences de l'application ont été mises à jour avec succès!"
+                ),
             )
         else:
             messages.success(
-                request, "Vos préférences ont été mises à jour avec succès!"
+                request, _("Vos préférences ont été mises à jour avec succès!")
             )
 
         return redirect(reverse("accounts:user_settings") + "?tab=preferences")

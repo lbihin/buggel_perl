@@ -1,40 +1,53 @@
+{% load i18n %}
 <div class="table-responsive">
   <table class="shapes-table">
     <thead>
       <tr>
-        <th scope="col">Nom</th>
-        <th scope="col">Type</th>
-        <th scope="col">Dimensions</th>
+        <th scope="col">
+          {% trans 'Nom' %}
+        </th>
+        <th scope="col">
+          {% trans 'Type' %}
+        </th>
+        <th scope="col">
+          {% trans 'Dimensions' %}
+        </th>
         <th scope="col" style="width: 50px;"></th>
       </tr>
     </thead>
     <tbody id="shapes-table-body">
       <tr>
-      {% include "shapes/partials/shape_inline_add_form.html" %}
+        {% include 'shapes/partials/shape_inline_add_form.html' %}
       </tr>
       {% for shape in shapes %}
         <tr class="shape-row {% cycle 'odd-row' 'even-row' %}" id="shape-{{ shape.id }}">
           <!-- Nom de la forme - Rendu direct avec bouton d'édition -->
           <td width="35%" id="shape-name-{{ shape.id }}" class="shape-name">
             {{ shape.name }}
-            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="Modifier le nom"><i class="bi bi-pencil-square"></i></button>
+            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_name_edit' shape.id %}" hx-target="#shape-name-{{ shape.id }}" hx-swap="innerHTML" title="{% trans 'Modifier le nom' %}"><i class="bi bi-pencil-square"></i></button>
           </td>
 
           <!-- Type de forme - Rendu direct (non modifiable) -->
           <td width="22%" id="shape-type-{{ shape.id }}" class="shape-type">
-            {% if shape.shape_type == 'rectangle' %}Rectangle{% elif shape.shape_type == 'square' %}Carré{% elif shape.shape_type == 'circle' %}Cercle{% endif %}
-            <small class="text-muted d-block" style="font-style: italic; font-size: 0.8em;">(déterminé automatiquement)</small>
+            {% if shape.shape_type == 'rectangle' %}
+              {% trans 'Rectangle' %}
+            {% elif shape.shape_type == 'square' %}
+              {% trans 'Carré' %}
+            {% elif shape.shape_type == 'circle' %}
+              {% trans 'Cercle' %}
+            {% endif %}
+            <small class="text-muted d-block" style="font-style: italic; font-size: 0.8em;">{% trans '(déterminé automatiquement)' %}</small>
           </td>
 
           <!-- Dimensions de la forme - Rendu direct avec bouton d'édition -->
           <td width="28%" id="dimensions-display-{{ shape.id }}" class="dimensions-display">
             {{ shape.get_dimensions_display }}
-            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="Modifier les dimensions"><i class="bi bi-pencil-square"></i></button>
+            <button class="edit-inline-btn" hx-get="{% url 'shapes:shape_inline_edit' shape.id %}" hx-target="#dimensions-display-{{ shape.id }}" hx-swap="innerHTML" title="{% trans 'Modifier les dimensions' %}"><i class="bi bi-pencil-square"></i></button>
           </td>
 
           <!-- Bouton de suppression flottant -->
           <td width="7%" style="padding: 0; position: relative;">
-            <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?" hx-target="#shape-list-container" title="Supprimer cette forme"><i class="bi bi-trash"></i></button>
+            <button class="floating-delete-btn" hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}" hx-confirm="{% blocktrans with name=shape.name %}Voulez-vous vraiment supprimer la forme {{ name }} ?{% endblocktrans %}" hx-target="#shape-list-container" title="{% trans 'Supprimer cette forme' %}"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
       {% empty %}
@@ -42,8 +55,10 @@
           <td colspan="5" class="text-center py-5">
             <div class="empty-state">
               <i class="bi bi-shapes fs-1 text-muted mb-3"></i>
-              <h5>Aucune forme disponible</h5>
-              <p class="text-muted">Cliquez sur le bouton + pour ajouter une nouvelle forme</p>
+              <h5>{% trans 'Aucune forme disponible' %}</h5>
+              <p class="text-muted">
+                {% trans 'Cliquez sur le bouton + pour ajouter une nouvelle forme' %}
+              </p>
             </div>
           </td>
         </tr>
@@ -54,12 +69,7 @@
   </table>
 
   <!-- Bouton flottant "+" pour ajouter une nouvelle forme (HTMX) -->
-  <button class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left" type="button"
-          hx-get="{% url 'shapes:get_inline_add_form' %}"
-          hx-target="#inline-form-placeholder"
-          hx-swap="beforebegin">
-    <i class="bi bi-plus-lg"></i>
-  </button>
+  <button class="floating-add-btn" title="{% trans 'Créer une nouvelle forme' %}" data-bs-toggle="tooltip" data-bs-placement="left" type="button" hx-get="{% url 'shapes:get_inline_add_form' %}" hx-target="#inline-form-placeholder" hx-swap="beforebegin"><i class="bi bi-plus-lg"></i></button>
 </div>
 
 {% if shapes.has_other_pages %}
@@ -76,8 +86,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -87,7 +99,7 @@
               &shape_type_filter={{ shape_type_filter }}
             {% endif %}"
             hx-target="#shape-list-container">
-            &laquo; Première
+            &laquo;{% trans 'Première' %}
           </a>
         </li>
         <li class="page-item">
@@ -100,8 +112,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -111,15 +125,15 @@
               &shape_type_filter={{ shape_type_filter }}
             {% endif %}"
             hx-target="#shape-list-container">
-            &lsaquo; Précédente
+            &lsaquo;{% trans 'Précédente' %}
           </a>
         </li>
       {% else %}
         <li class="page-item disabled">
-          <span class="page-link">&laquo; Première</span>
+          <span class="page-link">&laquo; {% trans 'Première' %}</span>
         </li>
         <li class="page-item disabled">
-          <span class="page-link">&lsaquo; Précédente</span>
+          <span class="page-link">&lsaquo; {% trans 'Précédente' %}</span>
         </li>
       {% endif %}
 
@@ -139,8 +153,10 @@
                 
                 
                 
+                
                 &search={{ search }}
               {% endif %}{% if shape_type_filter %}
+                
                 
                 
                 
@@ -167,8 +183,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -178,7 +196,7 @@
               &shape_type_filter={{ shape_type_filter }}
             {% endif %}"
             hx-target="#shape-list-container">
-            Suivante &rsaquo;
+            {% trans 'Suivante' %}&rsaquo;
           </a>
         </li>
         <li class="page-item">
@@ -191,8 +209,10 @@
               
               
               
+              
               &search={{ search }}
             {% endif %}{% if shape_type_filter %}
+              
               
               
               
@@ -202,15 +222,15 @@
               &shape_type_filter={{ shape_type_filter }}
             {% endif %}"
             hx-target="#shape-list-container">
-            Dernière &raquo;
+            {% trans 'Dernière' %}&raquo;
           </a>
         </li>
       {% else %}
         <li class="page-item disabled">
-          <span class="page-link">Suivante &rsaquo;</span>
+          <span class="page-link">{% trans 'Suivante' %}&rsaquo;</span>
         </li>
         <li class="page-item disabled">
-          <span class="page-link">Dernière &raquo;</span>
+          <span class="page-link">{% trans 'Dernière' %}&raquo;</span>
         </li>
       {% endif %}
     </ul>

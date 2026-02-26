@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block extra_css %}
   <style>
@@ -204,19 +205,21 @@
     {# === LEFT: Pattern showcase === #}
     {% if model.bead_pattern %}
       <div class="pattern-panel">
-        <img src="{{ model.bead_pattern.url }}" alt="Modèle en perles — {{ model.name }}" />
+        <img src="{{ model.bead_pattern.url }}" alt="{% blocktrans with name=model.name %}Modèle en perles — {{ name }}{% endblocktrans %}" />
         {% if user == model.creator %}
           <div class="overlay-actions">
-            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-light btn-sm shadow-sm rounded-pill" title="Régénérer le motif"><i class="bi bi-arrow-repeat me-1"></i> Régénérer</a>
+            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-light btn-sm shadow-sm rounded-pill" title="{% trans 'Régénérer le motif' %}"><i class="bi bi-arrow-repeat me-1"></i> {% trans 'Régénérer' %}</a>
           </div>
         {% endif %}
       </div>
     {% else %}
       <div class="empty-pattern">
         <i class="bi bi-grid-3x3-gap" style="font-size: 3rem;"></i>
-        <p class="mt-2 mb-3">Pas encore de motif</p>
+        <p class="mt-2 mb-3">
+          {% trans 'Pas encore de motif' %}
+        </p>
         {% if user == model.creator %}
-          <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-primary rounded-pill btn-sm"><i class="bi bi-magic me-1"></i> Générer</a>
+          <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-primary rounded-pill btn-sm"><i class="bi bi-magic me-1"></i> {% trans 'Générer' %}</a>
         {% endif %}
       </div>
     {% endif %}
@@ -227,7 +230,7 @@
       <div>
         {% if user == model.creator %}
           <div id="inline-name">
-            <h6 class="editable-field d-inline-flex align-items-center gap-1 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier">
+            <h6 class="editable-field d-inline-flex align-items-center gap-1 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="{% trans 'Cliquer pour modifier' %}">
               {{ model.name }}
               <i class="bi bi-pencil text-muted edit-icon" style="font-size:.55em;"></i>
             </h6>
@@ -245,7 +248,7 @@
                 <i class="bi bi-pencil text-muted edit-icon" style="font-size:.7em;"></i>
               </small>
             {% else %}
-              <small class="editable-field text-muted d-inline-flex align-items-center gap-1" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button"><i class="bi bi-pencil" style="font-size:.7em;"></i> Description…</small>
+              <small class="editable-field text-muted d-inline-flex align-items-center gap-1" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button"><i class="bi bi-pencil" style="font-size:.7em;"></i> {% trans 'Description…' %}</small>
             {% endif %}
           </div>
         {% else %}
@@ -260,9 +263,9 @@
         <span><i class="bi bi-person"></i> {{ model.creator.username }}</span>
         <span><i class="bi bi-calendar3"></i> {{ model.created_at|date:'d/m/Y' }}</span>
         {% if model.is_public %}
-          <span class="badge bg-success-subtle text-success" style="font-size:.75rem;">Public</span>
+          <span class="badge bg-success-subtle text-success" style="font-size:.75rem;">{% trans 'Public' %}</span>
         {% else %}
-          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.75rem;">Privé</span>
+          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.75rem;">{% trans 'Privé' %}</span>
         {% endif %}
       </div>
 
@@ -279,21 +282,23 @@
       {# Stats #}
       {% if model.metadata.total_beads or model.metadata.grid_width %}
         <div>
-          <div class="section-lbl">Statistiques</div>
+          <div class="section-lbl">
+            {% trans 'Statistiques' %}
+          </div>
           <div class="d-flex flex-wrap gap-1">
             {% if model.metadata.grid_width %}
               <div class="stat-chip">
-                <strong>{{ model.metadata.grid_width }}×{{ model.metadata.grid_height }}</strong> <span>grille</span>
+                <strong>{{ model.metadata.grid_width }}×{{ model.metadata.grid_height }}</strong> <span>{% trans 'grille' %}</span>
               </div>
             {% endif %}
             {% if model.metadata.total_beads %}
               <div class="stat-chip">
-                <strong>{{ model.metadata.total_beads }}</strong> <span>perles</span>
+                <strong>{{ model.metadata.total_beads }}</strong> <span>{% trans 'perles' %}</span>
               </div>
             {% endif %}
             {% if model.metadata.palette %}
               <div class="stat-chip">
-                <strong>{{ model.metadata.palette|length }}</strong> <span>couleurs</span>
+                <strong>{{ model.metadata.palette|length }}</strong> <span>{% trans 'couleurs' %}</span>
               </div>
             {% endif %}
           </div>
@@ -308,11 +313,13 @@
       {# Palette #}
       {% if model.metadata.palette %}
         <div>
-          <div class="section-lbl">Palette</div>
+          <div class="section-lbl">
+            {% trans 'Palette' %}
+          </div>
           <div class="d-flex flex-wrap gap-1">
             {% for color in model.metadata.palette %}
               {% if not color.is_background %}
-                <span class="swatch" style="background-color: {{ color.hex }};" title="{{ color.hex }} — {{ color.count }} perles ({{ color.percentage }}%)" data-bs-toggle="tooltip"></span>
+                <span class="swatch" style="background-color: {{ color.hex }};" title="{% blocktrans with hex=color.hex count=color.count pct=color.percentage %}{{ hex }} — {{ count }} perles ({{ pct }}%){% endblocktrans %}" data-bs-toggle="tooltip"></span>
               {% endif %}
             {% endfor %}
           </div>
@@ -322,19 +329,23 @@
       {# Original image #}
       <div class="d-flex align-items-center gap-2">
         <div class="original-wrap">
-          <img src="{{ model.original_image.url }}" class="original-thumb" alt="Originale" />
-          <img src="{{ model.original_image.url }}" class="original-zoom" alt="Aperçu de l'image originale" />
+          <img src="{{ model.original_image.url }}" class="original-thumb" alt="{% trans 'Originale' %}" />
+          <img src="{{ model.original_image.url }}" class="original-zoom" alt="{% trans "Aperçu de l'image originale" %}" />
         </div>
         <div>
-          <div class="section-lbl mb-0">Image originale</div>
-          <div style="font-size:.75rem; color:#adb5bd;">Survoler pour agrandir</div>
+          <div class="section-lbl mb-0">
+            {% trans 'Image originale' %}
+          </div>
+          <div style="font-size:.75rem; color:#adb5bd;">
+            {% trans 'Survoler pour agrandir' %}
+          </div>
         </div>
       </div>
 
       {# Spacer + delete at bottom #}
       <div class="mt-auto"></div>
       {% if user == model.creator %}
-        <button type="button" class="btn btn-sm btn-outline-danger w-100" style="font-size:.78rem;" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash me-1"></i> Supprimer</button>
+        <button type="button" class="btn btn-sm btn-outline-danger w-100" style="font-size:.78rem;" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash me-1"></i> {% trans 'Supprimer' %}</button>
       {% endif %}
     </div>
   </div>
@@ -345,19 +356,19 @@
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
           <div class="modal-header border-0 pb-0">
-            <h6 class="modal-title" id="deleteModalLabel">Supprimer ce modèle ?</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            <h6 class="modal-title" id="deleteModalLabel">{% trans 'Supprimer ce modèle ?' %}</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Fermer' %}"></button>
           </div>
           <div class="modal-body pt-2">
             <p class="text-secondary mb-0" style="font-size:.88rem;">
-              Le modèle <strong>« {{ model.name }} »</strong> sera supprimé définitivement.
+              {% blocktrans with name=model.name %}Le modèle <strong>« {{ name }} »</strong> sera supprimé définitivement.{% endblocktrans %}
             </p>
           </div>
           <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">{% trans 'Annuler' %}</button>
             <form method="post" action="{% url 'beadmodels:delete' model.pk %}">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-danger rounded-pill"><i class="bi bi-trash me-1"></i> Supprimer</button>
+              <button type="submit" class="btn btn-sm btn-danger rounded-pill"><i class="bi bi-trash me-1"></i> {% trans 'Supprimer' %}</button>
             </form>
           </div>
         </div>

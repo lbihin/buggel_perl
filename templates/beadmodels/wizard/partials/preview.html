@@ -1,7 +1,8 @@
+{% load i18n %}
 {% if preview_image_base64 %}
-  <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="Aperçu pixelisé" />
+  <img src="data:image/png;base64,{{ preview_image_base64 }}" alt="{% trans 'Aperçu pixelisé' %}" />
 {% else %}
   <div class="text-muted" style="font-size:.85rem;">
-    Ajustez les paramètres pour voir l'aperçu.
+    {% trans "Ajustez les paramètres pour voir l'aperçu." %}
   </div>
 {% endif %}

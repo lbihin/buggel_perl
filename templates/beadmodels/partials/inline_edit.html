@@ -1,3 +1,4 @@
+{% load i18n %}
 {% if field == 'name' %}
   <form hx-post="{% url 'beadmodels:inline_edit' model.pk field %}" hx-target="#inline-{{ field }}" hx-swap="innerHTML" class="d-flex align-items-center gap-2">
     {% csrf_token %}
@@ -8,7 +9,7 @@
 {% elif field == 'description' %}
   <form hx-post="{% url 'beadmodels:inline_edit' model.pk field %}" hx-target="#inline-{{ field }}" hx-swap="innerHTML" class="d-flex align-items-start gap-2">
     {% csrf_token %}
-    <textarea name="value" class="form-control" rows="2" autofocus placeholder="Ajouter une description…">{{ model.description }}</textarea>
+    <textarea name="value" class="form-control" rows="2" autofocus placeholder="{% trans "Ajouter une description…" %}">{{ model.description }}</textarea>
     <div class="d-flex flex-column gap-1">
       <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i></button>
       <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beadmodels:inline_edit' model.pk field %}?cancel=1" hx-target="#inline-{{ field }}" hx-swap="innerHTML"><i class="bi bi-x-lg"></i></button>
