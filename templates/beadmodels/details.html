@@ -2,10 +2,60 @@
 
 {% block extra_css %}
   <style>
+    /* Fill viewport — reduced to 75vh for balance */
+    .detail-page {
+      display: flex;
+      gap: 1.5rem;
+      height: calc(75vh - 40px);
+      min-height: 360px;
+    }
+    
+    /* Left: pattern showcase */
+    .pattern-panel {
+      flex: 1 1 0;
+      position: relative;
+      background: radial-gradient(circle at 25% 40%, rgba(99, 102, 241, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 60%, rgba(236, 72, 153, 0.05) 0%, transparent 50%), linear-gradient(160deg, #f1f3f5, #e9ecef);
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .pattern-panel img {
+      image-rendering: pixelated;
+      /* Fill container — object-fit:contain keeps aspect ratio */
+      width: 85%;
+      height: 85%;
+      object-fit: contain;
+      border-radius: 0.5rem;
+      box-shadow: 0 6px 32px rgba(0, 0, 0, 0.09);
+    }
+    .pattern-panel .overlay-actions {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .pattern-panel:hover .overlay-actions {
+      opacity: 1;
+    }
+    
+    /* Right: info sidebar */
+    .info-panel {
+      width: 340px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+    
     /* Inline edit */
     .editable-field .edit-icon {
       opacity: 0;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s;
     }
     .editable-field:hover .edit-icon {
       opacity: 1;
@@ -13,235 +63,278 @@
     .editable-field {
       cursor: pointer;
       transition: background 0.15s;
+      border-radius: 0.25rem;
     }
     .editable-field:hover {
       background: rgba(0, 0, 0, 0.04);
-      border-radius: 0.375rem;
-      padding: 2px 8px;
-      margin: -2px -8px;
     }
     
-    /* Pattern image showcase */
-    .pattern-showcase {
-      position: relative;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 300px;
-    }
-    .pattern-showcase img {
-      image-rendering: pixelated;
-      max-height: 550px;
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    }
-    .pattern-showcase .overlay-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
-    .pattern-showcase:hover .overlay-btn {
-      opacity: 1;
-    }
-    
-    /* Download bar */
-    .download-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-    }
-    
-    /* Original image thumbnail */
-    .original-thumb {
-      width: 100%;
-      max-height: 140px;
-      object-fit: contain;
-      border-radius: 0.5rem;
-    }
-    
-    /* Stat items */
-    .stat-item {
-      text-align: center;
-      padding: 0.5rem 0;
-    }
-    .stat-value {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #212529;
-      line-height: 1.2;
-    }
-    .stat-label {
-      font-size: 0.75rem;
-      color: #6c757d;
+    /* Section label */
+    .section-lbl {
+      font-size: 0.78rem;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.06em;
+      color: #868e96;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    
+    /* Stat chip */
+    .stat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #f1f3f5;
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.92rem;
+    }
+    .stat-chip strong {
+      color: #212529;
+    }
+    .stat-chip span {
+      color: #868e96;
+      font-size: 0.8rem;
     }
     
     /* Palette swatch */
-    .color-swatch {
-      width: 28px;
-      height: 28px;
+    .swatch {
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       border: 2px solid #fff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.13);
       display: inline-block;
       transition: transform 0.15s;
       cursor: default;
     }
-    .color-swatch:hover {
-      transform: scale(1.25);
+    .swatch:hover {
+      transform: scale(1.3);
       z-index: 1;
+    }
+    
+    /* Original thumb + hover zoom */
+    .original-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .original-thumb {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 0.4rem;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .original-thumb:hover {
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    }
+    .original-zoom {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(500px, 70vw);
+      max-height: min(500px, 70vh);
+      object-fit: contain;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .original-wrap:hover .original-zoom {
+      display: block;
+    }
+    
+    /* Download strip */
+    .dl-strip {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .dl-strip .btn {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+    
+    /* Meta line */
+    .meta-line {
+      font-size: 0.88rem;
+      color: #868e96;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    
+    /* Empty state */
+    .empty-pattern {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      border-radius: 1rem;
+      color: #adb5bd;
+    }
+    
+    /* Responsive: stack on mobile */
+    @media (max-width: 768px) {
+      .detail-page {
+        flex-direction: column;
+        height: auto;
+      }
+      .pattern-panel {
+        min-height: 50vh;
+      }
+      .info-panel {
+        width: 100%;
+      }
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  {# === En-tête === #}
-  <div class="d-flex align-items-start justify-content-between mb-4">
-    <div class="flex-grow-1">
-      {% if user == model.creator %}
-        <div id="inline-name">
-          <h2 class="editable-field d-inline-flex align-items-center gap-2 mb-1" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier le nom">
-            {{ model.name }}
-            <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.55em;"></i>
-          </h2>
-        </div>
-      {% else %}
-        <h2 class="mb-1">{{ model.name }}</h2>
-      {% endif %}
-
-      <div class="text-muted small">
-        <i class="bi bi-person"></i> {{ model.creator.username }}
-        <span class="mx-1">&middot;</span>
-        <i class="bi bi-calendar3"></i> {{ model.created_at|date:'d/m/Y' }}
-        <span class="mx-1">&middot;</span>
-        {% if model.is_public %}
-          <span class="badge bg-success-subtle text-success">Public</span>
-        {% else %}
-          <span class="badge bg-secondary-subtle text-secondary">Privé</span>
+  <div class="detail-page">
+    {# === LEFT: Pattern showcase === #}
+    {% if model.bead_pattern %}
+      <div class="pattern-panel">
+        <img src="{{ model.bead_pattern.url }}" alt="Modèle en perles — {{ model.name }}" />
+        {% if user == model.creator %}
+          <div class="overlay-actions">
+            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-light btn-sm shadow-sm rounded-pill" title="Régénérer le motif"><i class="bi bi-arrow-repeat me-1"></i> Régénérer</a>
+          </div>
         {% endif %}
       </div>
-
-      {% if user == model.creator %}
-        <div id="inline-description" class="mt-2">
-          {% if model.description %}
-            <p class="editable-field d-inline-flex align-items-center gap-2 mb-0 text-secondary" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour modifier la description">
-              {{ model.description }}
-              <i class="bi bi-pencil text-muted edit-icon" style="font-size: 0.8em;"></i>
-            </p>
-          {% else %}
-            <p class="editable-field text-muted d-inline-flex align-items-center gap-2 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button" title="Cliquer pour ajouter une description">
-              <i class="bi bi-pencil" style="font-size: 0.8em;"></i> Ajouter une description…
-            </p>
-          {% endif %}
-        </div>
-      {% else %}
-        {% if model.description %}
-          <p class="text-secondary mt-2 mb-0">{{ model.description }}</p>
+    {% else %}
+      <div class="empty-pattern">
+        <i class="bi bi-grid-3x3-gap" style="font-size: 3rem;"></i>
+        <p class="mt-2 mb-3">Pas encore de motif</p>
+        {% if user == model.creator %}
+          <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-primary rounded-pill btn-sm"><i class="bi bi-magic me-1"></i> Générer</a>
         {% endif %}
-      {% endif %}
-    </div>
-
-    {% if user == model.creator %}
-      <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-sm btn-outline-danger ms-3 mt-1" title="Supprimer ce modèle"><i class="bi bi-trash"></i></a>
+      </div>
     {% endif %}
-  </div>
 
-  <div class="row g-4">
-    {# === Colonne principale === #}
-    <div class="col-lg-8">
-      {% if model.bead_pattern %}
-        {# Showcase du motif #}
-        <div class="pattern-showcase mb-3">
-          <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" />
-          {% if user == model.creator %}
-            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="overlay-btn btn btn-light btn-sm shadow-sm rounded-pill" title="Régénérer le motif avec d'autres paramètres"><i class="bi bi-arrow-repeat me-1"></i> Régénérer</a>
+    {# === RIGHT: Info panel === #}
+    <div class="info-panel">
+      {# Title #}
+      <div>
+        {% if user == model.creator %}
+          <div id="inline-name">
+            <h6 class="editable-field d-inline-flex align-items-center gap-1 mb-0" hx-get="{% url 'beadmodels:inline_edit' model.pk 'name' %}" hx-target="#inline-name" hx-swap="innerHTML" role="button" title="Cliquer pour modifier">
+              {{ model.name }}
+              <i class="bi bi-pencil text-muted edit-icon" style="font-size:.55em;"></i>
+            </h6>
+          </div>
+        {% else %}
+          <h6 class="mb-0">{{ model.name }}</h6>
+        {% endif %}
+
+        {# Description #}
+        {% if user == model.creator %}
+          <div id="inline-description" class="mt-1">
+            {% if model.description %}
+              <small class="editable-field d-inline-flex align-items-center gap-1 text-secondary" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button">
+                {{ model.description }}
+                <i class="bi bi-pencil text-muted edit-icon" style="font-size:.7em;"></i>
+              </small>
+            {% else %}
+              <small class="editable-field text-muted d-inline-flex align-items-center gap-1" hx-get="{% url 'beadmodels:inline_edit' model.pk 'description' %}" hx-target="#inline-description" hx-swap="innerHTML" role="button"><i class="bi bi-pencil" style="font-size:.7em;"></i> Description…</small>
+            {% endif %}
+          </div>
+        {% else %}
+          {% if model.description %}
+            <small class="text-secondary">{{ model.description }}</small>
           {% endif %}
-        </div>
-
-        {# Barre de téléchargement #}
-        <div class="download-bar">
-          <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary rounded-pill px-4"><i class="bi bi-download me-1"></i> Télécharger PDF</a>
-          <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-image me-1"></i> PNG</a>
-        </div>
-      {% else %}
-        <div class="pattern-showcase mb-3 flex-column text-center text-muted">
-          <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: .3;"></i>
-          <p class="mt-2 mb-0">Pas encore de motif en perles.</p>
-          {% if user == model.creator %}
-            <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-primary rounded-pill mt-3"><i class="bi bi-magic me-1"></i> Générer le modèle</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    </div>
-
-    {# === Colonne latérale === #}
-    <div class="col-lg-4">
-      {# Image originale — petit rappel #}
-      <div class="mb-4">
-        <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-image me-1"></i> Image originale</h6>
-        <div class="bg-light rounded-3 p-3 text-center">
-          <img src="{{ model.original_image.url }}" class="original-thumb" alt="Image originale" />
-        </div>
+        {% endif %}
       </div>
 
-      {# Statistiques #}
+      {# Meta #}
+      <div class="meta-line">
+        <span><i class="bi bi-person"></i> {{ model.creator.username }}</span>
+        <span><i class="bi bi-calendar3"></i> {{ model.created_at|date:'d/m/Y' }}</span>
+        {% if model.is_public %}
+          <span class="badge bg-success-subtle text-success" style="font-size:.75rem;">Public</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary" style="font-size:.75rem;">Privé</span>
+        {% endif %}
+      </div>
+
+      <hr class="my-0" />
+
+      {# Download #}
+      {% if model.bead_pattern %}
+        <div class="dl-strip">
+          <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-download me-1"></i> PDF</a>
+          <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-secondary btn-sm rounded-pill"><i class="bi bi-image me-1"></i> PNG</a>
+        </div>
+      {% endif %}
+
+      {# Stats #}
       {% if model.metadata.total_beads or model.metadata.grid_width %}
-        <div class="mb-4">
-          <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-bar-chart me-1"></i> Statistiques</h6>
-          <div class="row g-2">
+        <div>
+          <div class="section-lbl">Statistiques</div>
+          <div class="d-flex flex-wrap gap-1">
             {% if model.metadata.grid_width %}
-              <div class="col-4">
-                <div class="stat-item bg-light rounded-3 py-2">
-                  <div class="stat-value">{{ model.metadata.grid_width }}×{{ model.metadata.grid_height }}</div>
-                  <div class="stat-label">Grille</div>
-                </div>
+              <div class="stat-chip">
+                <strong>{{ model.metadata.grid_width }}×{{ model.metadata.grid_height }}</strong> <span>grille</span>
               </div>
             {% endif %}
             {% if model.metadata.total_beads %}
-              <div class="col-4">
-                <div class="stat-item bg-light rounded-3 py-2">
-                  <div class="stat-value">{{ model.metadata.total_beads }}</div>
-                  <div class="stat-label">Perles</div>
-                </div>
+              <div class="stat-chip">
+                <strong>{{ model.metadata.total_beads }}</strong> <span>perles</span>
               </div>
             {% endif %}
             {% if model.metadata.palette %}
-              <div class="col-4">
-                <div class="stat-item bg-light rounded-3 py-2">
-                  <div class="stat-value">{{ model.metadata.palette|length }}</div>
-                  <div class="stat-label">Couleurs</div>
-                </div>
+              <div class="stat-chip">
+                <strong>{{ model.metadata.palette|length }}</strong> <span>couleurs</span>
               </div>
             {% endif %}
           </div>
           {% if model.board %}
-            <div class="mt-2 small text-muted">
-              <i class="bi bi-grid me-1"></i> Support : {{ model.board.name }} ({{ model.board.width_pegs }}×{{ model.board.height_pegs }})
+            <div class="mt-1" style="font-size:.72rem; color:#adb5bd;">
+              <i class="bi bi-grid"></i> {{ model.board.name }} ({{ model.board.width_pegs }}×{{ model.board.height_pegs }})
             </div>
           {% endif %}
         </div>
       {% endif %}
 
-      {# Palette de couleurs #}
+      {# Palette #}
       {% if model.metadata.palette %}
-        <div class="mb-4">
-          <h6 class="text-uppercase text-muted small fw-semibold mb-2"><i class="bi bi-palette me-1"></i> Palette</h6>
+        <div>
+          <div class="section-lbl">Palette</div>
           <div class="d-flex flex-wrap gap-1">
             {% for color in model.metadata.palette %}
               {% if not color.is_background %}
-                <span class="color-swatch" style="background-color: {{ color.hex }};" title="{{ color.hex }} — {{ color.count }} perles ({{ color.percentage }}%)" data-bs-toggle="tooltip"></span>
+                <span class="swatch" style="background-color: {{ color.hex }};" title="{{ color.hex }} — {{ color.count }} perles ({{ color.percentage }}%)" data-bs-toggle="tooltip"></span>
               {% endif %}
             {% endfor %}
           </div>
         </div>
+      {% endif %}
+
+      {# Original image #}
+      <div class="d-flex align-items-center gap-2">
+        <div class="original-wrap">
+          <img src="{{ model.original_image.url }}" class="original-thumb" alt="Originale" />
+          <img src="{{ model.original_image.url }}" class="original-zoom" alt="Aperçu de l'image originale" />
+        </div>
+        <div>
+          <div class="section-lbl mb-0">Image originale</div>
+          <div style="font-size:.75rem; color:#adb5bd;">Survoler pour agrandir</div>
+        </div>
+      </div>
+
+      {# Spacer + delete at bottom #}
+      <div class="mt-auto"></div>
+      {% if user == model.creator %}
+        <a href="{% url 'beadmodels:delete' model.pk %}" class="btn btn-sm btn-outline-danger w-100" style="font-size:.78rem;"><i class="bi bi-trash me-1"></i> Supprimer</a>
       {% endif %}
     </div>
   </div>
@@ -249,7 +342,6 @@
 
 {% block extra_js %}
   <script>
-    // Init Bootstrap tooltips on palette swatches
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
       new bootstrap.Tooltip(el)
     })
