@@ -1,55 +1,72 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_head %}
+{% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
 {% endblock %}
 
 {% block content %}
-  <div class="container mt-3 wizard-container">
-    <h1 class="h3">{{ wizard.name }}</h1>
-
-    <div class="progress mb-4">
-      <div class="progress-bar" role="progressbar" style="width: {% widthratio wizard_step total_steps 100 %}%;" aria-valuenow="{{ wizard_step }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">Étape {{ wizard_step }} sur {{ total_steps }}</div>
+  <div class="wizard-layout">
+    {# ── Stepper ── #}
+    <div class="wizard-stepper">
+      <div class="wizard-step-item active">
+        <div class="step-circle">1</div>
+        <div class="step-label">Image</div>
+      </div>
+      <div class="wizard-step-item pending">
+        <div class="step-circle">2</div>
+        <div class="step-label">Configuration</div>
+      </div>
+      <div class="wizard-step-item pending">
+        <div class="step-circle">3</div>
+        <div class="step-label">Finalisation</div>
+      </div>
     </div>
 
-    <div class="card wizard-card">
-      <div class="card-header bg-primary text-white">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Étape {{ wizard_step }} : {{ current_step.name }}</h5>
-          <span class="badge bg-light text-dark">Étape {{ wizard_step }} sur {{ total_steps }}</span>
-        </div>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{% url 'beadmodels:create' %}" enctype="multipart/form-data" class="needs-validation">
+    {# ── Card ── #}
+    <div class="wizard-card">
+      <div class="wizard-card-body">
+        <form method="post" action="{% url 'beadmodels:create' %}" enctype="multipart/form-data" id="uploadForm">
           {% csrf_token %}
 
           {% if form.errors %}
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle"></i> Veuillez corriger les erreurs ci-dessous et réessayer.{% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
+            <div class="alert alert-danger mb-3">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              Veuillez corriger les erreurs ci-dessous.
+              {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+              {% for error in form.image.errors %}<div>{{ error }}</div>{% endfor %}
             </div>
           {% endif %}
 
-          <div class="mb-3">
-            <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
-            {{ form.image }}
-            {% if form.image.help_text %}
-              <small class="form-text text-muted">{{ form.image.help_text }}</small>
-            {% endif %}
-            {% if form.image.errors %}
-              <div class="invalid-feedback d-block">
-                {% for error in form.image.errors %}
-                  {{ error }}
-                {% endfor %}
-              </div>
-            {% endif %}
+          {# Drop zone #}
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">
+              <i class="bi bi-cloud-arrow-up"></i>
+            </div>
+            <div class="drop-zone-title">Glissez votre image ici</div>
+            <div class="drop-zone-subtitle">ou <span class="link" id="browseLink">parcourez vos fichiers</span></div>
+            <div class="mt-2" style="font-size:.78rem; color:#adb5bd;">PNG, JPG, WEBP — max 10 Mo</div>
+            <div style="display:none;">{{ form.image }}</div>
           </div>
 
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-            <a href="{% url 'home' %}" class="btn btn-outline-secondary me-md-2"><i class="bi bi-x-circle"></i> Annuler</a>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-right-circle"></i> Suivant</button>
+          {# Upload preview #}
+          <div class="text-center" id="previewArea" style="display:none;">
+            <div class="upload-preview">
+              <img id="previewImg" src="" alt="Aperçu" />
+              <button type="button" class="remove-btn" id="removeBtn" title="Retirer l'image">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+
+          {# Navigation #}
+          <div class="wizard-nav">
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg me-1"></i> Annuler
+            </a>
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+              Suivant <i class="bi bi-arrow-right ms-1"></i>
+            </button>
           </div>
         </form>
       </div>
@@ -60,25 +77,50 @@
 {% block extra_js %}
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const imageInput = document.getElementById('{{ form.image.id_for_label }}')
-      if (imageInput) {
-        imageInput.addEventListener('change', function () {
-          if (this.files && this.files[0]) {
-            const reader = new FileReader()
-            reader.onload = function (e) {
-              let preview = document.getElementById('image-preview')
-              if (!preview) {
-                preview = document.createElement('div')
-                preview.id = 'image-preview'
-                preview.className = 'mt-3 text-center'
-                preview.innerHTML = '<img src="" class="img-fluid border rounded" style="max-height: 300px;" alt="Aperçu">'
-                imageInput.parentNode.appendChild(preview)
-              }
-              preview.querySelector('img').src = e.target.result
-            }
-            reader.readAsDataURL(this.files[0])
-          }
-        })
+      const dropZone = document.getElementById('dropZone')
+      const fileInput = document.querySelector('input[type="file"]')
+      const browseLink = document.getElementById('browseLink')
+      const previewArea = document.getElementById('previewArea')
+      const previewImg = document.getElementById('previewImg')
+      const removeBtn = document.getElementById('removeBtn')
+      const submitBtn = document.getElementById('submitBtn')
+
+      browseLink.addEventListener('click', e => { e.stopPropagation(); fileInput.click() })
+      dropZone.addEventListener('click', () => fileInput.click())
+
+      ;['dragenter', 'dragover'].forEach(evt => {
+        dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('dragover') })
+      })
+      ;['dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('dragover') })
+      })
+      dropZone.addEventListener('drop', e => {
+        if (e.dataTransfer.files.length) {
+          fileInput.files = e.dataTransfer.files
+          showPreview(e.dataTransfer.files[0])
+        }
+      })
+
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) showPreview(this.files[0])
+      })
+
+      removeBtn.addEventListener('click', function () {
+        fileInput.value = ''
+        previewArea.style.display = 'none'
+        dropZone.style.display = ''
+        submitBtn.disabled = true
+      })
+
+      function showPreview(file) {
+        const reader = new FileReader()
+        reader.onload = function (e) {
+          previewImg.src = e.target.result
+          previewArea.style.display = ''
+          dropZone.style.display = 'none'
+          submitBtn.disabled = false
+        }
+        reader.readAsDataURL(file)
       }
     })
   </script>

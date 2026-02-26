@@ -1,0 +1,459 @@
+/* ========================================
+   Wizard — Modern step-by-step creation
+   Design system: Inter, indigo #4f46e5
+   ======================================== */
+
+/* Layout */
+.wizard-layout {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Stepper ────────────────────────────── */
+.wizard-stepper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.wizard-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  max-width: 160px;
+}
+
+.wizard-step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 22px);
+  width: calc(100% - 44px);
+  height: 2px;
+  background: #e9ecef;
+  z-index: 0;
+}
+
+.wizard-step-item.done:not(:last-child)::after {
+  background: #4f46e5;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 600;
+  z-index: 1;
+  transition: all .2s;
+}
+
+.wizard-step-item.done .step-circle {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.wizard-step-item.active .step-circle {
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, .18);
+}
+
+.wizard-step-item.pending .step-circle {
+  background: #e9ecef;
+  color: #adb5bd;
+}
+
+.step-label {
+  margin-top: .45rem;
+  font-size: .72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #868e96;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.wizard-step-item.active .step-label {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.wizard-step-item.done .step-label {
+  color: #495057;
+}
+
+/* ── Wizard Card ────────────────────────── */
+.wizard-card {
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, .06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+  overflow: hidden;
+}
+
+.wizard-card:hover {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+  transform: none;
+}
+
+.wizard-card-body {
+  padding: 2rem;
+}
+
+/* ── Drop Zone (Step 1) ─────────────────── */
+.drop-zone {
+  border: 2px dashed #dee2e6;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: #fafbfc;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: #4f46e5;
+  background: #f0efff;
+}
+
+.drop-zone-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #4f46e5;
+  margin-bottom: 1rem;
+}
+
+.drop-zone-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: .35rem;
+}
+
+.drop-zone-subtitle {
+  font-size: .85rem;
+  color: #868e96;
+}
+
+.drop-zone-subtitle .link {
+  color: #4f46e5;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Image upload preview */
+.upload-preview {
+  margin-top: 1.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+.upload-preview img {
+  max-height: 260px;
+  border-radius: .75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
+}
+
+.upload-preview .remove-btn {
+  position: absolute;
+  top: -.5rem;
+  right: -.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  color: #868e96;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: .75rem;
+  transition: all .15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+}
+
+.upload-preview .remove-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* ── Configure (Step 2) ──────────────────── */
+.config-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .config-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+.config-panel {
+  background: #f8f9fa;
+  border-radius: .875rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-panel-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #868e96;
+  padding: .75rem 1rem .5rem;
+  font-weight: 600;
+}
+
+.config-panel-img {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .75rem;
+  min-height: 220px;
+}
+
+.config-panel-img img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: .5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+/* Controls */
+.config-section {
+  margin-top: 1.5rem;
+}
+
+.config-section-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: .5rem;
+}
+
+/* Chip selector (shapes / colors) */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.chip-group input[type="radio"] {
+  display: none;
+}
+
+.chip-group label {
+  display: inline-flex;
+  align-items: center;
+  padding: .35rem .85rem;
+  border-radius: 2rem;
+  font-size: .82rem;
+  font-weight: 500;
+  border: 1.5px solid #dee2e6;
+  color: #495057;
+  background: #fff;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+
+.chip-group label:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.chip-group input:checked + label {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+
+/* Checkbox styled */
+.config-toggle {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .85rem;
+  border-radius: .625rem;
+  background: #f1f3f5;
+  font-size: .85rem;
+  color: #495057;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.config-toggle:hover {
+  background: #e9ecef;
+}
+
+.config-toggle input[type="checkbox"] {
+  accent-color: #4f46e5;
+}
+
+/* HTMX loading indicator */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator {
+  display: inline-flex;
+}
+
+.htmx-request .config-panel-img img {
+  opacity: .4;
+  transition: opacity .2s;
+}
+
+.preview-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #4f46e5;
+}
+
+/* ── Finalize (Step 3) ────────────────────── */
+.finalize-layout {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .finalize-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finalize-preview {
+  background: linear-gradient(160deg, #f1f3f5, #e9ecef);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  min-height: 340px;
+}
+
+.finalize-preview img {
+  max-width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: .5rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .1);
+}
+
+/* Stats row */
+.stat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .75rem;
+  background: #f1f3f5;
+  border-radius: .5rem;
+  font-size: .82rem;
+}
+
+.stat-pill strong {
+  color: #212529;
+}
+
+.stat-pill span {
+  color: #868e96;
+  font-size: .75rem;
+}
+
+/* Palette row */
+.palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-bottom: 1.25rem;
+}
+
+.palette-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+  cursor: default;
+  transition: transform .15s;
+}
+
+.palette-dot:hover {
+  transform: scale(1.35);
+  z-index: 1;
+}
+
+/* Save form */
+.save-form-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.save-form-card .form-label {
+  font-size: .82rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.save-form-card .form-control,
+.save-form-card .form-select {
+  font-size: .88rem;
+  border-radius: .5rem;
+}
+
+/* ── Navigation ─────────────────────────── */
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.wizard-nav .btn {
+  border-radius: 2rem;
+  padding: .5rem 1.5rem;
+  font-size: .88rem;
+  font-weight: 500;
+}

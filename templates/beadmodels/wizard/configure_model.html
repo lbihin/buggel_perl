@@ -1,165 +1,142 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load math_filters %}
 
-{% block extra_head %}
+{% block extra_css %}
   <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/custom_wizard.css' %}" />
-  <link rel="stylesheet" href="{% static 'css/button_group.css' %}" />
 {% endblock %}
 
 {% block content %}
-  <!-- Overlay de chargement -->
-  <div id="loadingOverlay" class="loading-overlay d-none">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Traitement en cours...</div>
-  </div>
-
-  <div class="container mt-3 wizard-container">
-    <h1 class="h3">{{ step_name }}</h1>
-    
-    <div class="progress mb-4">
-      <div class="progress-bar" role="progressbar" style="width: {% widthratio step_nr total_steps 100 %}%;" 
-          aria-valuenow="{{ step_nr }}" aria-valuemin="0" aria-valuemax="{{ total_steps }}">
-        Étape {{ step_nr }} sur {{ total_steps }}
+  <div class="wizard-layout">
+    {# ── Stepper ── #}
+    <div class="wizard-stepper">
+      <div class="wizard-step-item done">
+        <div class="step-circle"><i class="bi bi-check2"></i></div>
+        <div class="step-label">Image</div>
+      </div>
+      <div class="wizard-step-item active">
+        <div class="step-circle">2</div>
+        <div class="step-label">Configuration</div>
+      </div>
+      <div class="wizard-step-item pending">
+        <div class="step-circle">3</div>
+        <div class="step-label">Finalisation</div>
       </div>
     </div>
-    
-    <div class="card wizard-card">
-      <div class="card-header bg-primary text-white">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">{{ current_step.name }}</h5>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <!-- Colonne de gauche: Image originale -->
-          <div class="col-md-6 mb-3">
-            <h6>Image originale</h6>
-            <div class="image-container text-center">
+
+    {# ── Card ── #}
+    <div class="wizard-card">
+      <div class="wizard-card-body">
+
+        {% if form.errors %}
+          <div class="alert alert-danger mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Veuillez corriger les erreurs ci-dessous.
+            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+
+        {# ── Side-by-side panels ── #}
+        <div class="config-panels">
+          {# Left: original image #}
+          <div class="config-panel">
+            <div class="config-panel-label">Image originale</div>
+            <div class="config-panel-img">
               {% if image_base64 %}
-                <img src="data:image/png;base64,{{ image_base64 }}" alt="Image originale" class="img-fluid border rounded" style="max-height: 300px;" />
+                <img src="data:image/png;base64,{{ image_base64 }}" alt="Image originale" />
               {% else %}
-                <div class="alert alert-warning">
-                  Aucune image n'a été chargée. <a href="{% url 'beadmodels:create' %}">Retour à l'étape 1</a>.
+                <div class="text-muted p-3">
+                  Aucune image chargée. <a href="{% url 'beadmodels:create' %}">Retour</a>.
                 </div>
               {% endif %}
             </div>
           </div>
-          
-          <!-- Colonne de droite: Formulaire et prévisualisation -->
-          <div class="col-md-6">
-            <form method="post" class="needs-validation" novalidate>
-              {% csrf_token %}
-              
-              {% if form.errors %}
-                <div class="alert alert-danger">
-                  <i class="bi bi-exclamation-triangle"></i> Veuillez corriger les erreurs ci-dessous et réessayer.
-                  {% for error in form.non_field_errors %}
-                    <div>{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-              
-              <!-- Formes personnalisées -->
-              <div class="mb-3" id="shape-selector">
-                <label class="form-label">Formes personnalisées</label>
-                <div class="segmented-control">
-                  {% for shape in user_shapes %}
-                  <div class="form-check form-check-inline">
-                    <input 
-                      class="btn-check" 
-                      type="radio" 
-                      name="shape_id" 
-                      id="shape_{{ shape.id }}" 
-                      value="{{ shape.id }}" 
-                      {% if selected_shape_id|stringformat:"s" == shape.id|stringformat:"s" %}checked{% endif %}
-                      hx-post="{% url 'beadmodels:hx-config-change-shape' shape.id %}" 
-                      hx-trigger="change" 
-                      hx-target="#preview-container"
-                      autocomplete="off"
-                    >
-                    <label class="btn btn-outline-primary" for="shape_{{ shape.id }}">{{ shape.name }}</label>
-                  </div>
-                  {% endfor %}
-                </div>
-                <small class="form-text text-muted mt-2 d-block">
-                  Sélectionnez une forme personnalisée pour adapter votre modèle.
-                </small>
-              </div>
-              
-              <!-- Nombre de couleurs -->
-              <div class="mb-3">
-                <label class="form-label">{{ form.color_reduction.label }}</label>
-                {{ form.color_reduction }}  <!-- Champ caché -->
-                <div class="segmented-control">
-                  {% for value in color_values %}
-                  <div class="form-check form-check-inline">
-                    <input 
-                      class="btn-check" 
-                      type="radio" 
-                      name="color_reduction" 
-                      id="color_{{ value }}" 
-                      value="{{ value }}" 
-                      {% if form.color_reduction.value|stringformat:'s' == value|stringformat:'s' %}
-                        checked
-                      {% elif not form.color_reduction.value and value == 16 %}
-                        checked
-                      {% endif %}
-                      hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}" 
-                      hx-trigger="change" 
-                      hx-target="#preview-container"
-                      autocomplete="off"
-                    >
-                    <label class="btn btn-outline-primary" for="color_{{ value }}">{{ value }}</label>
-                  </div>
-                  {% endfor %}
-                </div>
-                {% if form.color_reduction.help_text %}
-                  <small class="form-text text-muted mt-2 d-block">{{ form.color_reduction.help_text }}</small>
-                {% endif %}
-                {% if form.color_reduction.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.color_reduction.errors %}
-                      {{ error }}
-                    {% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-              
-              <!-- Option d'utilisation des couleurs disponibles -->
-              <div class="mb-3 form-check">
-                {{ form.use_available_colors }}
-                <label for="{{ form.use_available_colors.id_for_label }}" class="form-check-label">
-                  {{ form.use_available_colors.label }}
-                </label>
-                {% if form.use_available_colors.help_text %}
-                  <small class="d-block form-text text-muted">{{ form.use_available_colors.help_text }}</small>
-                {% endif %}
-              </div>
-              
-              <!-- Prévisualisation du modèle pixelisé -->
-              <h6 class="mt-4">Modèle pixelisé</h6>
-              <div id="preview-container" class="mb-4">
-                {% include 'beadmodels/wizard/partials/preview.html' %}
-              </div>
-              
-              <!-- Boutons de navigation -->
-              <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <button type="submit" name="q" value="previous" class="btn btn-outline-secondary me-md-2">
-                  <i class="bi bi-arrow-left-circle"></i> Retour
-                </button>
-                <button type="submit" name="q" value="next" class="btn btn-primary">
-                  <i class="bi bi-palette"></i> Générer
-                </button>
-              </div>
-            </form>
+
+          {# Right: live preview #}
+          <div class="config-panel" style="position:relative;">
+            <div class="config-panel-label">
+              Aperçu pixelisé
+              <span class="htmx-indicator preview-spinner">
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+              </span>
+            </div>
+            <div class="config-panel-img" id="preview-container">
+              {% include 'beadmodels/wizard/partials/preview.html' %}
+            </div>
           </div>
         </div>
+
+        {# ── Controls ── #}
+        <form method="post" class="needs-validation" novalidate>
+          {% csrf_token %}
+
+          {# Shape selector #}
+          <div class="config-section">
+            <div class="config-section-label">Forme de la plaque</div>
+            <div class="chip-group">
+              {% for shape in user_shapes %}
+                <input
+                  type="radio"
+                  name="shape_id"
+                  id="shape_{{ shape.id }}"
+                  value="{{ shape.id }}"
+                  {% if selected_shape_id|stringformat:"s" == shape.id|stringformat:"s" %}checked{% endif %}
+                  hx-post="{% url 'beadmodels:hx-config-change-shape' shape.id %}"
+                  hx-trigger="change"
+                  hx-target="#preview-container"
+                  hx-indicator=".preview-spinner"
+                >
+                <label for="shape_{{ shape.id }}">{{ shape.name }}</label>
+              {% endfor %}
+            </div>
+          </div>
+
+          {# Color count selector #}
+          <div class="config-section">
+            <div class="config-section-label">Nombre de couleurs</div>
+            {{ form.color_reduction }}
+            <div class="chip-group">
+              {% for value in color_values %}
+                <input
+                  type="radio"
+                  name="color_reduction"
+                  id="color_{{ value }}"
+                  value="{{ value }}"
+                  {% if form.color_reduction.value|stringformat:'s' == value|stringformat:'s' %}checked
+                  {% elif not form.color_reduction.value and value == 16 %}checked{% endif %}
+                  hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}"
+                  hx-trigger="change"
+                  hx-target="#preview-container"
+                  hx-indicator=".preview-spinner"
+                >
+                <label for="color_{{ value }}">{{ value }}</label>
+              {% endfor %}
+            </div>
+          </div>
+
+          {# Use available colors toggle #}
+          <div class="config-section">
+            <label class="config-toggle">
+              {{ form.use_available_colors }}
+              {{ form.use_available_colors.label }}
+            </label>
+            {% if form.use_available_colors.help_text %}
+              <small class="d-block text-muted mt-1" style="font-size:.78rem;">{{ form.use_available_colors.help_text }}</small>
+            {% endif %}
+          </div>
+
+          {# Navigation #}
+          <div class="wizard-nav">
+            <button type="submit" name="q" value="previous" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i> Retour
+            </button>
+            <button type="submit" name="q" value="next" class="btn btn-primary">
+              Générer le modèle <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </form>
+
       </div>
     </div>
   </div>
-{% endblock %}
-
-{% block extra_js %}
-  <script src="{% static 'js/loading-overlay.js' %}"></script>
 {% endblock %}

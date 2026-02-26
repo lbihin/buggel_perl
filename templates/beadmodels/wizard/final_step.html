@@ -1,91 +1,168 @@
 {% extends 'base.html' %}
 {% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/wizard.css' %}" />
+{% endblock %}
+
 {% block title %}Finalisation du modèle{% endblock %}
+
 {% block content %}
-<div class="row" data-finalize-step="true">
-  <div class="col-md-7">
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong id="model-preview-title">{{ form.name.value|default:'Nouveau modèle' }}</strong>
-        <span class="badge bg-secondary">Étape {{ wizard_step }} / {{ total_steps }}</span>
+  <div class="wizard-layout">
+    {# ── Stepper ── #}
+    <div class="wizard-stepper">
+      <div class="wizard-step-item done">
+        <div class="step-circle"><i class="bi bi-check2"></i></div>
+        <div class="step-label">Image</div>
       </div>
-      <div class="card-body">
-        {% if image_base64 %}
-          <img src="data:image/png;base64,{{ image_base64 }}" alt="Prévisualisation finale" class="img-fluid border" />
-        {% else %}
-          <div class="alert alert-warning">Image finale introuvable.</div>
-        {% endif %}
-        <hr />
-        <div class="d-flex flex-wrap gap-3">
-          <div><strong>Dimensions:</strong> {{ grid_width }} × {{ grid_height }}</div>
-          <div><strong>Total perles:</strong> {{ total_beads }}</div>
-          <div><strong>Forme:</strong> {{ shape_name }} ({{ shape_type }})</div>
-          <div><strong>Couleurs:</strong> {{ beads_count }}</div>
-        </div>
+      <div class="wizard-step-item done">
+        <div class="step-circle"><i class="bi bi-check2"></i></div>
+        <div class="step-label">Configuration</div>
+      </div>
+      <div class="wizard-step-item active">
+        <div class="step-circle">3</div>
+        <div class="step-label">Finalisation</div>
       </div>
     </div>
-    <div class="card mb-3">
-      <div class="card-header">Palette finale</div>
-      <div class="card-body" id="palette-container">
-        {% if palette %}
-          <div class="row">
-            {% for c in palette %}
-              {% if not c.is_background %}
-              <div class="col-6 col-lg-4 mb-2">
-                <div class="border rounded p-2 h-100">
-                  <div class="d-flex align-items-center mb-1">
-                    <span class="rounded me-2" style="display:inline-block;width:24px;height:24px;background:{{ c.color }};border:1px solid #ddd;"></span>
-                    <strong>{{ c.count }} perles</strong>
-                    <small class="text-muted ms-1">({{ c.percentage }}%)</small>
-                  </div>
-                  {% if c.matches %}
-                    <small class="text-muted">Correspondances:</small>
-                    <ul class="list-unstyled mb-0">
-                      {% for m in c.matches %}
-                        <li><span style="background:{{ m.color }};display:inline-block;width:12px;height:12px;border:1px solid #ccc;"></span> {{ m.name }} ({{ m.quantity|default:'-' }})</li>
-                      {% endfor %}
-                    </ul>
-                  {% endif %}
-                </div>
-              </div>
+
+    {# ── Card ── #}
+    <div class="wizard-card">
+      <div class="wizard-card-body">
+        <div class="finalize-layout">
+
+          {# ── Left: Preview + Stats + Palette ── #}
+          <div>
+            {# Image #}
+            <div class="finalize-preview">
+              {% if image_base64 %}
+                <img src="data:image/png;base64,{{ image_base64 }}" alt="Prévisualisation finale" />
+              {% else %}
+                <div class="text-muted">Image finale introuvable.</div>
               {% endif %}
-            {% endfor %}
-          </div>
-          {% for c in palette %}
-            {% if c.is_background %}
-            <div class="mt-2">
-              <small class="text-muted"><i class="bi bi-info-circle"></i> Fond détecté : <span style="display:inline-block;width:12px;height:12px;background:{{ c.color }};border:1px solid #ccc;"></span> {{ c.hex }} ({{ c.count }} perles exclues du décompte)</small>
             </div>
+
+            {# Stats #}
+            <div class="stat-pills mt-3">
+              <div class="stat-pill">
+                <strong>{{ grid_width }} × {{ grid_height }}</strong>
+                <span>dimensions</span>
+              </div>
+              <div class="stat-pill">
+                <strong>{{ total_beads }}</strong>
+                <span>perles</span>
+              </div>
+              <div class="stat-pill">
+                <strong>{{ beads_count }}</strong>
+                <span>couleurs</span>
+              </div>
+              <div class="stat-pill">
+                <strong>{{ shape_name }}</strong>
+                <span>{{ shape_type }}</span>
+              </div>
+            </div>
+
+            {# Palette swatches #}
+            {% if palette %}
+              <div class="config-section-label">Palette</div>
+              <div class="palette-row">
+                {% for c in palette %}
+                  {% if not c.is_background %}
+                    <div class="palette-dot" style="background:{{ c.color }};" title="{{ c.hex }} — {{ c.count }} perles ({{ c.percentage }}%)"></div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+
+              {# Expanded palette table #}
+              <details class="mt-2">
+                <summary style="font-size:.82rem;color:#868e96;cursor:pointer;">Détails de la palette</summary>
+                <div class="mt-2">
+                  {% for c in palette %}
+                    {% if not c.is_background %}
+                      <div class="d-flex align-items-center gap-2 py-1" style="font-size:.82rem;">
+                        <span class="rounded" style="display:inline-block;width:18px;height:18px;background:{{ c.color }};border:1px solid #dee2e6;flex-shrink:0;"></span>
+                        <strong>{{ c.count }}</strong>
+                        <span class="text-muted">({{ c.percentage }}%)</span>
+                        {% if c.matches %}
+                          <span class="text-muted">→</span>
+                          {% for m in c.matches %}
+                            <span style="display:inline-block;width:10px;height:10px;background:{{ m.color }};border:1px solid #ccc;border-radius:2px;"></span>
+                            <span>{{ m.name }}</span>
+                          {% endfor %}
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% for c in palette %}
+                    {% if c.is_background %}
+                      <div class="mt-2 text-muted" style="font-size:.78rem;">
+                        <i class="bi bi-info-circle me-1"></i>Fond détecté :
+                        <span style="display:inline-block;width:12px;height:12px;background:{{ c.color }};border:1px solid #ccc;border-radius:2px;"></span>
+                        {{ c.hex }} ({{ c.count }} perles exclues)
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </details>
             {% endif %}
-          {% endfor %}
-        {% else %}
-          <p class="text-muted">Aucune palette disponible.</p>
-        {% endif %}
+          </div>
+
+          {# ── Right: Save form ── #}
+          <div>
+            <form method="post" class="save-form-card">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+
+              <div class="mb-3">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+              </div>
+
+              <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+              </div>
+
+              <div class="form-check mb-3">
+                {{ form.is_public }}
+                <label for="{{ form.is_public.id_for_label }}" class="form-check-label">
+                  {{ form.is_public.label }}
+                </label>
+                <small class="d-block form-text text-muted">Rendre visible aux autres utilisateurs</small>
+              </div>
+
+              <div class="mb-3">
+                <label for="{{ form.tags.id_for_label }}" class="form-label">{{ form.tags.label }}</label>
+                {{ form.tags }}
+                {% if form.tags.help_text %}
+                  <small class="form-text text-muted">{{ form.tags.help_text }}</small>
+                {% endif %}
+                {{ form.tags.errors }}
+              </div>
+
+              <div class="d-grid gap-2 mt-4">
+                <button type="submit" name="save" class="btn btn-primary">
+                  <i class="bi bi-save me-1"></i> Enregistrer
+                </button>
+                <button type="submit" name="download" value="png" class="btn btn-outline-secondary">
+                  <i class="bi bi-download me-1"></i> Télécharger PNG
+                </button>
+              </div>
+
+              <div class="wizard-nav" style="border-top:none;margin-top:1rem;padding-top:0;">
+                <button type="submit" name="previous_step" class="btn btn-outline-secondary">
+                  <i class="bi bi-arrow-left me-1"></i> Retour
+                </button>
+                <button type="submit" name="download_instructions" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-file-earmark-text me-1"></i> Instructions
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-5">
-    <form method="post" class="card">
-      {% csrf_token %}
-      <div class="card-header">Finalisation</div>
-      <div class="card-body">
-        {{ form.non_field_errors }}
-        <div class="mb-3">{{ form.name.label_tag }} {{ form.name }} {{ form.name.errors }}</div>
-        <div class="mb-3">{{ form.description.label_tag }} {{ form.description }} {{ form.description.errors }}</div>
-        <div class="form-check mb-3">
-          {{ form.is_public }} {{ form.is_public.label_tag }}
-          <small class="form-text text-muted">Rendre visible aux autres utilisateurs</small>
-        </div>
-        <div class="mb-3">{{ form.tags.label_tag }} {{ form.tags }} {{ form.tags.errors }}</div>
-        <hr />
-        <div class="d-grid gap-2">
-          <button type="submit" name="save" class="btn btn-success"><i class="bi bi-save"></i> Enregistrer le modèle</button>
-          <button type="submit" name="download" value="png" class="btn btn-outline-primary"><i class="bi bi-download"></i> Télécharger PNG</button>
-          <button type="submit" name="download_instructions" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-text"></i> Instructions</button>
-          <button type="submit" name="previous_step" class="btn btn-outline-dark"><i class="bi bi-arrow-left-circle"></i> Retour étape 2</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
 {% endblock %}
