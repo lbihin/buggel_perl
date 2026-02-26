@@ -1,32 +1,34 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <div class="jumbotron">
-    <h1 class="display-4">Bienvenue sur Buggel</h1>
-    <p class="lead">Créez facilement des modèles de perles à repasser à partir de vos images préférées.</p>
+  <!-- Hero -->
+  <section class="text-center py-5 mb-5" style="background: linear-gradient(135deg, #f0efff 0%, #e8f4fd 100%); margin: -1.5rem -0.75rem 2rem; padding: 3.5rem 1rem; border-radius: 1rem;">
+    <h1 class="fw-bold mb-2" style="font-size:2rem; color:#1a1a2e;">Créez des modèles de perles<br />à partir de vos images</h1>
+    <p class="text-muted mb-4 mx-auto" style="max-width:480px; font-size:.95rem;">Transformez n'importe quelle image en patron de perles à repasser en quelques clics.</p>
     {% if not user.is_authenticated %}
-      <hr class="my-4" />
-      <p>Inscrivez-vous pour commencer à créer vos propres modèles !</p>
-      <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}" role="button">S'inscrire</a>
+      <a class="btn btn-primary rounded-pill px-4" href="{% url 'accounts:register' %}"><i class="bi bi-person-plus me-1"></i>S'inscrire gratuitement</a>
+      <a class="btn btn-outline-primary rounded-pill px-4 ms-2" href="{% url 'login' %}">Connexion</a>
     {% else %}
-      <div class="btn-group">
-        <a class="btn btn-primary btn-lg" href="{% url 'beadmodels:create' %}?reset=1 step_id=1" role="button">
-          <i class="bi bi-magic"></i> Assistant de création
-        </a>
-      </div>
+      <a class="btn btn-primary rounded-pill px-4" href="{% url 'beadmodels:create' %}?reset=1&step_id=1"><i class="bi bi-magic me-1"></i>Assistant de création</a>
     {% endif %}
-  </div>
+  </section>
 
-  <h2 class="mt-5 mb-4">Derniers modèles publics</h2>
-  <div class="row">
-    {% for model in models %}
-      <div class="col-md-4 mb-4">
-        {% include "beadmodels/partials/inline-card.html" with model=model %}
-      </div>
-    {% empty %}
-      <div class="col-12">
-        <p>Aucun modèle public n'a encore été créé.</p>
-      </div>
-    {% endfor %}
-  </div>
+  <!-- Public models -->
+  {% if models %}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-semibold mb-0">Derniers modèles publics</h5>
+    </div>
+    <div class="row g-4">
+      {% for model in models %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+          {% include 'beadmodels/partials/inline-card.html' with model=model %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state-card mt-4">
+      <i class="bi bi-grid-3x3-gap"></i>
+      <p>Aucun modèle public n'a encore été créé.</p>
+    </div>
+  {% endif %}
 {% endblock %}

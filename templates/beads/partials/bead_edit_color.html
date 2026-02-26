@@ -1,5 +1,5 @@
 <!-- Formulaire d'édition de couleur -->
-<form hx-post="{% url 'beadmodels:bead_update_color_htmx' bead.pk %}" 
+<form hx-post="{% url 'beads:bead_update_color_htmx' bead.pk %}" 
       hx-target="closest .color-display" 
       class="edit-color-form"
       hx-indicator="#color-indicator-{{ bead.pk }}"
@@ -101,7 +101,7 @@
     <button class="btn btn-sm btn-secondary me-1" 
             id="cancel-color-btn-{{ bead.pk }}"
             type="button"
-            hx-get="{% url 'beadmodels:bead_edit_color_htmx' bead.pk %}?cancel=true"
+            hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}?cancel=true"
             hx-target="closest .color-display"
             hx-swap="outerHTML transition:true">
       <span class="bi bi-x me-1"></span>Annuler

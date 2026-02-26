@@ -1,38 +1,16 @@
 <!-- Formulaire d'édition de quantité -->
-<form hx-post="{% url 'beadmodels:bead_update_quantity_htmx' bead.pk %}" 
-      hx-target="closest .quantity-display" 
-      class="edit-quantity-form"
-      hx-indicator="#quantity-indicator-{{ bead.pk }}"
-      hx-swap="outerHTML transition:true"
-      hx-disabled-elt="find button">
+<form hx-post="{% url 'beads:bead_update_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" class="edit-quantity-form" hx-indicator="#quantity-indicator-{{ bead.pk }}" hx-swap="outerHTML transition:true" hx-disabled-elt="find button">
   {% csrf_token %}
   <div class="input-group input-group-sm">
-    <input type="number" 
-           name="quantity" 
-           value="{{ bead.quantity|default_if_none:'' }}" 
-           class="form-control form-control-sm" 
-           min="0"
-           placeholder="Quantité"
-           id="quantity-input-{{ bead.pk }}"
-           autofocus>
-    <button class="btn btn-sm btn-primary" 
-            type="submit" 
-            id="save-quantity-btn-{{ bead.pk }}"
-            hx-disable>
+    <input type="number" name="quantity" value="{{ bead.quantity|default_if_none:'' }}" class="form-control form-control-sm" min="0" placeholder="Quantité" id="quantity-input-{{ bead.pk }}" autofocus />
+    <button class="btn btn-sm btn-primary" type="submit" id="save-quantity-btn-{{ bead.pk }}" hx-disable>
       <span class="bi bi-check"></span>
       <span class="spinner-border spinner-border-sm htmx-indicator" id="quantity-indicator-{{ bead.pk }}" role="status" aria-hidden="true"></span>
     </button>
-    <button class="btn btn-sm btn-secondary" 
-            id="cancel-quantity-btn-{{ bead.pk }}"
-            type="button"
-            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}?cancel=true"
-            hx-target="closest .quantity-display"
-            hx-swap="outerHTML transition:true">
-      <span class="bi bi-x"></span>
-    </button>
+    <button class="btn btn-sm btn-secondary" id="cancel-quantity-btn-{{ bead.pk }}" type="button" hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}?cancel=true" hx-target="closest .quantity-display" hx-swap="outerHTML transition:true"><span class="bi bi-x"></span></button>
   </div>
   {% if error %}
-  <div class="text-danger mt-1 small">{{ error }}</div>
+    <div class="text-danger mt-1 small">{{ error }}</div>
   {% endif %}
 </form>
 

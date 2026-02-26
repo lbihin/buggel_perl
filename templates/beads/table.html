@@ -7,26 +7,81 @@
 {% endblock %}
 
 {% block content %}
-  <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h2 mb-0">Ma collection de perles</h1>
+  <div class="page-header">
+    <div>
+      <h2><i class="bi bi-palette2 me-2 text-muted"></i>Ma collection de perles</h2>
+      <p class="subtitle">Gérez vos perles et suivez vos stocks</p>
     </div>
+    <a href="{% url 'beads:create' %}" class="btn btn-primary btn-sm rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Ajouter</a>
+  </div>
 
-    <!-- Messages de succès/erreur -->
-    <div id="messages-container">
-      <!-- Alerte pour les perles en quantité faible -->
-      {% if low_quantity_beads %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-          <strong>Attention!</strong> Vous avez {{ low_quantity_beads|length }} perle(s) en quantité faible (moins de {{ threshold }}).
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endif %}
+  <!-- Messages -->
+  <div id="messages-container">
+    {% if low_quantity_beads %}
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Stock faible :</strong> {{ low_quantity_beads|length }} perle{{ low_quantity_beads|length|pluralize }} en dessous de {{ threshold }} unités.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if beads %}
+    <div class="table-modern">
+      <table class="beads-table w-100 mb-0">
+        <thead>
+          <tr>
+            <th>Couleur</th>
+            <th>Nom</th>
+            <th>Quantité</th>
+            <th>Notes</th>
+            <th class="text-end" style="width:80px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bead in beads %}
+            <tr id="bead-row-{{ bead.id }}" class="{% if bead.quantity is not None and bead.quantity < threshold %}low-quantity{% endif %}">
+              <td>
+                <div class="color-display d-inline-flex align-items-center gap-2">
+                  <span class="color-preview" style="background-color: {{ bead.get_rgb_color }};" hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}" hx-target="closest .color-display" hx-trigger="click" role="button" title="Modifier la couleur"></span>
+                  <code class="text-muted" style="font-size:.78rem;">{{ bead.get_hex_color }}</code>
+                </div>
+              </td>
+              <td class="fw-medium">{{ bead.name }}</td>
+              <td>
+                <div class="quantity-display">
+                  <span class="quantity-value badge {% if bead.quantity is not None and bead.quantity < threshold %}
+                      bg-warning-subtle text-warning
+                    {% else %}
+                      bg-primary-subtle text-primary
+                    {% endif %}"
+                    style="font-size:.82rem; cursor:pointer;"
+                    hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}"
+                    hx-target="closest .quantity-display"
+                    hx-trigger="click"
+                    role="button"
+                    title="Modifier">
+                    {{ bead.quantity|default_if_none:'–' }}
+                  </span>
+                </div>
+              </td>
+              <td class="text-muted" style="font-size:.85rem;">{{ bead.notes|default:'-'|truncatewords:8 }}</td>
+              <td class="text-end">
+                <a href="{% url 'beads:edit' bead.pk %}" class="btn btn-sm btn-light" title="Modifier"><i class="bi bi-pencil"></i></a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-
-    <!-- Bouton flottant "+" pour ajouter une nouvelle perle -->
-    <a class="floating-add-btn" title="Ajouter une nouvelle perle" href="{% url 'beads:create' %}">
-      <i class="bi bi-plus-lg"></i>
-    </a>
-      <i class="bi bi-info-circle me-2"></i>
-      <strong>Astuce :</strong> Cliquez sur la couleur ou la quantité d'une perle pour les modifier directement.
+    <p class="text-muted mt-3" style="font-size:.82rem;">
+      <i class="bi bi-info-circle me-1"></i>Cliquez sur la couleur ou la quantité pour les modifier directement.
+    </p>
+  {% else %}
+    <div class="empty-state-card">
+      <i class="bi bi-palette2"></i>
+      <p>Vous n'avez pas encore ajouté de perles.</p>
+      <a href="{% url 'beads:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-plus-lg me-1"></i>Ajouter ma première perle</a>
+    </div>
+  {% endif %}
 {% endblock %}

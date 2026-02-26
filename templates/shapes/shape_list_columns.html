@@ -8,252 +8,249 @@
 {% endblock %}
 
 {% block content %}
-  <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 mb-0 fw-light">Gestion des formes</h1>
+  <div class="page-header">
+    <div>
+      <h2><i class="bi bi-pentagon me-2 text-muted"></i>Gestion des formes</h2>
+      <p class="subtitle">Organisez vos plaques de perles par type</p>
     </div>
+  </div>
 
-    <!-- Messages de succès/erreur -->
-    <div id="messages-container">
-      {% if success_message %}
-        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-          <i class="bi bi-check-circle-fill me-2"></i>{{ success_message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endif %}
-      {% if error_message %}
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error_message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endif %}
-    </div>
+  <!-- Messages -->
+  <div id="messages-container">
+    {% if success_message %}
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>{{ success_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+    {% if error_message %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+  </div>
 
-    <div class="row g-4">
-      <!-- Colonnes des formes (principales) -->
-      <div class="col-lg-8">
-        <div class="row g-3 shape-columns">
-          <!-- Colonne des rectangles -->
-          <div class="col-md-4">
-            <div class="card h-100 shape-column border-0">
-              <div class="card-header bg-shape-rectangle text-white border-0 rounded-top">
-                <h5 class="mb-0 card-title fw-normal text-center py-2">Rectangles</h5>
-              </div>
-              <div class="card-body">
-                {% if rectangles %}
-                  <div class="shape-list">
-                    {% for shape in rectangles %}
-                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
-                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
-                        <div class="shape-content">
-                          <p class="shape-dimensions mb-0">{{ shape.width }} × {{ shape.height }}</p>
-                          <div class="shape-badges">
-                            {% if shape.is_shared %}
-                              <span class="badge bg-shape-shared">Partagée</span>
-                            {% endif %}
-                            {% if shape.is_default %}
-                              <span class="badge bg-shape-default">Défaut</span>
-                            {% endif %}
-                          </div>
-                        </div>
-                        {% if not shape.is_default %}
-                          <button class="btn btn-sm btn-icon delete-btn"
-                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
-                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
-                                hx-target="#shape-list-container"
-                                title="Supprimer">
-                            <i class="bi bi-x"></i>
-                          </button>
-                        {% endif %}
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <div class="empty-state">
-                    <p class="text-muted text-center">Aucun rectangle</p>
-                  </div>
-                {% endif %}
+  <div class="row g-4">
+    <!-- Shape columns -->
+    <div class="col-lg-8">
+      <div class="row g-3 shape-columns">
+        <!-- Rectangles -->
+        <div class="col-md-4">
+          <div class="card h-100 shape-column border-0 shadow-sm" style="border-radius:.875rem; overflow:hidden;">
+            <div class="card-header bg-shape-rectangle text-white border-0 py-3">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-square"></i>
+                <h6 class="mb-0 fw-semibold">Rectangles</h6>
               </div>
             </div>
-          </div>
-          
-          <!-- Colonne des carrés -->
-          <div class="col-md-4">
-            <div class="card h-100 shape-column border-0">
-              <div class="card-header bg-shape-square text-white border-0 rounded-top">
-                <h5 class="mb-0 card-title fw-normal text-center py-2">Carrés</h5>
-              </div>
-              <div class="card-body">
-                {% if squares %}
-                  <div class="shape-list">
-                    {% for shape in squares %}
-                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
-                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
-                        <div class="shape-content">
-                          <p class="shape-dimensions mb-0">{{ shape.size }} × {{ shape.size }}</p>
-                          <div class="shape-badges">
-                            {% if shape.is_shared %}
-                              <span class="badge bg-shape-shared">Partagée</span>
-                            {% endif %}
-                            {% if shape.is_default %}
-                              <span class="badge bg-shape-default">Défaut</span>
-                            {% endif %}
-                          </div>
+            <div class="card-body p-2">
+              {% if rectangles %}
+                <div class="shape-list">
+                  {% for shape in rectangles %}
+                    <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer {{ shape.id }}"></a>
+                      <div class="shape-content">
+                        <p class="shape-dimensions mb-0">{{ shape.width }} × {{ shape.height }}</p>
+                        <div class="shape-badges">
+                          {% if shape.is_shared %}<span class="badge bg-shape-shared">Partagée</span>{% endif %}
+                          {% if shape.is_default %}<span class="badge bg-shape-default">Défaut</span>{% endif %}
                         </div>
-                        {% if not shape.is_default %}
-                          <button class="btn btn-sm btn-icon delete-btn"
-                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
-                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
-                                hx-target="#shape-list-container"
-                                title="Supprimer">
-                            <i class="bi bi-x"></i>
-                          </button>
-                        {% endif %}
                       </div>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <div class="empty-state">
-                    <p class="text-muted text-center">Aucun carré</p>
-                  </div>
-                {% endif %}
-              </div>
+                      {% if not shape.is_default %}
+                        <button class="btn btn-sm btn-icon delete-btn"
+                              hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                              hx-confirm="Supprimer la forme {{ shape.name }} ?"
+                              hx-target="#shape-list-container"
+                              title="Supprimer">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="empty-state py-4">
+                  <p class="text-muted text-center mb-0" style="font-size:.85rem;">Aucun rectangle</p>
+                </div>
+              {% endif %}
             </div>
           </div>
-          
-          <!-- Colonne des cercles -->
-          <div class="col-md-4">
-            <div class="card h-100 shape-column border-0">
-              <div class="card-header bg-shape-circle border-0 rounded-top">
-                <h5 class="mb-0 card-title fw-normal text-center py-2">Cercles</h5>
+        </div>
+
+        <!-- Carrés -->
+        <div class="col-md-4">
+          <div class="card h-100 shape-column border-0 shadow-sm" style="border-radius:.875rem; overflow:hidden;">
+            <div class="card-header bg-shape-square text-white border-0 py-3">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-square-fill"></i>
+                <h6 class="mb-0 fw-semibold">Carrés</h6>
               </div>
-              <div class="card-body">
-                {% if circles %}
-                  <div class="shape-list">
-                    {% for shape in circles %}
-                      <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
-                        <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer la forme {{ shape.id }}"></a>
-                        <div class="shape-content">
-                          <p class="shape-dimensions mb-0">Ø {{ shape.diameter }}</p>
-                          <div class="shape-badges">
-                            {% if shape.is_shared %}
-                              <span class="badge bg-shape-shared">Partagée</span>
-                            {% endif %}
-                            {% if shape.is_default %}
-                              <span class="badge bg-shape-default">Défaut</span>
-                            {% endif %}
-                          </div>
+            </div>
+            <div class="card-body p-2">
+              {% if squares %}
+                <div class="shape-list">
+                  {% for shape in squares %}
+                    <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer {{ shape.id }}"></a>
+                      <div class="shape-content">
+                        <p class="shape-dimensions mb-0">{{ shape.size }} × {{ shape.size }}</p>
+                        <div class="shape-badges">
+                          {% if shape.is_shared %}<span class="badge bg-shape-shared">Partagée</span>{% endif %}
+                          {% if shape.is_default %}<span class="badge bg-shape-default">Défaut</span>{% endif %}
                         </div>
-                        {% if not shape.is_default %}
-                          <button class="btn btn-sm btn-icon delete-btn"
-                                hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
-                                hx-confirm="Voulez-vous vraiment supprimer la forme {{ shape.name }}?"
-                                hx-target="#shape-list-container"
-                                title="Supprimer">
-                            <i class="bi bi-x"></i>
-                          </button>
-                        {% endif %}
                       </div>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <div class="empty-state">
-                    <p class="text-muted text-center">Aucun cercle</p>
-                  </div>
-                {% endif %}
+                      {% if not shape.is_default %}
+                        <button class="btn btn-sm btn-icon delete-btn"
+                              hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                              hx-confirm="Supprimer la forme {{ shape.name }} ?"
+                              hx-target="#shape-list-container"
+                              title="Supprimer">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="empty-state py-4">
+                  <p class="text-muted text-center mb-0" style="font-size:.85rem;">Aucun carré</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Cercles -->
+        <div class="col-md-4">
+          <div class="card h-100 shape-column border-0 shadow-sm" style="border-radius:.875rem; overflow:hidden;">
+            <div class="card-header bg-shape-circle border-0 py-3">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-circle"></i>
+                <h6 class="mb-0 fw-semibold">Cercles</h6>
               </div>
+            </div>
+            <div class="card-body p-2">
+              {% if circles %}
+                <div class="shape-list">
+                  {% for shape in circles %}
+                    <div class="shape-item position-relative" id="shape-{{ shape.id }}" {% if edit_shape and edit_shape.id == shape.id %}data-selected="true"{% endif %}>
+                      <a class="stretched-link" href="?edit={{ shape.id }}" aria-label="Éditer {{ shape.id }}"></a>
+                      <div class="shape-content">
+                        <p class="shape-dimensions mb-0">Ø {{ shape.diameter }}</p>
+                        <div class="shape-badges">
+                          {% if shape.is_shared %}<span class="badge bg-shape-shared">Partagée</span>{% endif %}
+                          {% if shape.is_default %}<span class="badge bg-shape-default">Défaut</span>{% endif %}
+                        </div>
+                      </div>
+                      {% if not shape.is_default %}
+                        <button class="btn btn-sm btn-icon delete-btn"
+                              hx-delete="{% url 'shapes:shape_delete_hx' shape.id %}"
+                              hx-confirm="Supprimer la forme {{ shape.name }} ?"
+                              hx-target="#shape-list-container"
+                              title="Supprimer">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="empty-state py-4">
+                  <p class="text-muted text-center mb-0" style="font-size:.85rem;">Aucun cercle</p>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- Formulaire latéral -->
-      <div class="col-lg-4">
-        <div class="card shape-form-card sticky-top border-0 shadow-sm" style="top: 20px; z-index: 100;">
-          <div class="card-header bg-white border-bottom-0">
-            <h5 class="mb-0 fw-normal" id="form-title">
-              <i class="bi bi-pencil-square me-2 text-muted"></i>
-              {% if edit_shape %}Modifier{% else %}Ajouter{% endif %} une forme
-            </h5>
-          </div>
-          <div class="card-body">
-            <form id="shapeForm" method="post" action="{% if edit_shape %}{% url 'shapes:update_shape' edit_shape.id %}{% else %}{% url 'shapes:create_shape' %}{% endif %}">
-              {% csrf_token %}
-              
-              <div class="mb-4">
-                <div class="form-switch">
-                  <input type="checkbox" class="form-check-input" id="id_share_shape" name="share_shape" {% if edit_shape.is_shared %}checked{% endif %}>
-                  <label class="form-check-label" for="id_share_shape">Partager avec les autres utilisateurs</label>
-                </div>
-              </div>
-              
-              <div class="mb-4">
-                <label class="form-label text-muted small mb-3">Type de forme et dimensions</label>
-                <div class="shape-type-selector">
-                  <div class="shape-type-option mb-3">
-                    <input type="radio" class="btn-check" name="shape_option" id="option-rectangle" value="rectangle" 
-                      {% if not edit_shape or edit_shape.shape_type == 'rectangle' %}checked{% endif %} 
-                      autocomplete="off">
-                    <label class="btn btn-outline-shape-rectangle w-100 fw-normal" for="option-rectangle">Rectangle</label>
-                    <div class="shape-dimensions mt-3 {% if edit_shape and edit_shape.shape_type != 'rectangle' %}d-none{% endif %}" id="rectangle-dimensions">
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <label class="form-label small text-muted">Largeur</label>
-                          <input type="number" name="width" value="{{ edit_shape.width|default:'10' }}" min="1" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label small text-muted">Hauteur</label>
-                          <input type="number" name="height" value="{{ edit_shape.height|default:'10' }}" min="1" class="form-control form-control-sm">
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="shape-type-option mb-3">
-                    <input type="radio" class="btn-check" name="shape_option" id="option-square" value="square" 
-                      {% if edit_shape and edit_shape.shape_type == 'square' %}checked{% endif %}
-                      autocomplete="off">
-                    <label class="btn btn-outline-shape-square w-100 fw-normal" for="option-square">Carré</label>
-                    <div class="shape-dimensions mt-3 {% if not edit_shape or edit_shape.shape_type != 'square' %}d-none{% endif %}" id="square-dimensions">
-                      <label class="form-label small text-muted">Taille</label>
-                      <input type="number" name="size" value="{{ edit_shape.size|default:'10' }}" min="1" class="form-control form-control-sm">
-                    </div>
-                  </div>
-                  
-                  <div class="shape-type-option mb-3">
-                    <input type="radio" class="btn-check" name="shape_option" id="option-circle" value="circle" 
-                      {% if edit_shape and edit_shape.shape_type == 'circle' %}checked{% endif %}
-                      autocomplete="off">
-                    <label class="btn btn-outline-shape-circle w-100 fw-normal" for="option-circle">Cercle</label>
-                    <div class="shape-dimensions mt-3 {% if not edit_shape or edit_shape.shape_type != 'circle' %}d-none{% endif %}" id="circle-dimensions">
-                      <label class="form-label small text-muted">Diamètre</label>
-                      <input type="number" name="diameter" value="{{ edit_shape.diameter|default:'10' }}" min="1" class="form-control form-control-sm">
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Champ caché pour le nom (généré automatiquement) -->
-              <input type="hidden" id="id_name" name="name" value="{{ edit_shape.name|default:'Forme' }}">
+    </div>
 
-              <div class="d-flex justify-content-between mt-4">
-                {% if edit_shape %}
-                  <a href="{% url 'shapes:shape_list_columns' %}" class="btn btn-sm btn-outline-secondary">Annuler</a>
-                {% else %}
-                  <div></div>
-                {% endif %}
-                <button type="submit" class="btn btn-sm btn-primary px-4">
-                  {% if edit_shape %}Mettre à jour{% else %}Ajouter{% endif %}
-                </button>
+    <!-- Sidebar form -->
+    <div class="col-lg-4">
+      <div class="card shape-form-card sticky-top border-0 shadow-sm" style="top: 20px; z-index: 100; border-radius:.875rem;">
+        <div class="card-body p-4">
+          <h6 class="fw-semibold mb-3">
+            <i class="bi bi-pencil-square me-2 text-muted"></i>
+            {% if edit_shape %}Modifier{% else %}Ajouter{% endif %} une forme
+          </h6>
+
+          <form id="shapeForm" method="post" action="{% if edit_shape %}{% url 'shapes:update_shape' edit_shape.id %}{% else %}{% url 'shapes:create_shape' %}{% endif %}">
+            {% csrf_token %}
+
+            <div class="form-check form-switch mb-4">
+              <input type="checkbox" class="form-check-input" id="id_share_shape" name="share_shape" {% if edit_shape.is_shared %}checked{% endif %}>
+              <label class="form-check-label" style="font-size:.88rem;" for="id_share_shape">Partager avec les autres</label>
+            </div>
+
+            <label class="form-label text-muted small mb-3">Type & dimensions</label>
+            <div class="shape-type-selector">
+              <!-- Rectangle -->
+              <div class="shape-type-option">
+                <input type="radio" class="btn-check" name="shape_option" id="option-rectangle" value="rectangle"
+                  {% if not edit_shape or edit_shape.shape_type == 'rectangle' %}checked{% endif %}
+                  autocomplete="off">
+                <label class="btn btn-outline-shape-rectangle w-100 btn-sm fw-medium" for="option-rectangle">
+                  <i class="bi bi-square me-1"></i>Rectangle
+                </label>
+                <div class="shape-dimensions mt-3 {% if edit_shape and edit_shape.shape_type != 'rectangle' %}d-none{% endif %}" id="rectangle-dimensions">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small text-muted">Largeur</label>
+                      <input type="number" name="width" value="{{ edit_shape.width|default:'10' }}" min="1" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small text-muted">Hauteur</label>
+                      <input type="number" name="height" value="{{ edit_shape.height|default:'10' }}" min="1" class="form-control form-control-sm">
+                    </div>
+                  </div>
+                </div>
               </div>
-            </form>
-          </div>
+
+              <!-- Square -->
+              <div class="shape-type-option">
+                <input type="radio" class="btn-check" name="shape_option" id="option-square" value="square"
+                  {% if edit_shape and edit_shape.shape_type == 'square' %}checked{% endif %}
+                  autocomplete="off">
+                <label class="btn btn-outline-shape-square w-100 btn-sm fw-medium" for="option-square">
+                  <i class="bi bi-square-fill me-1"></i>Carré
+                </label>
+                <div class="shape-dimensions mt-3 {% if not edit_shape or edit_shape.shape_type != 'square' %}d-none{% endif %}" id="square-dimensions">
+                  <label class="form-label small text-muted">Taille</label>
+                  <input type="number" name="size" value="{{ edit_shape.size|default:'10' }}" min="1" class="form-control form-control-sm">
+                </div>
+              </div>
+
+              <!-- Circle -->
+              <div class="shape-type-option">
+                <input type="radio" class="btn-check" name="shape_option" id="option-circle" value="circle"
+                  {% if edit_shape and edit_shape.shape_type == 'circle' %}checked{% endif %}
+                  autocomplete="off">
+                <label class="btn btn-outline-shape-circle w-100 btn-sm fw-medium" for="option-circle">
+                  <i class="bi bi-circle me-1"></i>Cercle
+                </label>
+                <div class="shape-dimensions mt-3 {% if not edit_shape or edit_shape.shape_type != 'circle' %}d-none{% endif %}" id="circle-dimensions">
+                  <label class="form-label small text-muted">Diamètre</label>
+                  <input type="number" name="diameter" value="{{ edit_shape.diameter|default:'10' }}" min="1" class="form-control form-control-sm">
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" id="id_name" name="name" value="{{ edit_shape.name|default:'Forme' }}">
+
+            <div class="d-flex justify-content-between mt-4">
+              {% if edit_shape %}
+                <a href="{% url 'shapes:shape_list_columns' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Annuler</a>
+              {% else %}
+                <div></div>
+              {% endif %}
+              <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4">
+                {% if edit_shape %}Mettre à jour{% else %}<i class="bi bi-plus-lg me-1"></i>Ajouter{% endif %}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Deletion confirmation handled inline by HTMX's hx-confirm on delete buttons. Modal removed. -->
 {% endblock %}
-
-{% comment %} Removed custom JS: interactions use HTMX and HTML-only patterns now. {% endcomment %}

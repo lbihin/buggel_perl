@@ -2,28 +2,10 @@
 <div class="quantity-display">
   <div class="d-flex align-items-center">
     {% if bead.quantity is not None and bead.quantity <= threshold %}
-      <span class="text-warning fw-bold quantity-value" 
-            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}" 
-            hx-target="closest .quantity-display"
-            hx-trigger="click"
-            role="button"
-            title="Cliquez pour modifier">
-        {{ bead.quantity }}
-      </span>
+      <span class="text-warning fw-bold quantity-value" hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" hx-trigger="click" role="button" title="Cliquez pour modifier">{{ bead.quantity }}</span>
     {% else %}
-      <span class="quantity-value" 
-            hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}" 
-            hx-target="closest .quantity-display"
-            hx-trigger="click"
-            role="button"
-            title="Cliquez pour modifier">
-        {{ bead.quantity|default_if_none:"Non spécifié" }}
-      </span>
+      <span class="quantity-value" hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" hx-trigger="click" role="button" title="Cliquez pour modifier">{{ bead.quantity|default_if_none:'Non spécifié' }}</span>
     {% endif %}
-    <i class="bi bi-pencil-square ms-2 text-primary edit-icon" 
-       hx-get="{% url 'beadmodels:bead_edit_quantity_htmx' bead.pk %}" 
-       hx-target="closest .quantity-display"
-       hx-trigger="click"
-       role="button"></i>
+    <i class="bi bi-pencil-square ms-2 text-primary edit-icon" hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}" hx-target="closest .quantity-display" hx-trigger="click" role="button"></i>
   </div>
 </div>

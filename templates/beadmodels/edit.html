@@ -1,15 +1,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-        <h2>Modifier le modèle de perles</h2>
-        <form method="post" enctype="multipart/form-data">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="mb-4">
+        <a href="{% url 'beadmodels:details' model.pk %}" class="text-muted text-decoration-none" style="font-size:.85rem;"><i class="bi bi-arrow-left me-1"></i>Retour au modèle</a>
+        <h2 class="mt-2 mb-0">Modifier le modèle</h2>
+      </div>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-            <a href="{% url 'beadmodels:details' model.pk %}" class="btn btn-secondary">Annuler</a>
-        </form>
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'beadmodels:details' model.pk %}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-x-lg me-1"></i>Annuler</a>
+              <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check-lg me-1"></i>Enregistrer</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
-{% endblock  %}
+  </div>
+{% endblock %}
