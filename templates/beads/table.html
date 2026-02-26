@@ -16,7 +16,7 @@
   </div>
 
   <!-- Messages -->
-  <div id="messages-container">
+  <div id="messages-container" hx-get="{% url 'beads:stock_alert_htmx' %}" hx-trigger="quantityUpdated from:body" hx-swap="innerHTML">
     {% if low_quantity_beads %}
       <div class="alert alert-warning alert-dismissible fade show" role="alert">
         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -40,29 +40,16 @@
         </thead>
         <tbody>
           {% for bead in beads %}
-            <tr id="bead-row-{{ bead.id }}" class="{% if bead.quantity is not None and bead.quantity < threshold %}low-quantity{% endif %}">
+            <tr id="bead-row-{{ bead.pk }}" class="{% if bead.quantity is not None and bead.quantity < threshold %}low-quantity{% endif %}">
               <td>
-                <div class="color-display d-inline-flex align-items-center gap-2">
-                  <span class="color-preview" style="background-color: {{ bead.get_rgb_color }};" hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}" hx-target="closest .color-display" hx-trigger="click" role="button" title="Modifier la couleur"></span>
-                  <code class="text-muted" style="font-size:.78rem;">{{ bead.get_hex_color }}</code>
+                <div id="clr-{{ bead.pk }}">
+                  {% include 'beads/partials/bead_color_display.html' with bead=bead %}
                 </div>
               </td>
               <td class="fw-medium">{{ bead.name }}</td>
               <td>
-                <div class="quantity-display">
-                  <span class="quantity-value badge {% if bead.quantity is not None and bead.quantity < threshold %}
-                      bg-warning-subtle text-warning
-                    {% else %}
-                      bg-primary-subtle text-primary
-                    {% endif %}"
-                    style="font-size:.82rem; cursor:pointer;"
-                    hx-get="{% url 'beads:bead_edit_quantity_htmx' bead.pk %}"
-                    hx-target="closest .quantity-display"
-                    hx-trigger="click"
-                    role="button"
-                    title="Modifier">
-                    {{ bead.quantity|default_if_none:'–' }}
-                  </span>
+                <div id="qty-{{ bead.pk }}">
+                  {% include 'beads/partials/bead_quantity_display.html' with bead=bead threshold=threshold %}
                 </div>
               </td>
               <td class="text-muted" style="font-size:.85rem;">{{ bead.notes|default:'-'|truncatewords:8 }}</td>
@@ -84,4 +71,19 @@
       <a href="{% url 'beads:create' %}" class="btn btn-primary btn-sm rounded-pill px-4"><i class="bi bi-plus-lg me-1"></i>Ajouter ma première perle</a>
     </div>
   {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    // Update row low-quantity class after inline quantity change
+    document.body.addEventListener('quantityUpdated', function (e) {
+      var d = e.detail
+      if (d && d.beadId) {
+        var row = document.getElementById('bead-row-' + d.beadId)
+        if (row) {
+          row.classList.toggle('low-quantity', !!d.isLow)
+        }
+      }
+    })
+  </script>
 {% endblock %}

@@ -5,6 +5,7 @@ from .view_htmx import (
     bead_edit_quantity_htmx,
     bead_update_color_htmx,
     bead_update_quantity_htmx,
+    stock_alert_htmx,
 )
 from .views import BeadCreateView, BeadListView, BeadUpdateView
 
@@ -36,6 +37,11 @@ htmx_urlpatterns = [
         "<int:pk>/update-color/",
         bead_update_color_htmx,
         name="bead_update_color_htmx",
+    ),
+    path(
+        "stock-alert/",
+        stock_alert_htmx,
+        name="stock_alert_htmx",
     ),
 ]
 urlpatterns += htmx_urlpatterns

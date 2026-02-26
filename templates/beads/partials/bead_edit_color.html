@@ -1,122 +1,20 @@
-<!-- Formulaire d'édition de couleur -->
-<form hx-post="{% url 'beads:bead_update_color_htmx' bead.pk %}" 
-      hx-target="closest .color-display" 
-      class="edit-color-form"
-      hx-indicator="#color-indicator-{{ bead.pk }}"
-      hx-swap="outerHTML transition:true"
-      hx-disabled-elt="find button">
+<!-- Color edit: native picker + preset swatches -->
+<form hx-post="{% url 'beads:bead_update_color_htmx' bead.pk %}" hx-target="#clr-{{ bead.pk }}" hx-swap="innerHTML" class="edit-color-form">
   {% csrf_token %}
-  <div class="edit-color-container mb-2">
-    <div class="color-preview-edit mb-2" 
-         id="colorPreview-{{ bead.pk }}" 
-         style="background-color: {{ bead.get_rgb_color }}; height: 30px; border-radius: 4px;"></div>
-    
-    <!-- Champ pour le code hexadécimal -->
-    <div class="mb-2">
-      <div class="input-group input-group-sm">
-        <span class="input-group-text">#</span>
-         <input type="text" 
-           id="hexColor-{{ bead.pk }}" 
-           class="form-control form-control-sm" 
-           value="{{ bead.get_hex_color|slice:'1:' }}" 
-           placeholder="000000" 
-           maxlength="6" 
-           pattern="[0-9A-Fa-f]{6}" 
-           title="Code couleur hexadécimal (sans le #)" 
-           data-bead-id="{{ bead.pk }}"
-           autocomplete="off">
-         <button class="btn btn-outline-secondary btn-sm" 
-            type="button">
-           Appliquer
-         </button>
-      </div>
+  <div class="color-edit-panel p-2 rounded-3 border bg-white shadow-sm" style="width:230px;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <input type="color" name="hex_color" value="{{ bead.get_hex_color }}" class="form-control form-control-color border-0 p-0" style="width:40px; height:40px; cursor:pointer;" title="Choisir une couleur" />
+      <span class="text-muted small">Choisir une couleur</span>
     </div>
-    
-    <!-- Valeurs RGB individuelles -->
-    <div class="row g-2">
-      <div class="col-4">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text">R</span>
-          <input type="number" 
-                 name="red" 
-                 id="red-{{ bead.pk }}"
-                 value="{{ bead.red }}" 
-                 class="form-control form-control-sm" 
-                 min="0" 
-                 max="255" 
-                 data-bead-id="{{ bead.pk }}">
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text">G</span>
-          <input type="number" 
-                 name="green" 
-                 id="green-{{ bead.pk }}"
-                 value="{{ bead.green }}" 
-                 class="form-control form-control-sm" 
-                 min="0" 
-                 max="255" 
-                 data-bead-id="{{ bead.pk }}">
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text">B</span>
-          <input type="number" 
-                 name="blue" 
-                 id="blue-{{ bead.pk }}"
-                 value="{{ bead.blue }}" 
-                 class="form-control form-control-sm" 
-                 min="0" 
-                 max="255" 
-                 data-bead-id="{{ bead.pk }}">
-        </div>
-      </div>
+    <label class="form-label text-muted mb-1" style="font-size:.72rem; text-transform:uppercase; letter-spacing:.04em;">Couleurs courantes</label>
+    <div class="d-flex flex-wrap gap-1 mb-3">
+      {% for hex in preset_colors %}
+        <button type="submit" name="hex_color" value="{{ hex }}" class="rounded-circle border-0 p-0" style="width:22px; height:22px; background:{{ hex }}; cursor:pointer;" title="{{ hex }}"></button>
+      {% endfor %}
     </div>
-    <div class="mt-2">
-      <div class="d-flex flex-wrap gap-1 mt-1">
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-          style="background-color: #ff0000;" 
-          aria-hidden="true"></button>
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-                style="background-color: #00ff00;" 
-                data-bead-id="{{ bead.pk }}" data-r="0" data-g="255" data-b="0"></button>
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-                style="background-color: #0000ff;" 
-                data-bead-id="{{ bead.pk }}" data-r="0" data-g="0" data-b="255"></button>
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-                style="background-color: #ffff00;" 
-                data-bead-id="{{ bead.pk }}" data-r="255" data-g="255" data-b="0"></button>
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-                style="background-color: #000000;" 
-                data-bead-id="{{ bead.pk }}" data-r="0" data-g="0" data-b="0"></button>
-        <button type="button" class="btn btn-sm p-1 border color-btn-edit" 
-                style="background-color: #ffffff;" 
-                data-bead-id="{{ bead.pk }}" data-r="255" data-g="255" data-b="255"></button>
-      </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-check-lg me-1"></i>Valider</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}?cancel=true" hx-target="#clr-{{ bead.pk }}" hx-swap="innerHTML">Annuler</button>
     </div>
   </div>
-    <div class="mt-2 d-flex justify-content-end">
-    <button class="btn btn-sm btn-secondary me-1" 
-            id="cancel-color-btn-{{ bead.pk }}"
-            type="button"
-            hx-get="{% url 'beads:bead_edit_color_htmx' bead.pk %}?cancel=true"
-            hx-target="closest .color-display"
-            hx-swap="outerHTML transition:true">
-      <span class="bi bi-x me-1"></span>Annuler
-    </button>
-    <button class="btn btn-sm btn-primary" 
-            id="save-color-btn-{{ bead.pk }}"
-            type="submit"
-            hx-disable>
-      <span class="bi bi-check me-1"></span>Enregistrer
-      <span class="spinner-border spinner-border-sm htmx-indicator" id="color-indicator-{{ bead.pk }}" role="status" aria-hidden="true"></span>
-    </button>
-  </div>
-  {% if error %}
-  <div class="text-danger mt-1 small">{{ error }}</div>
-  {% endif %}
-  </form>
-
-  <!-- Removed inline JS: color preview and keyboard shortcuts are no longer handled client-side. -->
+</form>
