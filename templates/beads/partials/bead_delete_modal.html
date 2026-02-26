@@ -1,0 +1,21 @@
+{% load i18n %}
+<div class="modal fade show" id="beadDeleteModal" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title">{% trans 'Supprimer cette perle ?' %}</h6>
+        <button type="button" class="btn-close" onclick="document.getElementById('bead-delete-modal-container').innerHTML=''" aria-label="{% trans 'Fermer' %}"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <p class="text-secondary mb-0" style="font-size:.88rem;">
+          {% blocktrans with name=bead.name %}La perle <strong>« {{ name }} »</strong> sera supprimée définitivement.{% endblocktrans %}
+        </p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-sm btn-secondary rounded-pill" onclick="document.getElementById('bead-delete-modal-container').innerHTML=''">{% trans 'Annuler' %}</button>
+        <button type="button" class="btn btn-sm btn-danger rounded-pill" hx-delete="{% url 'beads:bead_delete_inline_htmx' bead.pk %}" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" hx-on::after-request="document.getElementById('bead-delete-modal-container').innerHTML=''"><i class="bi bi-trash me-1"></i> {% trans 'Supprimer' %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show"></div>

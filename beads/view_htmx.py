@@ -312,8 +312,14 @@ def bead_create_inline_htmx(request):
 
 @login_required
 def bead_delete_inline_htmx(request, pk):
-    """DELETE: deletes bead, returns empty to remove the row."""
+    """GET: show delete confirmation modal; DELETE: deletes bead, returns empty to remove the row."""
     bead = get_object_or_404(Bead, pk=pk, creator=request.user)
+    if request.method == "GET":
+        return render(
+            request,
+            "beads/partials/bead_delete_modal.html",
+            {"bead": bead},
+        )
     if request.method == "DELETE":
         bead.delete()
         response = HttpResponse("")

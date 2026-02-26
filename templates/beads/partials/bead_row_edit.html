@@ -1,22 +1,22 @@
 {% load i18n %}
 <tr id="bead-row-{{ bead.pk }}" class="bead-row bead-row-editing">
   <td>
-    <input type="color" name="hex_color" value="{{ bead.get_hex_color }}" class="form-control-color border-0 p-0" style="width:36px; height:36px; cursor:pointer;" title="{% trans "Choisir une couleur" %}" />
+    <input type="color" name="hex_color" value="{{ bead.get_hex_color }}" class="form-control-color border-0 p-0" style="width:36px; height:36px; cursor:pointer;" title="{% trans 'Choisir une couleur' %}" />
   </td>
   <td>
-    <input type="text" name="name" value="{{ bead.name }}" class="form-control form-control-sm" placeholder="{% trans "Nom" %}" />
+    <input type="text" name="name" value="{{ bead.name }}" class="form-control form-control-sm" placeholder="{% trans 'Nom' %}" />
   </td>
   <td>
-    <input type="number" name="quantity" value="{{ bead.quantity|default_if_none:'' }}" class="form-control form-control-sm" min="0" style="max-width:100px;" placeholder="{% trans "Qté" %}" />
+    <input type="number" name="quantity" value="{{ bead.quantity|default_if_none:'' }}" class="form-control form-control-sm" min="0" style="max-width:100px;" placeholder="{% trans 'Qté' %}" />
   </td>
   <td>
-    <input type="text" name="notes" value="{{ bead.notes|default:'' }}" class="form-control form-control-sm" placeholder="{% trans "Notes..." %}" />
+    <input type="text" name="notes" value="{{ bead.notes|default:'' }}" class="form-control form-control-sm" placeholder="{% trans 'Notes...' %}" />
   </td>
   <td class="td-row-actions">
     <div class="d-flex gap-1 align-items-center">
-      <button class="btn btn-sm btn-primary" hx-post="{% url 'beads:bead_save_row_htmx' bead.pk %}" hx-include="#bead-row-{{ bead.pk }}" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" title="{% trans "Enregistrer" %}"><i class="bi bi-check-lg"></i></button>
-      <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beads:bead_edit_row_htmx' bead.pk %}?cancel=true" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" title="{% trans "Annuler" %}"><i class="bi bi-x-lg"></i></button>
-      <button class="btn btn-sm btn-outline-danger" hx-delete="{% url 'beads:bead_delete_inline_htmx' bead.pk %}" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" hx-confirm="{% trans "Supprimer cette perle ?" %}" title="{% trans "Supprimer" %}"><i class="bi bi-trash"></i></button>
+      <button class="btn btn-sm btn-primary" hx-post="{% url 'beads:bead_save_row_htmx' bead.pk %}" hx-include="#bead-row-{{ bead.pk }}" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" title="{% trans 'Enregistrer' %}"><i class="bi bi-check-lg"></i></button>
+      <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'beads:bead_edit_row_htmx' bead.pk %}?cancel=true" hx-target="#bead-row-{{ bead.pk }}" hx-swap="outerHTML" title="{% trans 'Annuler' %}"><i class="bi bi-x-lg"></i></button>
+      <button class="btn btn-sm btn-outline-danger" hx-get="{% url 'beads:bead_delete_inline_htmx' bead.pk %}" hx-target="#bead-delete-modal-container" hx-swap="innerHTML" title="{% trans 'Supprimer' %}"><i class="bi bi-trash"></i></button>
     </div>
     {% if error %}
       <div class="text-danger mt-1 small">{{ error }}</div>
