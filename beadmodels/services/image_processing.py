@@ -131,6 +131,78 @@ def _lab_distance(lab_a: np.ndarray, lab_b: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
+def estimate_optimal_colors(
+    image_array: np.ndarray,
+    max_k: int = 24,
+    min_k: int = 2,
+) -> int:
+    """Estimate the optimal number of distinct colours in *image_array*.
+
+    Strategy
+    --------
+    1. Sub-sample pixels (≤ 2 000) for speed.
+    2. Run KMeans for k = *min_k* … *max_k* and record inertia (sum of
+       squared distances to centroid).
+    3. Detect the "elbow" (knee) in the inertia curve — the k after which
+       adding more clusters no longer yields a significant drop.
+
+    The elbow is found by computing the second-order finite differences of
+    inertia and picking the k where curvature is maximal (Kneedle-style
+    heuristic, without an extra dependency).
+
+    Returns
+    -------
+    int — suggested number of colours.
+    """
+    pixels = image_array.reshape(-1, 3).astype(np.float64)
+
+    # Quick pre-check: count truly unique colours (up to max_k + 1)
+    unique = np.unique(pixels, axis=0)
+    if len(unique) <= max_k:
+        # Image has fewer distinct colours than max_k → just use that count
+        return max(min_k, len(unique))
+
+    # Sub-sample for speed
+    rng = np.random.RandomState(42)
+    sample_size = min(2000, len(pixels))
+    sample = pixels[rng.choice(len(pixels), sample_size, replace=False)]
+
+    # Compute inertia for each k
+    ks = list(range(min_k, max_k + 1))
+    inertias: list[float] = []
+    for k in ks:
+        km = KMeans(n_clusters=k, random_state=0, n_init="auto", max_iter=100)
+        km.fit(sample)
+        inertias.append(km.inertia_)
+
+    inertias_arr = np.array(inertias)
+
+    # Normalise k and inertia to [0, 1] for curvature detection
+    k_norm = (np.array(ks, dtype=float) - ks[0]) / (ks[-1] - ks[0])
+    i_norm = (inertias_arr - inertias_arr[-1]) / (
+        inertias_arr[0] - inertias_arr[-1] + 1e-9
+    )
+
+    # Distance of each point to the line from first to last point
+    # (geometric elbow detection)
+    p0 = np.array([k_norm[0], i_norm[0]])
+    p1 = np.array([k_norm[-1], i_norm[-1]])
+    line_vec = p1 - p0
+    line_len = np.linalg.norm(line_vec)
+    if line_len < 1e-9:
+        return min_k
+
+    distances = []
+    for j in range(len(ks)):
+        pj = np.array([k_norm[j], i_norm[j]])
+        # perpendicular distance to line p0→p1
+        d = abs(np.cross(line_vec, p0 - pj)) / line_len
+        distances.append(d)
+
+    best_idx = int(np.argmax(distances))
+    return ks[best_idx]
+
+
 def reduce_colors(
     image_array: np.ndarray,
     n_colors: int,
@@ -573,3 +645,28 @@ def generate_model(
         total_beads=total_beads,
         palette=palette,
     )
+
+
+def suggest_color_count(
+    image_path: Optional[str] = None,
+    image_base64: Optional[str] = None,
+) -> int:
+    """Analyse an image and return the suggested number of colours.
+
+    This is a lightweight call (no grid generation, no clustering of the final
+    image) meant to be invoked once after upload so the wizard can pre-select
+    the best radio-button value.
+    """
+    img = _load_image(image_path, image_base64)
+    if img is None:
+        return 16  # safe fallback
+
+    # Down-sample to ~100px on longest side for speed
+    max_dim = 100
+    w, h = img.size
+    if max(w, h) > max_dim:
+        scale = max_dim / max(w, h)
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))))
+
+    arr = np.array(img)
+    return estimate_optimal_colors(arr)

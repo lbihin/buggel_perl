@@ -29,6 +29,7 @@ from ..services.image_processing import (
     generate_model,
     generate_preview,
     save_temp_image,
+    suggest_color_count,
 )
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
@@ -118,7 +119,16 @@ class UploadImage(WizardStep):
         if form.is_valid():
             image = form.cleaned_data["image"]
             stored_path = save_temp_image(image)
-            self.wizard.update_session_data({"image_data": {"image_path": stored_path}})
+
+            # Auto-detect optimal colour count for this image
+            suggested_colors = suggest_color_count(image_path=stored_path)
+            self.wizard.update_session_data(
+                {
+                    "image_data": {"image_path": stored_path},
+                    "suggested_colors": suggested_colors,
+                    "color_reduction": suggested_colors,
+                }
+            )
             return self.wizard.go_to_next_step()
 
         return self.render_template(
@@ -151,8 +161,9 @@ class ConfigureModel(WizardStep):
             )
             return redirect("beadmodels:create")
 
+        suggested_colors = wizard_data.get("suggested_colors", 16)
         initial_data = {
-            "color_reduction": wizard_data.get("color_reduction", 16),
+            "color_reduction": wizard_data.get("color_reduction", suggested_colors),
             "use_available_colors": wizard_data.get("use_available_colors", False),
         }
         form = self.form_class(initial=initial_data)
@@ -170,6 +181,16 @@ class ConfigureModel(WizardStep):
 
         color_values = [2, 4, 6, 8, 16, 24, 32]
 
+        # Snap suggested_colors to the nearest available radio value
+        suggested_snapped = min(color_values, key=lambda v: abs(v - suggested_colors))
+
+        # If user hasn't manually changed the color count, use the suggestion
+        current_color = wizard_data.get("color_reduction", suggested_snapped)
+        if current_color == suggested_colors:
+            # The raw value hasn't been manually changed → snap to radio
+            current_color = suggested_snapped
+            self.wizard.update_session_data({"color_reduction": current_color})
+
         preview_kwargs = _build_preview_kwargs(wizard_data, self.wizard.request.user)
         preview_result = generate_preview(**preview_kwargs)
         original_image_base64 = file_to_base64(image_data.get("image_path"))
@@ -182,6 +203,7 @@ class ConfigureModel(WizardStep):
             "user_shapes": usr_shapes,
             "selected_shape_id": wizard_data.get("shape_id"),
             "color_values": color_values,
+            "suggested_colors": suggested_snapped,
             "step_nr": self.position,
             "step_name": self.name,
             "total_steps": step_ctx.get("total_steps"),

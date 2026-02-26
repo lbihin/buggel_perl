@@ -11,6 +11,7 @@ from beadmodels.services.image_processing import (
     _lab_distance,
     _rgb_to_lab,
     cleanup_small_components,
+    estimate_optimal_colors,
     reduce_colors,
 )
 
@@ -211,3 +212,67 @@ class TestReduceColorsWithCielab:
         unique = np.unique(result.reshape(-1, 3), axis=0)
         assert len(unique) == 1
         assert list(unique[0]) == [255, 0, 0]
+
+
+# ---------------------------------------------------------------------------
+# Smart color count estimation
+# ---------------------------------------------------------------------------
+
+
+class TestEstimateOptimalColors:
+    def test_exact_4_colors(self):
+        """Image with exactly 4 solid colors → should return 4."""
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        img[0:50, 0:50] = [255, 0, 0]
+        img[0:50, 50:100] = [255, 255, 0]
+        img[50:100, 0:50] = [0, 0, 0]
+        img[50:100, 50:100] = [255, 255, 255]
+
+        result = estimate_optimal_colors(img)
+        assert result == 4
+
+    def test_exact_2_colors(self):
+        """Black and white image → should return 2."""
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        img[50:, :] = 255
+
+        result = estimate_optimal_colors(img)
+        assert result == 2
+
+    def test_uniform_single_color(self):
+        """Uniform image → should return min_k (2)."""
+        img = np.full((100, 100, 3), [128, 64, 32], dtype=np.uint8)
+
+        result = estimate_optimal_colors(img, min_k=2)
+        assert result == 2
+
+    def test_complex_image_returns_more(self):
+        """Gradient image should return more colors than a simple logo."""
+        gradient = np.zeros((100, 100, 3), dtype=np.uint8)
+        for i in range(100):
+            for j in range(100):
+                gradient[i, j] = [int(i * 2.55), int(j * 2.55), 128]
+
+        simple = np.zeros((100, 100, 3), dtype=np.uint8)
+        simple[0:50, :] = [255, 0, 0]
+        simple[50:100, :] = [0, 0, 255]
+
+        complex_count = estimate_optimal_colors(gradient)
+        simple_count = estimate_optimal_colors(simple)
+        assert complex_count > simple_count
+
+    def test_never_below_min_k(self):
+        """Result should never be below min_k."""
+        img = np.full((10, 10, 3), [100, 100, 100], dtype=np.uint8)
+        result = estimate_optimal_colors(img, min_k=3)
+        assert result >= 3
+
+    def test_never_above_max_k(self):
+        """Result should never exceed max_k."""
+        gradient = np.zeros((100, 100, 3), dtype=np.uint8)
+        for i in range(100):
+            for j in range(100):
+                gradient[i, j] = [int(i * 2.55), int(j * 2.55), int((i + j) * 1.27)]
+
+        result = estimate_optimal_colors(gradient, max_k=8)
+        assert result <= 8
