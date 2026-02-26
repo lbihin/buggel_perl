@@ -198,7 +198,7 @@ def shape_form_hx_view(request, shape_id=None):
 
     return render(
         request,
-        "partials/create_edit_shape.html",
+        "shapes/partials/create_edit_shape.html",
         {"url": url, "shape": instance},
     )
 
@@ -236,11 +236,11 @@ def shape_save_or_update_hx_view(request, shape_id=None):
     if is_new:
         context = _get_shapes_context(request.user)
         context["success_message"] = f"Forme {shape.name} créée avec succès!"
-        return render(request, "shape_row_list.html", context)
+        return render(request, "shapes/shape_row_list.html", context)
     else:
         return render(
             request,
-            "partials/shape_row.html",
+            "shapes/partials/shape_row.html",
             {
                 "shape": shape,
                 "success": True,
@@ -272,14 +272,14 @@ def shape_delete_hx_view(request, shape_id):
     context = _get_shapes_context(request.user)
     context["success_message"] = f"Forme {shape_name} supprimée avec succès!"
 
-    return render(request, "partials/shape_list_content.html", context)
+    return render(request, "shapes/partials/shape_list_content.html", context)
 
 
 @login_required
 def get_inline_add_form(request):
     """Vue HTMX pour obtenir le formulaire d'ajout en ligne."""
     _require_htmx(request)
-    return render(request, "partials/shape_inline_add_form.html")
+    return render(request, "shapes/partials/shape_inline_add_form.html")
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ def shape_dimensions(request, shape_id):
     """Affiche les dimensions d'une forme."""
     _require_htmx(request)
     shape = get_object_or_404(BeadShape, id=shape_id)
-    return render(request, "partials/shape_dimensions.html", {"shape": shape})
+    return render(request, "shapes/partials/shape_dimensions.html", {"shape": shape})
 
 
 @login_required
@@ -307,7 +307,7 @@ def shape_inline_edit(request, shape_id):
     type_changed = request.GET.get("type_changed", False)
     return render(
         request,
-        "partials/shape_inline_edit.html",
+        "shapes/partials/shape_inline_edit.html",
         {"shape": shape, "type_changed": type_changed},
     )
 
@@ -339,7 +339,9 @@ def shape_inline_update(request, shape_id):
         shape.update_from_dimensions()
         shape.save()
 
-        response = render(request, "partials/shape_dimensions.html", {"shape": shape})
+        response = render(
+            request, "shapes/partials/shape_dimensions.html", {"shape": shape}
+        )
         response["HX-Trigger"] = (
             f'{{"shapeDimensionsUpdated": {{"shapeId": "{shape.id}"}}}}'
         )
@@ -361,7 +363,7 @@ def shape_name(request, shape_id):
     """Affiche le nom d'une forme."""
     _require_htmx(request)
     shape = get_object_or_404(BeadShape, id=shape_id)
-    return render(request, "partials/shape_name.html", {"shape": shape})
+    return render(request, "shapes/partials/shape_name.html", {"shape": shape})
 
 
 @login_required
@@ -372,7 +374,7 @@ def shape_name_edit(request, shape_id):
     error_response = _check_shape_permission(request, shape)
     if error_response:
         return error_response
-    return render(request, "partials/shape_name_edit.html", {"shape": shape})
+    return render(request, "shapes/partials/shape_name_edit.html", {"shape": shape})
 
 
 @login_required
@@ -391,7 +393,7 @@ def shape_name_update(request, shape_id):
     try:
         shape.name = request.POST.get("name", "")
         shape.save()
-        return render(request, "partials/shape_name.html", {"shape": shape})
+        return render(request, "shapes/partials/shape_name.html", {"shape": shape})
     except Exception as e:
         return HttpResponse(f"Erreur lors de la mise à jour du nom: {e}", status=400)
 
@@ -406,7 +408,7 @@ def shape_type(request, shape_id):
     """Affiche le type d'une forme."""
     _require_htmx(request)
     shape = get_object_or_404(BeadShape, id=shape_id)
-    return render(request, "partials/shape_type.html", {"shape": shape})
+    return render(request, "shapes/partials/shape_type.html", {"shape": shape})
 
 
 @login_required
@@ -417,7 +419,7 @@ def shape_type_edit(request, shape_id):
     error_response = _check_shape_permission(request, shape)
     if error_response:
         return error_response
-    return render(request, "partials/shape_type_edit.html", {"shape": shape})
+    return render(request, "shapes/partials/shape_type_edit.html", {"shape": shape})
 
 
 @login_required
@@ -460,7 +462,7 @@ def shape_type_update(request, shape_id):
 
         shape.save()
 
-        response = render(request, "partials/shape_type.html", {"shape": shape})
+        response = render(request, "shapes/partials/shape_type.html", {"shape": shape})
         if old_type != new_type:
             response["HX-Trigger"] = (
                 f'{{"shapeTypeChanged": {{"shapeId": "{shape.id}"}}}}'

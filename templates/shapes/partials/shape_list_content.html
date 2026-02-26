@@ -16,7 +16,7 @@
     </thead>
     <tbody>
       {% for shape in custom_shapes %}
-        {% include 'partials/shape_row.html' with shape=shape %}
+        {% include 'shapes/partials/shape_row.html' with shape=shape %}
       {% empty %}
         <tr>
           <td colspan="4" class="text-center py-5">
@@ -32,10 +32,7 @@
   </table>
 
   <!-- Bouton flottant "+" pour ajouter une nouvelle forme (HTMX) -->
-  <div class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left"
-       hx-get="{% url 'shapes:get_inline_add_form' %}"
-       hx-target="#shape-list-container"
-       hx-swap="beforeend">
+  <div class="floating-add-btn" title="Créer une nouvelle forme" data-bs-toggle="tooltip" data-bs-placement="left" hx-get="{% url 'shapes:get_inline_add_form' %}" hx-target="#shape-list-container" hx-swap="beforeend">
     <i class="bi bi-plus-lg"></i>
   </div>
 </div>

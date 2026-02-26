@@ -295,7 +295,7 @@ class SaveModel(WizardStep):
     """Troisieme etape: Sauvegarde du modele."""
 
     name = "Finalisation"
-    template = "wizard_final_step.html"
+    template = "beadmodels/wizard/final_step.html"
     position = 3
 
     def handle_get(self, **kwargs):
