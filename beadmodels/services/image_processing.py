@@ -13,9 +13,11 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 
+import cv2
 import numpy as np
 from django.core.files.storage import default_storage
 from PIL import Image
+from scipy import ndimage
 from sklearn.cluster import KMeans
 
 logger = logging.getLogger(__name__)
@@ -95,6 +97,36 @@ def file_to_base64(path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Color helpers  (CIELAB perceptual distance)
+# ---------------------------------------------------------------------------
+
+
+def _rgb_to_lab(rgb: np.ndarray) -> np.ndarray:
+    """Convert an array of RGB uint8 colors to CIELAB.
+
+    *rgb* can be (N, 3) or (H, W, 3).  Returns same shape with float64 Lab
+    values.
+    """
+    # cv2 expects uint8 BGR
+    if rgb.ndim == 2:
+        bgr = rgb[:, ::-1].reshape(1, -1, 3).astype(np.uint8)
+    else:
+        bgr = rgb[:, :, ::-1].astype(np.uint8)
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
+    if rgb.ndim == 2:
+        return lab.reshape(-1, 3)
+    return lab
+
+
+def _lab_distance(lab_a: np.ndarray, lab_b: np.ndarray) -> np.ndarray:
+    """Euclidean distance in CIELAB space (Delta-E 76).
+
+    *lab_a*: (N, 3)  *lab_b*: (M, 3) → returns (N, M) distance matrix.
+    """
+    return np.sqrt(np.sum((lab_a[:, None, :] - lab_b[None, :, :]) ** 2, axis=2))
+
+
+# ---------------------------------------------------------------------------
 # Color reduction
 # ---------------------------------------------------------------------------
 
@@ -110,13 +142,110 @@ def reduce_colors(
     centroids = kmeans.cluster_centers_.astype(int)
 
     if user_colors is not None and len(user_colors):
-        for i, c in enumerate(centroids):
-            distances = np.sqrt(np.sum((user_colors - c) ** 2, axis=1))
-            centroids[i] = user_colors[int(np.argmin(distances))]
+        # Use CIELAB perceptual distance for color matching
+        centroids_lab = _rgb_to_lab(centroids.astype(np.uint8))
+        user_lab = _rgb_to_lab(user_colors.astype(np.uint8))
+        dists = _lab_distance(centroids_lab, user_lab)  # (n_centroids, n_user)
+        for i in range(len(centroids)):
+            centroids[i] = user_colors[int(np.argmin(dists[i]))]
 
     labels = kmeans.labels_
     reduced_pixels = centroids[labels].reshape(image_array.shape)
     return reduced_pixels.astype("uint8")
+
+
+# ---------------------------------------------------------------------------
+# Spatial coherence  (connected component cleanup)
+# ---------------------------------------------------------------------------
+
+
+def cleanup_small_components(
+    pixels: np.ndarray,
+    min_component_size: int = 3,
+    content_mask: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Remove small isolated bead clusters to guarantee spatial coherence.
+
+    For each unique color, find 4-connected components.  Components smaller
+    than *min_component_size* are replaced by the most-frequent neighbouring
+    colour (within a 3×3 window).  The process repeats until stable.
+
+    Only pixels inside *content_mask* (if provided) are processed.
+
+    Parameters
+    ----------
+    pixels : np.ndarray, shape (H, W, 3), uint8
+        The colour-reduced pixel grid.
+    min_component_size : int
+        Components with fewer pixels than this are absorbed.
+    content_mask : np.ndarray | None, shape (H, W), bool
+        True for pixels that belong to actual content (not background/padding).
+
+    Returns
+    -------
+    np.ndarray – cleaned pixel grid, same shape.
+    """
+    result = pixels.copy()
+    h, w = result.shape[:2]
+
+    # 4-connectivity structuring element (no diagonals — beads only touch
+    # orthogonal neighbours when placed on a pegboard)
+    struct = ndimage.generate_binary_structure(2, 1)  # 4-connected
+
+    MAX_ITERATIONS = 10
+    for _iteration in range(MAX_ITERATIONS):
+        changed = False
+        unique_colors = np.unique(result.reshape(-1, 3), axis=0)
+
+        for color in unique_colors:
+            # Binary mask for this colour
+            color_mask = np.all(result == color, axis=2)
+            if content_mask is not None:
+                color_mask &= content_mask
+
+            if not color_mask.any():
+                continue
+
+            labeled, n_components = ndimage.label(color_mask, structure=struct)
+            if n_components == 0:
+                continue
+
+            sizes = ndimage.sum(color_mask, labeled, range(1, n_components + 1))
+
+            for comp_id, size in enumerate(sizes, start=1):
+                if size >= min_component_size:
+                    continue
+
+                # Find pixels of this small component
+                comp_mask = labeled == comp_id
+                ys, xs = np.where(comp_mask)
+
+                # Collect neighbouring colours (3×3 window, exclude self)
+                neighbour_colors = []
+                for py, px in zip(ys, xs):
+                    for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        ny, nx = py + dy, px + dx
+                        if 0 <= ny < h and 0 <= nx < w:
+                            if content_mask is not None and not content_mask[ny, nx]:
+                                continue
+                            nc = tuple(result[ny, nx])
+                            if nc != tuple(color):
+                                neighbour_colors.append(nc)
+
+                if not neighbour_colors:
+                    continue  # surrounded by same colour or edge — skip
+
+                # Pick the most frequent neighbour colour
+                from collections import Counter
+
+                best_color = Counter(neighbour_colors).most_common(1)[0][0]
+                result[comp_mask] = best_color
+                changed = True
+
+        if not changed:
+            break
+
+    return result
 
 
 def _detect_background_color(
@@ -385,6 +514,11 @@ def generate_preview(
     # Color reduction
     user_colors = user_bead_colors if use_available_colors else None
     reduced_pixels = reduce_colors(img_array, color_reduction, user_colors)
+
+    # Spatial coherence: remove isolated beads / tiny fragments
+    reduced_pixels = cleanup_small_components(
+        reduced_pixels, min_component_size=3, content_mask=content_mask
+    )
 
     # Draw bead grid
     bead_img = _draw_bead_grid(reduced_pixels, spec)
