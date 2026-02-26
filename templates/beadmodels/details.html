@@ -81,22 +81,22 @@
       {% endif %}
 
       {% if model.bead_pattern %}
-        <div class="card mb-4 hover-overlay">
-          <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card mb-4">
+          <div class="card-header">
             <h5 class="card-title mb-0">Modèle en perles</h5>
-            <div class="btn-group btn-group-sm">
-              <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
-              <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-primary"><i class="bi bi-image"></i> PNG</a>
-            </div>
           </div>
-          <div class="card-body text-center">
+          <div class="card-body text-center hover-overlay">
             <img src="{{ model.bead_pattern.url }}" class="img-fluid" alt="Modèle en perles" style="image-rendering: pixelated; max-height: 600px;" />
+            {% if user == model.creator %}
+              <div class="hover-actions">
+                <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-sm btn-light shadow-sm" title="Régénérer le motif"><i class="bi bi-arrow-repeat"></i></a>
+              </div>
+            {% endif %}
           </div>
-          {% if user == model.creator %}
-            <div class="hover-actions">
-              <a href="{% url 'beadmodels:create' %}?model_id={{ model.id }}" class="btn btn-sm btn-light shadow-sm" title="Régénérer le motif"><i class="bi bi-pencil"></i></a>
-            </div>
-          {% endif %}
+          <div class="card-footer bg-white d-flex justify-content-center gap-2">
+            <a href="{% url 'beadmodels:download' model.pk 'pdf' %}" class="btn btn-primary"><i class="bi bi-download"></i> Télécharger PDF</a>
+            <a href="{% url 'beadmodels:download' model.pk 'png' %}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> PNG</a>
+          </div>
         </div>
       {% else %}
         <div class="alert alert-info">
