@@ -30,6 +30,7 @@ from ..services.image_processing import (
     generate_preview,
     save_temp_image,
     suggest_color_count,
+    analyze_image_suggestions,
 )
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
@@ -122,11 +123,18 @@ class UploadImage(WizardStep):
 
             # Auto-detect optimal colour count for this image
             suggested_colors = suggest_color_count(image_path=stored_path)
+
+            # Full image analysis for smart suggestions
+            suggestions = analyze_image_suggestions(image_path=stored_path)
+
+            from dataclasses import asdict
+
             self.wizard.update_session_data(
                 {
                     "image_data": {"image_path": stored_path},
                     "suggested_colors": suggested_colors,
                     "color_reduction": suggested_colors,
+                    "suggestions": asdict(suggestions),
                 }
             )
             return self.wizard.go_to_next_step()
@@ -162,6 +170,7 @@ class ConfigureModel(WizardStep):
             return redirect("beadmodels:create")
 
         suggested_colors = wizard_data.get("suggested_colors", 16)
+        suggestions = wizard_data.get("suggestions", {})
         initial_data = {
             "color_reduction": wizard_data.get("color_reduction", suggested_colors),
             "use_available_colors": wizard_data.get("use_available_colors", False),
@@ -174,9 +183,17 @@ class ConfigureModel(WizardStep):
 
         selected_shape_id = wizard_data.get("shape_id")
         if not selected_shape_id:
-            default = usr_shapes.filter(is_default=True).first() or usr_shapes.first()
-            if default:
-                selected_shape_id = default.pk
+            # Try to match the AI suggestion to an existing shape
+            suggested_shape = suggestions.get("suggested_shape", "")
+            matched = None
+            if suggested_shape:
+                matched = usr_shapes.filter(shape_type=suggested_shape).first()
+            if not matched:
+                matched = (
+                    usr_shapes.filter(is_default=True).first() or usr_shapes.first()
+                )
+            if matched:
+                selected_shape_id = matched.pk
                 self.wizard.update_session_data({"shape_id": selected_shape_id})
 
         color_values = [2, 4, 6, 8, 16, 24, 32]
@@ -187,13 +204,18 @@ class ConfigureModel(WizardStep):
         # If user hasn't manually changed the color count, use the suggestion
         current_color = wizard_data.get("color_reduction", suggested_snapped)
         if current_color == suggested_colors:
-            # The raw value hasn't been manually changed → snap to radio
             current_color = suggested_snapped
             self.wizard.update_session_data({"color_reduction": current_color})
 
         preview_kwargs = _build_preview_kwargs(wizard_data, self.wizard.request.user)
         preview_result = generate_preview(**preview_kwargs)
         original_image_base64 = file_to_base64(image_data.get("image_path"))
+
+        # Build suggestion labels for the UI
+        shape_labels = {"circle": _("Rond"), "square": _("Carré"), "rectangle": _("Rectangle")}
+        suggestion_shape_label = shape_labels.get(
+            suggestions.get("suggested_shape", ""), ""
+        )
 
         step_ctx = self.get_context_data()
         context = {
@@ -204,6 +226,8 @@ class ConfigureModel(WizardStep):
             "selected_shape_id": wizard_data.get("shape_id"),
             "color_values": color_values,
             "suggested_colors": suggested_snapped,
+            "suggestions": suggestions,
+            "suggestion_shape_label": suggestion_shape_label,
             "step_nr": self.position,
             "step_name": self.name,
             "total_steps": step_ctx.get("total_steps"),

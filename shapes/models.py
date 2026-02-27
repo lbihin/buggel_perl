@@ -78,8 +78,13 @@ class BeadShape(models.Model):
         elif self.shape_type == "square" and self.size:
             return self.size * self.size
         elif self.shape_type == "circle" and self.diameter:
-            r = self.diameter / 2
-            return int(math.pi * r * r)
+            # Concentric layout: center + sum of round(2*pi*k) for k=1..R
+            radius = self.diameter / 2.0
+            num_rings = int(radius)
+            count = 1  # center peg
+            for ring in range(1, num_rings + 1):
+                count += max(6, round(2 * math.pi * ring))
+            return count
         return 0
 
     @property

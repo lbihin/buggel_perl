@@ -37,6 +37,52 @@
           </div>
         {% endif %}
 
+        {# ── AI Suggestion Card ── #}
+        {% if suggestions %}
+          <div class="suggestion-card">
+            <div class="suggestion-header">
+              <i class="bi bi-magic me-2"></i>{% trans "Analyse de l'image" %}
+            </div>
+            <div class="suggestion-body">
+              <div class="suggestion-metrics">
+                {% if suggestion_shape_label %}
+                  <div class="suggestion-metric">
+                    <span class="suggestion-metric-value">
+                      {% if suggestions.suggested_shape == "circle" %}<i class="bi bi-circle"></i>
+                      {% elif suggestions.suggested_shape == "square" %}<i class="bi bi-square-fill"></i>
+                      {% else %}<i class="bi bi-square"></i>{% endif %}
+                      {{ suggestion_shape_label }}
+                    </span>
+                    <span class="suggestion-metric-label">{% trans "forme" %}</span>
+                  </div>
+                {% endif %}
+                <div class="suggestion-metric">
+                  <span class="suggestion-metric-value">{{ suggestions.suggested_colors }}</span>
+                  <span class="suggestion-metric-label">{% trans "couleurs" %}</span>
+                </div>
+                <div class="suggestion-metric">
+                  <span class="suggestion-metric-value">{{ suggestions.suggested_size }}</span>
+                  <span class="suggestion-metric-label">{% trans "taille" %}</span>
+                </div>
+                <div class="suggestion-metric">
+                  <span class="suggestion-metric-value">
+                    {% widthratio suggestions.fill_ratio 1 100 %}%
+                  </span>
+                  <span class="suggestion-metric-label">{% trans "efficacité" %}</span>
+                </div>
+              </div>
+              {% if suggestions.dominant_colors %}
+                <div class="suggestion-palette">
+                  {% for hex in suggestions.dominant_colors %}
+                    <span class="suggestion-dot" style="background:{{ hex }};"></span>
+                  {% endfor %}
+                  <span class="suggestion-palette-label">{% trans "couleurs dominantes" %}</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
         {# ── Side-by-side panels ── #}
         <div class="config-panels">
           {# Left: original image #}
@@ -87,7 +133,19 @@
                   hx-target="#preview-container"
                   hx-indicator=".preview-spinner"
                 >
-                <label for="shape_{{ shape.id }}">{{ shape.name }}</label>
+                <label for="shape_{{ shape.id }}"
+                  {% if suggestions and shape.shape_type == suggestions.suggested_shape %}
+                    class="recommended" title="{% trans 'Recommandé par l\'analyse' %}"
+                  {% endif %}
+                >
+                  {% if shape.shape_type == "circle" %}<i class="bi bi-circle me-1" style="font-size:.75em;"></i>
+                  {% elif shape.shape_type == "square" %}<i class="bi bi-square-fill me-1" style="font-size:.75em;"></i>
+                  {% else %}<i class="bi bi-square me-1" style="font-size:.75em;"></i>{% endif %}
+                  {{ shape.name }}
+                  {% if suggestions and shape.shape_type == suggestions.suggested_shape %}
+                    <i class="bi bi-star-fill ms-1" style="font-size:.6em;vertical-align:super;color:var(--bs-warning)"></i>
+                  {% endif %}
+                </label>
               {% endfor %}
             </div>
           </div>
@@ -134,6 +192,23 @@
               <small class="d-block text-muted mt-1" style="font-size:.78rem;">{{ form.use_available_colors.help_text }}</small>
             {% endif %}
           </div>
+
+          {# Bead economy indicator #}
+          {% if suggestions.fill_ratio %}
+            <div class="config-section">
+              <div class="bead-economy">
+                <i class="bi bi-graph-up me-1"></i>
+                <span>
+                  {% trans "Efficacité d'utilisation" %}:
+                  <strong>{% widthratio suggestions.fill_ratio 1 100 %}%</strong>
+                </span>
+                <div class="economy-bar">
+                  <div class="economy-fill" style="width:{% widthratio suggestions.fill_ratio 1 100 %}%"></div>
+                </div>
+                <small class="text-muted">{% trans "Ratio contenu/espace de la plaque" %}</small>
+              </div>
+            </div>
+          {% endif %}
 
           {# Navigation #}
           <div class="wizard-nav">
