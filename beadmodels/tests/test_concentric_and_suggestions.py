@@ -14,15 +14,15 @@ from beadmodels.services.image_processing import (
     ImageSuggestion,
     _build_concentric_layout,
     _cleanup_concentric_components,
+    _compute_subject_circularity,
     _detect_concentric_background,
     _draw_concentric_grid,
     _sample_concentric_colors,
+    _suggest_bead_colors,
+    _suggest_optimal_size,
     analyze_image_suggestions,
     generate_model,
-    generate_preview,
-    resolve_shape_spec,
 )
-
 
 # ---------------------------------------------------------------------------
 # Concentric layout generation
@@ -219,9 +219,10 @@ class TestAnalyzeImageSuggestions:
         result = analyze_image_suggestions(image_base64=complex_image_b64)
         assert result.complexity_score > 0.1
 
-    def test_square_image_suggests_circle(self, simple_image_b64):
+    def test_square_image_suggests_square(self, simple_image_b64):
+        """A solid-colour square image has no circular subject → square."""
         result = analyze_image_suggestions(image_base64=simple_image_b64)
-        assert result.suggested_shape in ("circle", "square")
+        assert result.suggested_shape == "square"
 
     def test_wide_image_suggests_rectangle(self):
         import base64
@@ -281,9 +282,7 @@ class TestConcentricPreviewIntegration:
 
         layout = _build_concentric_layout(15)
         img = Image.open(
-            __import__("io").BytesIO(
-                __import__("base64").b64decode(test_image_b64)
-            )
+            __import__("io").BytesIO(__import__("base64").b64decode(test_image_b64))
         )
         img_resized = img.resize((200, 200), Image.Resampling.LANCZOS)
         colors = _sample_concentric_colors(np.array(img_resized), layout)
@@ -320,3 +319,142 @@ class TestModelResultFillRatio:
         assert hasattr(result, "useful_beads")
         assert 0 <= result.fill_ratio <= 1
         assert result.useful_beads <= result.total_beads
+
+
+# ---------------------------------------------------------------------------
+# Subject circularity detection
+# ---------------------------------------------------------------------------
+
+
+class TestComputeSubjectCircularity:
+    def test_solid_image_no_circularity(self):
+        """A solid-colour image has no edges → circularity 0."""
+        gray = np.full((100, 100), 128, dtype=np.uint8)
+        assert _compute_subject_circularity(gray) == 0.0
+
+    def test_circle_high_circularity(self):
+        """A white circle on black background → high circularity."""
+        import cv2 as _cv2
+
+        canvas = np.zeros((200, 200), dtype=np.uint8)
+        _cv2.circle(canvas, (100, 100), 70, 255, -1)
+        circ = _compute_subject_circularity(canvas)
+        assert circ > 0.65, f"Expected high circularity, got {circ}"
+
+    def test_rectangle_low_circularity(self):
+        """A tall thin rectangle → low circularity."""
+        import cv2 as _cv2
+
+        canvas = np.zeros((200, 200), dtype=np.uint8)
+        _cv2.rectangle(canvas, (80, 20), (120, 180), 255, -1)
+        circ = _compute_subject_circularity(canvas)
+        assert circ < 0.60, f"Expected low circularity, got {circ}"
+
+
+# ---------------------------------------------------------------------------
+# Bead-art colour suggestion
+# ---------------------------------------------------------------------------
+
+
+class TestSuggestBeadColors:
+    def test_two_colors_image(self):
+        """An image with exactly 2 distinct colours → suggest 2."""
+        arr = np.zeros((100, 100, 3), dtype=np.uint8)
+        arr[:50] = [255, 0, 0]  # red top half
+        arr[50:] = [0, 0, 255]  # blue bottom half
+        k = _suggest_bead_colors(arr)
+        assert k == 2
+
+    def test_three_colors_image(self):
+        """An image with 3 well-separated colours → suggest 3."""
+        arr = np.zeros((90, 100, 3), dtype=np.uint8)
+        arr[:30] = [255, 0, 0]  # red
+        arr[30:60] = [0, 255, 0]  # green
+        arr[60:] = [0, 0, 255]  # blue
+        k = _suggest_bead_colors(arr)
+        assert k == 3
+
+    def test_gradient_moderate_colors(self):
+        """A smooth gradient should suggest a moderate palette."""
+        arr = np.zeros((100, 100, 3), dtype=np.uint8)
+        for x in range(100):
+            arr[:, x] = [int(255 * x / 99), 0, int(255 * (99 - x) / 99)]
+        k = _suggest_bead_colors(arr)
+        assert 2 <= k <= 8
+
+    def test_minimum_always_two(self):
+        """Should never suggest fewer than 2 colours."""
+        arr = np.full((50, 50, 3), 128, dtype=np.uint8)
+        assert _suggest_bead_colors(arr) >= 2
+
+
+# ---------------------------------------------------------------------------
+# Optimal size suggestion
+# ---------------------------------------------------------------------------
+
+
+class TestSuggestOptimalSize:
+    def test_simple_image_small_size(self):
+        """A very simple image (solid blocks) needs few pegs."""
+        arr = np.zeros((200, 200, 3), dtype=np.uint8)
+        arr[:100] = [255, 0, 0]
+        arr[100:] = [0, 0, 255]
+        bounds = (0, 0, 200, 200)
+        size = _suggest_optimal_size(arr, bounds)
+        assert size <= 20, f"Expected small size for simple image, got {size}"
+
+    def test_complex_image_larger_size(self):
+        """A noisy random image requires more pegs for recognisability."""
+        np.random.seed(0)
+        arr = np.random.randint(0, 255, (200, 200, 3), dtype=np.uint8)
+        bounds = (0, 0, 200, 200)
+        size = _suggest_optimal_size(arr, bounds)
+        assert size >= 20, f"Expected larger size for complex image, got {size}"
+
+    def test_returns_valid_board_size(self):
+        """Should return one of the known test sizes."""
+        valid = {10, 15, 20, 25, 29, 35, 40, 50, 57}
+        arr = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        bounds = (0, 0, 100, 100)
+        assert _suggest_optimal_size(arr, bounds) in valid
+
+
+# ---------------------------------------------------------------------------
+# Shape suggestion for circular subjects
+# ---------------------------------------------------------------------------
+
+
+class TestCircularShapeSuggestion:
+    def test_circle_subject_suggests_circle(self):
+        """A white circle on black canvas → suggested_shape = circle."""
+        import base64
+        import io
+
+        import cv2 as _cv2
+
+        canvas = np.zeros((200, 200, 3), dtype=np.uint8)
+        _cv2.circle(canvas, (100, 100), 70, (255, 255, 255), -1)
+        img = Image.fromarray(canvas)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+
+        result = analyze_image_suggestions(image_base64=b64)
+        assert result.suggested_shape == "circle"
+
+    def test_tall_subject_suggests_rectangle(self):
+        """A tall narrow subject → suggested_shape = rectangle."""
+        import base64
+        import io
+
+        import cv2 as _cv2
+
+        canvas = np.full((300, 100, 3), 240, dtype=np.uint8)
+        _cv2.rectangle(canvas, (30, 10), (70, 290), (0, 0, 200), -1)
+        img = Image.fromarray(canvas)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+
+        result = analyze_image_suggestions(image_base64=b64)
+        assert result.suggested_shape == "rectangle"

@@ -557,9 +557,7 @@ def _detect_concentric_background(
 
     # Collect colors from outermost ring
     max_ring = max(layout.ring_indices)
-    border_indices = [
-        i for i, r in enumerate(layout.ring_indices) if r == max_ring
-    ]
+    border_indices = [i for i, r in enumerate(layout.ring_indices) if r == max_ring]
     if not border_indices:
         return None
 
@@ -1000,20 +998,27 @@ def _extract_dominant_colors(img_array: np.ndarray, k: int = 5) -> List[str]:
     sample_size = min(1000, len(pixels))
     rng = np.random.RandomState(42)
     sample = pixels[rng.choice(len(pixels), sample_size, replace=False)]
-    km = KMeans(n_clusters=min(k, len(np.unique(sample, axis=0))),
-                random_state=0, n_init="auto", max_iter=100)
+    km = KMeans(
+        n_clusters=min(k, len(np.unique(sample, axis=0))),
+        random_state=0,
+        n_init="auto",
+        max_iter=100,
+    )
     km.fit(sample)
     centers = km.cluster_centers_.astype(int)
     # Sort by cluster size (largest first)
     labels, counts = np.unique(km.labels_, return_counts=True)
     order = np.argsort(-counts)
-    return [f"#{centers[labels[i]][0]:02x}{centers[labels[i]][1]:02x}{centers[labels[i]][2]:02x}" for i in order]
+    return [
+        f"#{centers[labels[i]][0]:02x}{centers[labels[i]][1]:02x}{centers[labels[i]][2]:02x}"
+        for i in order
+    ]
 
 
 def _detect_subject_bounds(gray: np.ndarray) -> Tuple[int, int, int, int]:
-    """Detect main subject bounding box using saliency-like approach.
+    """Detect main subject bounding box using edge-based saliency.
 
-    Returns (x, y, w, h) normalised to [0, 1] range.
+    Returns (x, y, w, h) in pixel coordinates.
     """
     h, w = gray.shape
 
@@ -1023,7 +1028,9 @@ def _detect_subject_bounds(gray: np.ndarray) -> Tuple[int, int, int, int]:
     dilated = cv2.dilate(edges, kernel, iterations=3)
 
     # Find contours and get bounding box of all significant contours
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
     if not contours:
         return (0, 0, w, h)
 
@@ -1054,15 +1061,185 @@ def _detect_subject_bounds(gray: np.ndarray) -> Tuple[int, int, int, int]:
     return (x_min, y_min, x_max - x_min, y_max - y_min)
 
 
+def _compute_subject_circularity(gray: np.ndarray) -> float:
+    """Compute how circular the main subject outline is.
+
+    Uses the isoperimetric quotient (4π·area / perimeter²) on the
+    largest detected contour.  Returns 0.0 (not circular at all)
+    to 1.0 (perfect circle).
+    """
+    edges = cv2.Canny(gray, 30, 100)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    dilated = cv2.dilate(edges, kernel, iterations=3)
+
+    contours, _ = cv2.findContours(
+        dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    if not contours:
+        return 0.0
+
+    largest = max(contours, key=cv2.contourArea)
+    area = cv2.contourArea(largest)
+    perimeter = cv2.arcLength(largest, True)
+
+    h, w = gray.shape
+    if perimeter == 0 or area < 0.01 * h * w:
+        return 0.0
+
+    circularity = (4 * math.pi * area) / (perimeter * perimeter)
+    return min(1.0, max(0.0, circularity))
+
+
+def _suggest_bead_colors(img_array: np.ndarray) -> int:
+    """Suggest optimal colour count for bead art.
+
+    Bead art looks best with fewer, well-separated colours.  This
+    function progressively increases *k* until adding another colour
+    would either:
+    - split two perceptually-close colours (ΔE < threshold), or
+    - create a cluster too small to matter (< 3 % of pixels).
+
+    Returns an int in the range [2, 12].
+    """
+    bgr = img_array[:, :, ::-1].astype(np.uint8)
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
+    pixels_lab = lab.reshape(-1, 3)
+
+    rng = np.random.RandomState(42)
+    sample_size = min(3000, len(pixels_lab))
+    sample = pixels_lab[rng.choice(len(pixels_lab), sample_size, replace=False)]
+
+    n_unique = len(np.unique(sample.astype(np.int32).reshape(-1, 3), axis=0))
+
+    DE_THRESHOLD = 18.0  # min ΔE between cluster centres
+    MIN_CLUSTER_RATIO = 0.03  # each colour must cover ≥ 3 %
+
+    best_k = 2
+    for k in range(2, 13):
+        actual_k = min(k, n_unique)
+        if actual_k < k:
+            best_k = actual_k
+            break
+
+        km = KMeans(
+            n_clusters=actual_k, random_state=0, n_init="auto", max_iter=100
+        )
+        km.fit(sample)
+        centers = km.cluster_centers_
+
+        # Check: are all clusters perceptually distinct?
+        too_close = False
+        for i in range(actual_k):
+            for j in range(i + 1, actual_k):
+                d = float(np.sqrt(np.sum((centers[i] - centers[j]) ** 2)))
+                if d < DE_THRESHOLD:
+                    too_close = True
+                    break
+            if too_close:
+                break
+
+        if too_close:
+            break  # k-1 was the last valid split
+
+        # Check: are all clusters large enough?
+        _, counts = np.unique(km.labels_, return_counts=True)
+        if float(counts.min()) / counts.sum() < MIN_CLUSTER_RATIO:
+            break
+
+        best_k = k
+
+    return max(2, best_k)
+
+
+def _suggest_optimal_size(
+    img_array: np.ndarray,
+    subject_bounds: Tuple[int, int, int, int],
+) -> int:
+    """Suggest the minimum board size that keeps the image recognisable.
+
+    Strategy: simulate bead pixelisation at multiple scales by
+    down-sampling and up-sampling the **subject region**, then measure
+    perceptual quality loss (mean ΔE in CIELAB).  The "elbow" in the
+    quality-vs-size curve is the optimal tradeoff.
+    """
+    h, w = img_array.shape[:2]
+    bx, by, bw, bh = subject_bounds
+
+    # Crop to subject
+    subject = img_array[by : by + bh, bx : bx + bw]
+    sh, sw = subject.shape[:2]
+    if sh < 2 or sw < 2:
+        return 15
+
+    subj_bgr = subject[:, :, ::-1].astype(np.uint8)
+    ref_lab = cv2.cvtColor(subj_bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
+
+    test_sizes = [10, 15, 20, 25, 29, 35, 40, 50, 57]
+    mae_scores: list[float] = []
+
+    for size in test_sizes:
+        if sw >= sh:
+            nw = size
+            nh = max(1, round(size * sh / sw))
+        else:
+            nh = size
+            nw = max(1, round(size * sw / sh))
+
+        small = cv2.resize(subject, (nw, nh), interpolation=cv2.INTER_AREA)
+        big = cv2.resize(small, (sw, sh), interpolation=cv2.INTER_NEAREST)
+
+        big_bgr = big[:, :, ::-1].astype(np.uint8)
+        big_lab = cv2.cvtColor(big_bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
+        delta_e = float(
+            np.mean(np.sqrt(np.sum((ref_lab - big_lab) ** 2, axis=2)))
+        )
+        mae_scores.append(delta_e)
+
+    scores = np.array(mae_scores)
+
+    # If quality barely changes across sizes, image is very simple
+    if scores[0] - scores[-1] < 2.0:
+        return test_sizes[0]
+
+    # Geometric elbow detection (same approach as estimate_optimal_colors)
+    s_norm = np.arange(len(test_sizes), dtype=float)
+    s_norm /= s_norm[-1]
+    q_norm = (scores - scores[-1]) / (scores[0] - scores[-1] + 1e-9)
+
+    p0 = np.array([s_norm[0], q_norm[0]])
+    p1 = np.array([s_norm[-1], q_norm[-1]])
+    line_vec = p1 - p0
+    line_len = float(np.linalg.norm(line_vec))
+
+    if line_len < 1e-9:
+        return test_sizes[0]
+
+    distances = [
+        abs(float(np.cross(line_vec, p0 - np.array([s_norm[j], q_norm[j]]))))
+        / line_len
+        for j in range(len(test_sizes))
+    ]
+
+    best_idx = int(np.argmax(distances))
+    return test_sizes[best_idx]
+
+
 def analyze_image_suggestions(
     image_path: Optional[str] = None,
     image_base64: Optional[str] = None,
 ) -> ImageSuggestion:
-    """Analyse an uploaded image and suggest optimal model parameters.
+    """Analyse an uploaded image and suggest optimal bead-model parameters.
 
-    Returns an ``ImageSuggestion`` with recommended shape, size, colour
-    count, and complexity metrics.  The wizard uses these to pre-select
-    the best options while allowing the user to override.
+    The algorithm optimises for the best tradeoff between:
+
+    * **Visual recognisability** — the bead model should look like the
+      original when placed next to it.
+    * **Bead economy** — fewer beads = simpler, cheaper build.
+    * **Colour simplicity** — fewer colours = cleaner bead art.
+
+    Shape is determined from the **subject's** actual outline (not the
+    canvas).  Circle is only suggested when the subject has a genuinely
+    circular silhouette (e.g. a ball, mandala, face).
     """
     img = _load_image(image_path, image_base64)
     if img is None:
@@ -1077,54 +1254,46 @@ def analyze_image_suggestions(
 
     arr = np.array(img)
     gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
-    w, h = img.size
+    w, h = img.size  # after possible resize
 
-    # 1) Aspect ratio & shape suggestion
-    aspect_ratio = w / h
-    if 0.85 <= aspect_ratio <= 1.15:
-        suggested_shape = "circle"  # nearly square → circle works well
-    elif aspect_ratio > 1.15:
-        suggested_shape = "rectangle"
-    else:
-        suggested_shape = "rectangle"
-
-    # 2) Complexity analysis
-    edge_density = _compute_edge_density(gray)
-    color_variance = _compute_color_variance(arr)
-    complexity = 0.6 * edge_density + 0.4 * color_variance
-    complexity = min(1.0, max(0.0, complexity))
-
-    # 3) Size suggestion based on complexity
-    # Simple images need fewer pegs; complex ones benefit from more
-    if complexity < 0.15:
-        suggested_size = 15  # very simple
-    elif complexity < 0.30:
-        suggested_size = 20
-    elif complexity < 0.50:
-        suggested_size = 29
-    elif complexity < 0.70:
-        suggested_size = 35
-    else:
-        suggested_size = 40  # highly detailed
-
-    # 4) Optimal colour count
-    suggested_colors = estimate_optimal_colors(arr)
-
-    # 5) Subject coverage / fill ratio
+    # ---- 1) Subject detection ----
     bounds = _detect_subject_bounds(gray)
     bx, by, bw, bh = bounds
     content_area = bw * bh
     total_area = w * h
     content_ratio = content_area / total_area if total_area > 0 else 1.0
 
-    # Fill ratio: how efficiently the board would be used
+    # ---- 2) Shape suggestion based on SUBJECT outline ----
+    subject_ar = bw / bh if bh > 0 else 1.0
+    circularity = _compute_subject_circularity(gray)
+
+    # Circle only for genuinely circular subjects
+    if circularity > 0.70 and 0.80 <= subject_ar <= 1.25:
+        suggested_shape = "circle"
+    elif 0.75 <= subject_ar <= 1.33:
+        suggested_shape = "square"
+    else:
+        suggested_shape = "rectangle"
+
+    # ---- 3) Colour suggestion (biased toward simplicity) ----
+    suggested_colors = _suggest_bead_colors(arr)
+
+    # ---- 4) Size suggestion (multi-scale recognisability) ----
+    suggested_size = _suggest_optimal_size(arr, bounds)
+
+    # ---- 5) Complexity score (for UI display) ----
+    edge_density = _compute_edge_density(gray)
+    color_variance = _compute_color_variance(arr)
+    complexity = 0.6 * edge_density + 0.4 * color_variance
+    complexity = min(1.0, max(0.0, complexity))
+
+    # ---- 6) Fill ratio ----
     if suggested_shape == "circle":
-        # Circle fills π/4 of bounding square; then content only covers part
         fill_ratio = content_ratio * (math.pi / 4)
     else:
         fill_ratio = content_ratio
 
-    # 6) Dominant colours for visualization
+    # ---- 7) Dominant colours for visualisation ----
     dominant = _extract_dominant_colors(arr, k=5)
 
     return ImageSuggestion(
@@ -1133,7 +1302,7 @@ def analyze_image_suggestions(
         suggested_size=suggested_size,
         complexity_score=round(complexity, 3),
         content_ratio=round(content_ratio, 3),
-        aspect_ratio=round(aspect_ratio, 3),
+        aspect_ratio=round(subject_ar, 3),
         dominant_colors=dominant,
         fill_ratio=round(fill_ratio, 3),
     )

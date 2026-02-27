@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
 
 
 class BeadShape(models.Model):
@@ -17,13 +16,22 @@ class BeadShape(models.Model):
         max_length=20, choices=SHAPE_TYPES, verbose_name=_("Type de forme")
     )
     width = models.IntegerField(
-        validators=[MinValueValidator(1)], null=True, blank=True, verbose_name=_("Largeur")
+        validators=[MinValueValidator(1)],
+        null=True,
+        blank=True,
+        verbose_name=_("Largeur"),
     )
     height = models.IntegerField(
-        validators=[MinValueValidator(1)], null=True, blank=True, verbose_name=_("Hauteur")
+        validators=[MinValueValidator(1)],
+        null=True,
+        blank=True,
+        verbose_name=_("Hauteur"),
     )
     size = models.IntegerField(
-        validators=[MinValueValidator(1)], null=True, blank=True, verbose_name=_("Taille")
+        validators=[MinValueValidator(1)],
+        null=True,
+        blank=True,
+        verbose_name=_("Taille"),
     )
     diameter = models.IntegerField(
         validators=[MinValueValidator(1)],

@@ -25,12 +25,12 @@ from ..forms import ImageUploadForm, ModelConfigurationForm
 from ..models import BeadBoard
 from ..services.image_processing import (
     ModelResult,
+    analyze_image_suggestions,
     file_to_base64,
     generate_model,
     generate_preview,
     save_temp_image,
     suggest_color_count,
-    analyze_image_suggestions,
 )
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
@@ -212,7 +212,11 @@ class ConfigureModel(WizardStep):
         original_image_base64 = file_to_base64(image_data.get("image_path"))
 
         # Build suggestion labels for the UI
-        shape_labels = {"circle": _("Rond"), "square": _("Carré"), "rectangle": _("Rectangle")}
+        shape_labels = {
+            "circle": _("Rond"),
+            "square": _("Carré"),
+            "rectangle": _("Rectangle"),
+        }
         suggestion_shape_label = shape_labels.get(
             suggestions.get("suggested_shape", ""), ""
         )
