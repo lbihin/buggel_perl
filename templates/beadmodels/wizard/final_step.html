@@ -50,7 +50,7 @@
               </div>
               <div class="stat-pill">
                 <strong>{{ total_beads }}</strong>
-                <span>{% trans "perles" %}</span>
+                <span>{% trans "perles utiles" %}</span>
               </div>
               <div class="stat-pill">
                 <strong>{{ beads_count }}</strong>
@@ -61,6 +61,24 @@
                 <span>{{ shape_type }}</span>
               </div>
             </div>
+
+            {# Bead economy #}
+            {% if fill_ratio and total_beads_raw %}
+              <div class="bead-economy mt-2 mb-3">
+                <i class="bi bi-pie-chart me-1"></i>
+                <span>
+                  {% trans "Économie" %}:
+                  <strong>{{ total_beads }}/{{ total_beads_raw }}</strong>
+                  {% trans "perles utilisées" %}
+                </span>
+                <div class="economy-bar">
+                  <div class="economy-fill" style="width:{% widthratio total_beads total_beads_raw 100 %}%"></div>
+                </div>
+                <small class="text-muted">
+                  {% widthratio total_beads total_beads_raw 100 %}% {% trans "de la plaque est utilisé" %}
+                </small>
+              </div>
+            {% endif %}
 
             {# Palette swatches #}
             {% if palette %}

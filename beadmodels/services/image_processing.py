@@ -68,6 +68,8 @@ class ModelResult:
     shape_id: Optional[str] = None
     color_reduction: int = 16
     total_beads: int = 0
+    useful_beads: int = 0  # beads excluding background
+    fill_ratio: float = 1.0  # useful / total
     palette: List[dict] = field(default_factory=list)
 
 
@@ -930,6 +932,11 @@ def generate_model(
             content_mask=preview.content_mask,
         )
 
+    # Compute useful beads (total minus background)
+    bg_beads = sum(c["count"] for c in palette if c.get("is_background"))
+    useful_beads = total_beads - bg_beads
+    fill_ratio = useful_beads / total_beads if total_beads > 0 else 1.0
+
     return ModelResult(
         image_base64=preview.image_base64,
         grid_width=spec.grid_width,
@@ -937,6 +944,8 @@ def generate_model(
         shape_id=shape_id,
         color_reduction=color_reduction,
         total_beads=total_beads,
+        useful_beads=useful_beads,
+        fill_ratio=round(fill_ratio, 3),
         palette=palette,
     )
 

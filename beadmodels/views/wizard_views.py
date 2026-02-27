@@ -418,6 +418,8 @@ class SaveModel(WizardStep):
             "shape_name": shape_name,
             "shape_type": shape_type,
             "total_beads": useful_beads,
+            "total_beads_raw": total_beads,
+            "fill_ratio": final_model.get("fill_ratio", 1.0),
             "palette": palette,
             "beads_count": useful_colors,
             "wizard_step": self.position,
