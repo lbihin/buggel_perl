@@ -7,17 +7,20 @@ Fonctions pures : pas de dependance a request/messages.
 import base64
 import io
 import logging
+import math
 import os
 import time
 import uuid
+from collections import Counter
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 import cv2
 import numpy as np
 from django.core.files.storage import default_storage
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
+from scipy.spatial import cKDTree
 from sklearn.cluster import KMeans
 
 logger = logging.getLogger(__name__)
@@ -33,6 +36,7 @@ class PreviewResult:
     image_base64: str
     reduced_pixels: Optional[np.ndarray] = None
     content_mask: Optional[np.ndarray] = None
+    concentric_colors: Optional[np.ndarray] = None  # (N, 3) for concentric mode
 
 
 @dataclass
@@ -45,6 +49,18 @@ class ShapeSpec:
 
 
 @dataclass
+class ConcentricLayout:
+    """Peg positions for a concentric circular board."""
+
+    positions: List[Tuple[float, float]]  # (x, y) center-based coords
+    ring_indices: List[int]  # ring index for each peg
+    num_rings: int
+    total_pegs: int
+    radius: float  # in ring-spacing units
+    neighbors: List[List[int]]  # adjacency list for spatial coherence
+
+
+@dataclass
 class ModelResult:
     image_base64: str = ""
     grid_width: int = 29
@@ -53,6 +69,20 @@ class ModelResult:
     color_reduction: int = 16
     total_beads: int = 0
     palette: List[dict] = field(default_factory=list)
+
+
+@dataclass
+class ImageSuggestion:
+    """Results from automated image analysis for parameter suggestion."""
+
+    suggested_shape: str = "square"  # "circle", "square", "rectangle"
+    suggested_colors: int = 16
+    suggested_size: int = 29  # pegs on smallest dimension
+    complexity_score: float = 0.5  # 0=simple, 1=complex
+    content_ratio: float = 1.0  # how much of the image is content vs bg
+    aspect_ratio: float = 1.0
+    dominant_colors: List[str] = field(default_factory=list)  # hex colors
+    fill_ratio: float = 1.0  # estimated board usage efficiency
 
 
 # ---------------------------------------------------------------------------
@@ -320,6 +350,229 @@ def cleanup_small_components(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Concentric circle layout
+# ---------------------------------------------------------------------------
+
+
+def _build_concentric_layout(diameter: int) -> ConcentricLayout:
+    """Generate concentric peg positions for a circular board.
+
+    Pegs are arranged in concentric rings radiating from the center.
+    Each ring at distance *k* from center has approximately ``2*pi*k``
+    pegs evenly distributed, matching the physical peg spacing of real
+    circular bead boards.
+
+    Parameters
+    ----------
+    diameter : int
+        Board diameter in peg-spacing units.
+
+    Returns
+    -------
+    ConcentricLayout with positions, neighbor graph, and metadata.
+    """
+    radius = diameter / 2.0
+    num_rings = int(radius)
+
+    positions: List[Tuple[float, float]] = [(0.0, 0.0)]  # center peg
+    ring_indices: List[int] = [0]
+
+    for ring in range(1, num_rings + 1):
+        n_pegs = max(6, round(2 * math.pi * ring))
+        for i in range(n_pegs):
+            angle = 2 * math.pi * i / n_pegs
+            x = ring * math.cos(angle)
+            y = ring * math.sin(angle)
+            positions.append((x, y))
+            ring_indices.append(ring)
+
+    total_pegs = len(positions)
+
+    # Build neighbor graph using spatial proximity
+    pos_arr = np.array(positions)
+    neighbors: List[List[int]] = [[] for _ in range(total_pegs)]
+
+    if total_pegs > 0:
+        tree = cKDTree(pos_arr)
+        # Neighbor distance threshold: ~1.5× ring spacing
+        max_dist = 1.6
+        for i in range(total_pegs):
+            nearby = tree.query_ball_point(pos_arr[i], max_dist)
+            neighbors[i] = [j for j in nearby if j != i]
+
+    return ConcentricLayout(
+        positions=positions,
+        ring_indices=ring_indices,
+        num_rings=num_rings,
+        total_pegs=total_pegs,
+        radius=radius,
+        neighbors=neighbors,
+    )
+
+
+def _sample_concentric_colors(
+    img_array: np.ndarray, layout: ConcentricLayout
+) -> np.ndarray:
+    """Sample pixel colors from an image at concentric peg positions.
+
+    Maps each peg position from board coordinates ``[-radius, radius]``
+    to pixel coordinates and performs bilinear interpolation.
+    """
+    h, w = img_array.shape[:2]
+    colors = np.zeros((layout.total_pegs, 3), dtype=np.uint8)
+    diameter = 2 * layout.radius
+
+    for i, (x, y) in enumerate(layout.positions):
+        # Map from center-based coords to [0, 1]
+        nx = (x + layout.radius) / diameter
+        ny = (y + layout.radius) / diameter
+        # Map to pixel coords
+        px = min(w - 1, max(0, int(nx * (w - 1))))
+        py = min(h - 1, max(0, int(ny * (h - 1))))
+        colors[i] = img_array[py, px]
+
+    return colors
+
+
+def _draw_concentric_grid(
+    colors: np.ndarray,
+    layout: ConcentricLayout,
+    cell_size: int = 10,
+) -> Image.Image:
+    """Draw a concentric bead visualization.
+
+    Each bead is rendered as a circle at its peg position with a subtle
+    border, producing the characteristic concentric-ring visual of
+    circular bead boards.
+    """
+    canvas_px = int(2 * layout.radius * cell_size) + cell_size
+    canvas = Image.new("RGB", (canvas_px, canvas_px), (255, 255, 255))
+    draw = ImageDraw.Draw(canvas)
+    center = canvas_px / 2.0
+    bead_r = cell_size * 0.42  # visual radius of each bead dot
+
+    for i, (x, y) in enumerate(layout.positions):
+        cx = center + x * cell_size
+        cy = center + y * cell_size
+        r, g, b = int(colors[i][0]), int(colors[i][1]), int(colors[i][2])
+
+        # Border circle
+        draw.ellipse(
+            [cx - bead_r, cy - bead_r, cx + bead_r, cy + bead_r],
+            fill=(r, g, b),
+            outline=(200, 200, 200),
+            width=1,
+        )
+
+    return canvas
+
+
+def _cleanup_concentric_components(
+    colors: np.ndarray,
+    layout: ConcentricLayout,
+    min_component_size: int = 3,
+) -> np.ndarray:
+    """Remove small isolated bead clusters in a concentric layout.
+
+    Works like ``cleanup_small_components`` but operates on a graph
+    structure (neighbor list) instead of a 2D pixel grid.
+    """
+    result = colors.copy()
+    n = layout.total_pegs
+
+    MAX_ITERATIONS = 10
+    for _iteration in range(MAX_ITERATIONS):
+        changed = False
+        unique_colors = np.unique(result, axis=0)
+
+        for color in unique_colors:
+            # Find all pegs with this color
+            mask = np.all(result == color, axis=1)
+            indices = np.where(mask)[0]
+            if len(indices) == 0:
+                continue
+
+            # BFS to find connected components using neighbor graph
+            visited = set()
+            components: List[List[int]] = []
+
+            for idx in indices:
+                if idx in visited:
+                    continue
+                # BFS from this peg
+                component = []
+                queue = [idx]
+                while queue:
+                    node = queue.pop(0)
+                    if node in visited:
+                        continue
+                    if not mask[node]:
+                        continue
+                    visited.add(node)
+                    component.append(node)
+                    for nb in layout.neighbors[node]:
+                        if nb not in visited and mask[nb]:
+                            queue.append(nb)
+                components.append(component)
+
+            # Check each component
+            for comp in components:
+                if len(comp) >= min_component_size:
+                    continue
+
+                # Find most common neighbor color
+                neighbor_colors: List[tuple] = []
+                for peg_idx in comp:
+                    for nb in layout.neighbors[peg_idx]:
+                        nc = tuple(result[nb])
+                        if nc != tuple(color):
+                            neighbor_colors.append(nc)
+
+                if not neighbor_colors:
+                    continue
+
+                best = Counter(neighbor_colors).most_common(1)[0][0]
+                for peg_idx in comp:
+                    result[peg_idx] = best
+                changed = True
+
+        if not changed:
+            break
+
+    return result
+
+
+def _detect_concentric_background(
+    colors: np.ndarray, layout: ConcentricLayout
+) -> Optional[tuple]:
+    """Detect background color in concentric layout.
+
+    Uses the outermost ring (border) as the sampling area.
+    """
+    if layout.total_pegs < 3:
+        return None
+
+    # Collect colors from outermost ring
+    max_ring = max(layout.ring_indices)
+    border_indices = [
+        i for i, r in enumerate(layout.ring_indices) if r == max_ring
+    ]
+    if not border_indices:
+        return None
+
+    border_colors = colors[border_indices]
+    unique, counts = np.unique(border_colors, axis=0, return_counts=True)
+    bg_color = tuple(unique[np.argmax(counts)])
+
+    # Verify it's significant (> 15% of all pegs)
+    matches = np.all(colors == bg_color, axis=1)
+    ratio = matches.sum() / len(colors)
+    if ratio > 0.15:
+        return bg_color
+    return None
+
+
 def _detect_background_color(
     reduced_pixels: np.ndarray,
     content_mask: Optional[np.ndarray] = None,
@@ -366,23 +619,29 @@ def compute_palette(
     reduced_pixels: Optional[np.ndarray] = None,
     content_mask: Optional[np.ndarray] = None,
     image_base64: Optional[str] = None,
+    concentric_colors: Optional[np.ndarray] = None,
+    concentric_layout: Optional[ConcentricLayout] = None,
 ) -> List[dict]:
-    if reduced_pixels is not None:
+    # Determine pixel source and background
+    bg_color = None
+    if concentric_colors is not None:
+        pixels = concentric_colors  # already (N, 3)
+        if concentric_layout is not None:
+            bg_color = _detect_concentric_background(
+                concentric_colors, concentric_layout
+            )
+    elif reduced_pixels is not None:
         if content_mask is not None:
             pixels = reduced_pixels[content_mask]
         else:
             pixels = reduced_pixels.reshape(-1, 3)
+        bg_color = _detect_background_color(reduced_pixels, content_mask)
     elif image_base64:
         img_bytes = base64.b64decode(image_base64)
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         pixels = np.array(img).reshape(-1, 3)
     else:
         return []
-
-    # Detect background
-    bg_color = None
-    if reduced_pixels is not None:
-        bg_color = _detect_background_color(reduced_pixels, content_mask)
 
     unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
     safe_total = total_beads if total_beads > 0 else pixels.shape[0]
@@ -566,36 +825,65 @@ def generate_preview(
         return PreviewResult(image_base64="")
 
     spec = resolve_shape_spec(shape_id)
+    user_colors = user_bead_colors if use_available_colors else None
 
-    # Resize
+    # ── Concentric path (circle boards) ──────────────────────────
+    if spec.use_circle_mask and spec.circle_diameter:
+        layout = _build_concentric_layout(spec.circle_diameter)
+
+        # Resize image to fill the circle bounding box
+        target_px = max(spec.circle_diameter * 4, 200)  # higher res for sampling
+        img_resized = img.resize((target_px, target_px), Image.Resampling.LANCZOS)
+        img_array = np.array(img_resized)
+
+        # Sample colors at concentric positions
+        colors = _sample_concentric_colors(img_array, layout)
+
+        # Color reduction
+        colors_2d = colors.reshape(1, -1, 3)
+        reduced = reduce_colors(colors_2d, color_reduction, user_colors)
+        reduced_colors = reduced.reshape(-1, 3)
+
+        # Spatial coherence
+        reduced_colors = _cleanup_concentric_components(
+            reduced_colors, layout, min_component_size=3
+        )
+
+        # Draw concentric grid
+        bead_img = _draw_concentric_grid(reduced_colors, layout)
+
+        buf = io.BytesIO()
+        bead_img.save(buf, format="PNG")
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode("utf-8")
+
+        return PreviewResult(
+            image_base64=b64,
+            concentric_colors=reduced_colors,
+        )
+
+    # ── Grid path (rectangle / square boards) ───────────────────
     if spec.use_circle_mask:
         grid_img, content_mask = _resize_for_circle(img, spec)
     else:
         grid_img, content_mask = _resize_for_rect(img, spec)
 
-    # Circle mask
     if spec.use_circle_mask:
         grid_img = _apply_circle_mask(grid_img, spec)
 
-    # Ensure exact grid size for clustering
     grid_img = grid_img.resize(
         (spec.grid_width, spec.grid_height), Image.Resampling.LANCZOS
     )
     img_array = np.array(grid_img)
 
-    # Color reduction
-    user_colors = user_bead_colors if use_available_colors else None
     reduced_pixels = reduce_colors(img_array, color_reduction, user_colors)
 
-    # Spatial coherence: remove isolated beads / tiny fragments
     reduced_pixels = cleanup_small_components(
         reduced_pixels, min_component_size=3, content_mask=content_mask
     )
 
-    # Draw bead grid
     bead_img = _draw_bead_grid(reduced_pixels, spec)
 
-    # Encode
     buf = io.BytesIO()
     bead_img.save(buf, format="PNG")
     buf.seek(0)
@@ -625,16 +913,22 @@ def generate_model(
     )
     spec = resolve_shape_spec(shape_id)
 
+    # ── Concentric circle bead count ────────────────────────────
     if spec.use_circle_mask and spec.circle_diameter:
-        total_beads = _count_circle_beads(spec.circle_diameter)
+        layout = _build_concentric_layout(spec.circle_diameter)
+        total_beads = layout.total_pegs
+        palette = compute_palette(
+            total_beads=total_beads,
+            concentric_colors=preview.concentric_colors,
+            concentric_layout=layout,
+        )
     else:
         total_beads = spec.grid_width * spec.grid_height
-
-    palette = compute_palette(
-        reduced_pixels=preview.reduced_pixels,
-        total_beads=total_beads,
-        content_mask=preview.content_mask,
-    )
+        palette = compute_palette(
+            reduced_pixels=preview.reduced_pixels,
+            total_beads=total_beads,
+            content_mask=preview.content_mask,
+        )
 
     return ModelResult(
         image_base64=preview.image_base64,
@@ -670,3 +964,167 @@ def suggest_color_count(
 
     arr = np.array(img)
     return estimate_optimal_colors(arr)
+
+
+# ---------------------------------------------------------------------------
+# Smart image analysis & suggestions
+# ---------------------------------------------------------------------------
+
+
+def _compute_edge_density(gray: np.ndarray) -> float:
+    """Fraction of pixels that are edges (Canny), 0–1."""
+    edges = cv2.Canny(gray, 50, 150)
+    return float(edges.astype(bool).sum()) / edges.size
+
+
+def _compute_color_variance(img_array: np.ndarray) -> float:
+    """Normalised colour variance (0–1 scale)."""
+    lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2Lab).astype(np.float64)
+    var = np.mean(np.var(lab.reshape(-1, 3), axis=0))
+    # Typical range 0–2000; normalise
+    return min(1.0, var / 2000.0)
+
+
+def _extract_dominant_colors(img_array: np.ndarray, k: int = 5) -> List[str]:
+    """Return hex strings of the k dominant colours via KMeans."""
+    pixels = img_array.reshape(-1, 3).astype(np.float64)
+    sample_size = min(1000, len(pixels))
+    rng = np.random.RandomState(42)
+    sample = pixels[rng.choice(len(pixels), sample_size, replace=False)]
+    km = KMeans(n_clusters=min(k, len(np.unique(sample, axis=0))),
+                random_state=0, n_init="auto", max_iter=100)
+    km.fit(sample)
+    centers = km.cluster_centers_.astype(int)
+    # Sort by cluster size (largest first)
+    labels, counts = np.unique(km.labels_, return_counts=True)
+    order = np.argsort(-counts)
+    return [f"#{centers[labels[i]][0]:02x}{centers[labels[i]][1]:02x}{centers[labels[i]][2]:02x}" for i in order]
+
+
+def _detect_subject_bounds(gray: np.ndarray) -> Tuple[int, int, int, int]:
+    """Detect main subject bounding box using saliency-like approach.
+
+    Returns (x, y, w, h) normalised to [0, 1] range.
+    """
+    h, w = gray.shape
+
+    # Edge detection + dilation to form connected subject regions
+    edges = cv2.Canny(gray, 30, 100)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    dilated = cv2.dilate(edges, kernel, iterations=3)
+
+    # Find contours and get bounding box of all significant contours
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return (0, 0, w, h)
+
+    # Filter out tiny contours (< 1% of image area)
+    min_area = 0.01 * h * w
+    significant = [c for c in contours if cv2.contourArea(c) > min_area]
+    if not significant:
+        significant = contours
+
+    # Union of all bounding boxes
+    x_min, y_min = w, h
+    x_max, y_max = 0, 0
+    for c in significant:
+        bx, by, bw, bh = cv2.boundingRect(c)
+        x_min = min(x_min, bx)
+        y_min = min(y_min, by)
+        x_max = max(x_max, bx + bw)
+        y_max = max(y_max, by + bh)
+
+    # Add small padding (5%)
+    pad_x = int(0.05 * w)
+    pad_y = int(0.05 * h)
+    x_min = max(0, x_min - pad_x)
+    y_min = max(0, y_min - pad_y)
+    x_max = min(w, x_max + pad_x)
+    y_max = min(h, y_max + pad_y)
+
+    return (x_min, y_min, x_max - x_min, y_max - y_min)
+
+
+def analyze_image_suggestions(
+    image_path: Optional[str] = None,
+    image_base64: Optional[str] = None,
+) -> ImageSuggestion:
+    """Analyse an uploaded image and suggest optimal model parameters.
+
+    Returns an ``ImageSuggestion`` with recommended shape, size, colour
+    count, and complexity metrics.  The wizard uses these to pre-select
+    the best options while allowing the user to override.
+    """
+    img = _load_image(image_path, image_base64)
+    if img is None:
+        return ImageSuggestion()
+
+    # Work on a manageable size
+    max_dim = 300
+    w, h = img.size
+    if max(w, h) > max_dim:
+        scale = max_dim / max(w, h)
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))))
+
+    arr = np.array(img)
+    gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+    w, h = img.size
+
+    # 1) Aspect ratio & shape suggestion
+    aspect_ratio = w / h
+    if 0.85 <= aspect_ratio <= 1.15:
+        suggested_shape = "circle"  # nearly square → circle works well
+    elif aspect_ratio > 1.15:
+        suggested_shape = "rectangle"
+    else:
+        suggested_shape = "rectangle"
+
+    # 2) Complexity analysis
+    edge_density = _compute_edge_density(gray)
+    color_variance = _compute_color_variance(arr)
+    complexity = 0.6 * edge_density + 0.4 * color_variance
+    complexity = min(1.0, max(0.0, complexity))
+
+    # 3) Size suggestion based on complexity
+    # Simple images need fewer pegs; complex ones benefit from more
+    if complexity < 0.15:
+        suggested_size = 15  # very simple
+    elif complexity < 0.30:
+        suggested_size = 20
+    elif complexity < 0.50:
+        suggested_size = 29
+    elif complexity < 0.70:
+        suggested_size = 35
+    else:
+        suggested_size = 40  # highly detailed
+
+    # 4) Optimal colour count
+    suggested_colors = estimate_optimal_colors(arr)
+
+    # 5) Subject coverage / fill ratio
+    bounds = _detect_subject_bounds(gray)
+    bx, by, bw, bh = bounds
+    content_area = bw * bh
+    total_area = w * h
+    content_ratio = content_area / total_area if total_area > 0 else 1.0
+
+    # Fill ratio: how efficiently the board would be used
+    if suggested_shape == "circle":
+        # Circle fills π/4 of bounding square; then content only covers part
+        fill_ratio = content_ratio * (math.pi / 4)
+    else:
+        fill_ratio = content_ratio
+
+    # 6) Dominant colours for visualization
+    dominant = _extract_dominant_colors(arr, k=5)
+
+    return ImageSuggestion(
+        suggested_shape=suggested_shape,
+        suggested_colors=suggested_colors,
+        suggested_size=suggested_size,
+        complexity_score=round(complexity, 3),
+        content_ratio=round(content_ratio, 3),
+        aspect_ratio=round(aspect_ratio, 3),
+        dominant_colors=dominant,
+        fill_ratio=round(fill_ratio, 3),
+    )
