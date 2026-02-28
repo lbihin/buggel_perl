@@ -150,47 +150,34 @@
           {# Color count selector #}
           <div class="config-section">
             <div class="config-section-label">{% trans "Nombre de couleurs" %}</div>
-            {{ form.color_reduction }}
-            <div class="chip-group">
-              {% for value in color_values %}
-                <input
-                  type="radio"
-                  name="color_reduction"
-                  id="color_{{ value }}"
-                  value="{{ value }}"
-                  {% if form.color_reduction.value|stringformat:'s' == value|stringformat:'s' %}checked
-                  {% elif not form.color_reduction.value and value|stringformat:'s' == suggested_colors|stringformat:'s' %}checked{% endif %}
-                  hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}"
-                  hx-trigger="change"
-                  hx-target="#preview-container"
-                  hx-indicator=".preview-spinner"
-                >
-                <label for="color_{{ value }}"
-                  {% if value|stringformat:'s' == suggested_colors|stringformat:'s' %}
-                    class="recommended" title="{% trans 'Recommandé pour cette image' %}"
-                  {% endif %}
-                >{{ value }}{% if value|stringformat:'s' == suggested_colors|stringformat:'s' %} <i class="bi bi-star-fill" style="font-size:.65em;vertical-align:super;color:var(--bs-warning)"></i>{% endif %}</label>
-              {% endfor %}
-            </div>
-            {% if suggested_colors %}
-              <small class="d-block text-muted mt-1" style="font-size:.75rem;">
-                <i class="bi bi-lightbulb me-1"></i>{% trans "Recommandé" %}: <strong>{{ suggested_colors }}</strong> {% trans "couleurs détectées dans l'image" %}
-              </small>
-            {% endif %}
+            {% include 'beadmodels/wizard/partials/color_chips.html' with selected_color=form.color_reduction.value %}
           </div>
 
           {# Use available colors toggle #}
           <div class="config-section">
             <div class="use-colors-toggle p-2 rounded-3" style="background:{% if form.use_available_colors.value %}#eef2ff{% else %}#f8f9fa{% endif %};border:1.5px solid {% if form.use_available_colors.value %}rgba(79,70,229,.2){% else %}transparent{% endif %};transition:all .2s;">
-              <label class="config-toggle mb-0">
-                {{ form.use_available_colors }}
-                <span>
-                  {{ form.use_available_colors.label }}
+              <div class="form-check form-switch mb-0">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="use_available_colors"
+                  name="use_available_colors"
+                  {% if form.use_available_colors.value %}checked{% endif %}
+                  {% if not user_bead_count %}disabled{% endif %}
+                  hx-post="{% url 'beadmodels:hx-toggle-colors' %}"
+                  hx-trigger="change"
+                  hx-target="#preview-container"
+                  hx-include="[name='shape_id']:checked, [name='color_reduction']:checked"
+                  hx-indicator=".preview-spinner"
+                >
+                <label class="form-check-label" for="use_available_colors">
+                  {% trans "Utiliser mes couleurs disponibles" %}
                   {% if user_bead_count %}
                     <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{{ user_bead_count }} {% trans "couleurs" %}</span>
                   {% endif %}
-                </span>
-              </label>
+                </label>
+              </div>
               {% if not user_bead_count %}
                 <small class="d-block text-muted mt-1 ms-4" style="font-size:.75rem;">
                   <i class="bi bi-info-circle me-1"></i>{% trans "Ajoutez des perles dans votre inventaire pour activer cette option." %}

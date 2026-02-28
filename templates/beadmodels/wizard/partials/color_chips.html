@@ -1,0 +1,28 @@
+{% load i18n %}
+<div id="color-chips-container">
+  <div class="chip-group">
+    {% for value in color_values %}
+      <input
+        type="radio"
+        name="color_reduction"
+        id="color_{{ value }}"
+        value="{{ value }}"
+        {% if selected_color|stringformat:'s' == value|stringformat:'s' %}checked{% endif %}
+        hx-post="{% url 'beadmodels:hx-config-change-max-colors' value %}"
+        hx-trigger="change"
+        hx-target="#preview-container"
+        hx-indicator=".preview-spinner"
+      >
+      <label for="color_{{ value }}"
+        {% if value|stringformat:'s' == suggested_colors|stringformat:'s' %}
+          class="recommended" title="{% trans 'Recommandé pour cette image' %}"
+        {% endif %}
+      >{{ value }}{% if value|stringformat:'s' == suggested_colors|stringformat:'s' %} <i class="bi bi-star-fill" style="font-size:.65em;vertical-align:super;color:var(--bs-warning)"></i>{% endif %}</label>
+    {% endfor %}
+  </div>
+  {% if suggested_colors %}
+    <small class="d-block text-muted mt-1" style="font-size:.75rem;">
+      <i class="bi bi-lightbulb me-1"></i>{% trans "Recommandé" %}: <strong>{{ suggested_colors }}</strong> {% trans "couleurs détectées dans l'image" %}
+    </small>
+  {% endif %}
+</div>

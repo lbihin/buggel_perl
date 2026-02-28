@@ -40,6 +40,11 @@ urlpatterns = [
         htmx_views.change_max_colors_hx_view,
         name="hx-config-change-max-colors",
     ),
+    path(
+        "hx/toggle-colors/",
+        htmx_views.toggle_use_colors_hx_view,
+        name="hx-toggle-colors",
+    ),
 ]
 
 if settings.DEBUG:

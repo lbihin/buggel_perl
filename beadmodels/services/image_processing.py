@@ -239,7 +239,37 @@ def reduce_colors(
     image_array: np.ndarray,
     n_colors: int,
     user_colors: np.ndarray | None = None,
+    content_mask: np.ndarray | None = None,
 ) -> np.ndarray:
+    h, w = image_array.shape[:2]
+
+    # When a content mask is provided, only cluster content pixels so that
+    # background/padding pixels don't consume a user colour slot.
+    if content_mask is not None:
+        flat_mask = content_mask.reshape(-1)
+        all_pixels = image_array.reshape(-1, 3)
+        content_pixels = all_pixels[flat_mask]
+        if content_pixels.shape[0] == 0:
+            return image_array.copy()
+        n_colors = min(n_colors, content_pixels.shape[0])
+        kmeans = KMeans(n_clusters=n_colors, random_state=0, n_init="auto")
+        kmeans.fit(content_pixels)
+        centroids = kmeans.cluster_centers_.astype(int)
+
+        if user_colors is not None and len(user_colors):
+            centroids_lab = _rgb_to_lab(centroids.astype(np.uint8))
+            user_lab = _rgb_to_lab(user_colors.astype(np.uint8))
+            dists = _lab_distance(centroids_lab, user_lab)
+            for i in range(len(centroids)):
+                centroids[i] = user_colors[int(np.argmin(dists[i]))]
+
+        # Assign content pixels to their nearest centroid
+        labels = kmeans.predict(content_pixels)
+        result = image_array.copy().reshape(-1, 3)
+        result[flat_mask] = centroids[labels]
+        # Background pixels stay as-is (white padding)
+        return result.reshape(h, w, 3).astype("uint8")
+
     pixels = image_array.reshape(-1, 3)
     kmeans = KMeans(n_clusters=n_colors, random_state=0, n_init="auto")
     kmeans.fit(pixels)
@@ -711,12 +741,93 @@ def _load_image(image_path: str | None, image_base64: str | None) -> Image.Image
     return img.convert("RGB") if img.mode != "RGB" else img
 
 
+# ---------------------------------------------------------------------------
+# Edge-preserving downsample
+# ---------------------------------------------------------------------------
+
+
+def _edge_preserving_downsample(
+    img: Image.Image, target_w: int, target_h: int
+) -> np.ndarray:
+    """Downsample *img* to (*target_w*, *target_h*) while preserving edges
+    and colour saturation.
+
+    Standard interpolation (LANCZOS, bilinear) averages edge pixels with
+    their surroundings, causing thin contour lines to vanish and colours to
+    become muted — especially problematic for cartoon / line-art images.
+
+    This function:
+
+    1. Boosts colour saturation (+30 %) for vibrancy.
+    2. Detects edges at full resolution (Canny).
+    3. For each target grid cell, if a *dark* edge pixel exists that is
+       significantly darker than the cell average it is kept, preserving
+       the contour.  Otherwise the cell uses the median colour (more robust
+       than mean against colour bleeding).
+    """
+    src = np.array(img)
+    h, w = src.shape[:2]
+
+    # If the source is already close to the target, standard resize is fine
+    if h <= target_h * 2 and w <= target_w * 2:
+        resized = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        return np.array(resized)
+
+    # 1. Saturation boost for colour vibrancy
+    hsv = cv2.cvtColor(src, cv2.COLOR_RGB2HSV).astype(np.float32)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.3, 0, 255)
+    enhanced = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+
+    # 2. Edge detection at full resolution
+    gray = cv2.cvtColor(enhanced, cv2.COLOR_RGB2GRAY)
+    edges = cv2.Canny(gray, 60, 150)
+
+    # 3. Block-based downsampling with edge awareness
+    result = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+
+    for ty in range(target_h):
+        y0 = ty * h // target_h
+        y1 = max(y0 + 1, (ty + 1) * h // target_h)
+        for tx in range(target_w):
+            x0 = tx * w // target_w
+            x1 = max(x0 + 1, (tx + 1) * w // target_w)
+
+            block = enhanced[y0:y1, x0:x1]
+            flat = block.reshape(-1, 3)
+            edge_mask = edges[y0:y1, x0:x1] > 0
+            n_edge = edge_mask.sum()
+            n_total = flat.shape[0]
+
+            if n_edge > 0 and n_edge < n_total * 0.7:
+                # Cell has some edge pixels — check for dark contour lines
+                edge_pixels = block[edge_mask]
+                block_mean_lum = float(np.mean(flat.astype(np.float64).sum(axis=1)))
+                lum_per_edge = edge_pixels.astype(np.int32).sum(axis=1)
+                darkest_idx = int(np.argmin(lum_per_edge))
+                darkest_lum = float(lum_per_edge[darkest_idx])
+
+                # Use contour colour if ≥ 30 % darker than block average
+                if (
+                    block_mean_lum > 0
+                    and (block_mean_lum - darkest_lum) > block_mean_lum * 0.3
+                ):
+                    result[ty, tx] = edge_pixels[darkest_idx]
+                else:
+                    result[ty, tx] = np.median(flat, axis=0).astype(np.uint8)
+            else:
+                # No significant edges — use median colour
+                result[ty, tx] = np.median(flat, axis=0).astype(np.uint8)
+
+    return result
+
+
 def _resize_for_circle(img: Image.Image, spec: ShapeSpec):
     ow, oh = img.size
     scale = spec.circle_diameter / min(ow, oh)
     nw, nh = int(ow * scale), int(oh * scale)
     grid_img = Image.new("RGB", (spec.grid_width, spec.grid_height), (255, 255, 255))
-    img_resized = img.resize((nw, nh), Image.Resampling.LANCZOS)
+    resized_array = _edge_preserving_downsample(img, nw, nh)
+    img_resized = Image.fromarray(resized_array)
     ox, oy = (spec.grid_width - nw) // 2, (spec.grid_height - nh) // 2
     grid_img.paste(img_resized, (ox, oy))
 
@@ -740,7 +851,8 @@ def _resize_for_rect(img: Image.Image, spec: ShapeSpec):
     ox, oy = (spec.grid_width - tw) // 2, (spec.grid_height - th) // 2
 
     grid_img = Image.new("RGB", (spec.grid_width, spec.grid_height), (255, 255, 255))
-    grid_img.paste(img.resize((tw, th), Image.Resampling.LANCZOS), (ox, oy))
+    resized_array = _edge_preserving_downsample(img, tw, th)
+    grid_img.paste(Image.fromarray(resized_array), (ox, oy))
 
     mask = np.zeros((spec.grid_height, spec.grid_width), dtype=bool)
     mask[oy : oy + th, ox : ox + tw] = True
@@ -825,42 +937,7 @@ def generate_preview(
     spec = resolve_shape_spec(shape_id)
     user_colors = user_bead_colors if use_available_colors else None
 
-    # ── Concentric path (circle boards) ──────────────────────────
-    if spec.use_circle_mask and spec.circle_diameter:
-        layout = _build_concentric_layout(spec.circle_diameter)
-
-        # Resize image to fill the circle bounding box
-        target_px = max(spec.circle_diameter * 4, 200)  # higher res for sampling
-        img_resized = img.resize((target_px, target_px), Image.Resampling.LANCZOS)
-        img_array = np.array(img_resized)
-
-        # Sample colors at concentric positions
-        colors = _sample_concentric_colors(img_array, layout)
-
-        # Color reduction
-        colors_2d = colors.reshape(1, -1, 3)
-        reduced = reduce_colors(colors_2d, color_reduction, user_colors)
-        reduced_colors = reduced.reshape(-1, 3)
-
-        # Spatial coherence
-        reduced_colors = _cleanup_concentric_components(
-            reduced_colors, layout, min_component_size=3
-        )
-
-        # Draw concentric grid
-        bead_img = _draw_concentric_grid(reduced_colors, layout)
-
-        buf = io.BytesIO()
-        bead_img.save(buf, format="PNG")
-        buf.seek(0)
-        b64 = base64.b64encode(buf.read()).decode("utf-8")
-
-        return PreviewResult(
-            image_base64=b64,
-            concentric_colors=reduced_colors,
-        )
-
-    # ── Grid path (rectangle / square boards) ───────────────────
+    # ── Grid path (all board types including circles) ───────────
     if spec.use_circle_mask:
         grid_img, content_mask = _resize_for_circle(img, spec)
     else:
@@ -874,7 +951,9 @@ def generate_preview(
     )
     img_array = np.array(grid_img)
 
-    reduced_pixels = reduce_colors(img_array, color_reduction, user_colors)
+    reduced_pixels = reduce_colors(
+        img_array, color_reduction, user_colors, content_mask=content_mask
+    )
 
     reduced_pixels = cleanup_small_components(
         reduced_pixels, min_component_size=3, content_mask=content_mask
@@ -911,22 +990,17 @@ def generate_model(
     )
     spec = resolve_shape_spec(shape_id)
 
-    # ── Concentric circle bead count ────────────────────────────
-    if spec.use_circle_mask and spec.circle_diameter:
-        layout = _build_concentric_layout(spec.circle_diameter)
-        total_beads = layout.total_pegs
-        palette = compute_palette(
-            total_beads=total_beads,
-            concentric_colors=preview.concentric_colors,
-            concentric_layout=layout,
-        )
+    # Compute total beads from content mask (correct for circles)
+    if preview.content_mask is not None:
+        total_beads = int(preview.content_mask.sum())
     else:
         total_beads = spec.grid_width * spec.grid_height
-        palette = compute_palette(
-            reduced_pixels=preview.reduced_pixels,
-            total_beads=total_beads,
-            content_mask=preview.content_mask,
-        )
+
+    palette = compute_palette(
+        reduced_pixels=preview.reduced_pixels,
+        total_beads=total_beads,
+        content_mask=preview.content_mask,
+    )
 
     # Compute useful beads (total minus background)
     bg_beads = sum(c["count"] for c in palette if c.get("is_background"))

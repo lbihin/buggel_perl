@@ -226,6 +226,12 @@ class ConfigureModel(WizardStep):
 
         suggested_colors = wizard_data.get("suggested_colors", 16)
         suggestions = wizard_data.get("suggestions", {})
+
+        # Use the full analysis suggestion if available (more accurate than
+        # the lightweight suggest_color_count used in step 1).
+        if suggestions.get("suggested_colors"):
+            suggested_colors = suggestions["suggested_colors"]
+
         initial_data = {
             "color_reduction": wizard_data.get("color_reduction", suggested_colors),
             "use_available_colors": wizard_data.get("use_available_colors", False),
@@ -323,36 +329,6 @@ class ConfigureModel(WizardStep):
         direction = request.POST.get("q")
         if direction == "previous":
             return self.wizard.go_to_previous_step()
-
-        # ---------- HTMX live-preview (checkbox "use_available_colors") ----------
-        if getattr(request, "htmx", False) and direction != "next":
-            # This HTMX path is only reached by the checkbox toggle
-            # (shape/color radios use dedicated endpoints).
-            # An unchecked checkbox is simply absent from POST → False.
-            shape_id = request.POST.get("shape_id") or wizard_data.get("shape_id", "")
-            color_reduction = _safe_int(
-                request.POST.get("color_reduction"),
-                _safe_int(wizard_data.get("color_reduction"), 16),
-            )
-            use_available = request.POST.get("use_available_colors") == "on"
-
-            self.wizard.update_session_data(
-                {
-                    "shape_id": shape_id,
-                    "color_reduction": color_reduction,
-                    "use_available_colors": use_available,
-                }
-            )
-
-            preview_kwargs = _build_preview_kwargs(
-                self.wizard.get_session_data(), request.user
-            )
-            preview_result = generate_preview(**preview_kwargs)
-            html = render_to_string(
-                "beadmodels/wizard/partials/preview.html",
-                {"preview_image_base64": preview_result.image_base64},
-            )
-            return HttpResponse(html)
 
         # ---------- Générer le modèle final → étape 3 ----------
         if direction == "next" or "generate" in request.POST:
@@ -465,7 +441,7 @@ class SaveModel(WizardStep):
 
         form = BeadModelFinalizeForm(
             initial={
-                "name": default_name,
+                "name": "",
                 "is_public": False,
                 "board": default_board.pk if default_board else None,
             },

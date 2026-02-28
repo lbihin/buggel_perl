@@ -119,12 +119,27 @@
                 {{ form.name.errors }}
               </div>
 
-              <div class="form-check mb-3">
-                {{ form.is_public }}
-                <label for="{{ form.is_public.id_for_label }}" class="form-check-label">
-                  {{ form.is_public.label }}
-                </label>
-                <small class="d-block form-text text-muted">{% trans "Rendre visible aux autres utilisateurs" %}</small>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="{{ form.is_public.id_for_label }}"
+                    name="is_public"
+                    {% if form.is_public.value %}checked{% endif %}
+                  >
+                  <label class="form-check-label fw-medium" for="{{ form.is_public.id_for_label }}" id="visibility-label">
+                    {% if form.is_public.value %}{% trans "Public" %}{% else %}{% trans "Privé" %}{% endif %}
+                  </label>
+                </div>
+                <small class="d-block form-text text-muted" id="visibility-hint">
+                  {% if form.is_public.value %}
+                    {% trans "Sera visible par les autres utilisateurs" %}
+                  {% else %}
+                    {% trans "Ne sera visible que par vous" %}
+                  {% endif %}
+                </small>
               </div>
 
               <details class="mb-3">
@@ -153,20 +168,20 @@
                   <i class="bi bi-save me-1"></i> {% trans "Enregistrer" %}
                 </button>
                 <div class="d-flex gap-2">
-                  <button type="submit" name="download" value="png" class="btn btn-outline-secondary flex-fill">
+                  <button type="submit" name="download" value="png" class="btn btn-outline-secondary flex-fill" formnovalidate>
                     <i class="bi bi-download me-1"></i> PNG
                   </button>
-                  <button type="submit" name="download" value="pdf" class="btn btn-outline-secondary flex-fill">
+                  <button type="submit" name="download" value="pdf" class="btn btn-outline-secondary flex-fill" formnovalidate>
                     <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                   </button>
                 </div>
               </div>
 
               <div class="wizard-nav" style="border-top:none;margin-top:1rem;padding-top:0;">
-                <button type="submit" name="previous_step" class="btn btn-outline-secondary">
+                <button type="submit" name="previous_step" class="btn btn-outline-secondary" formnovalidate>
                   <i class="bi bi-arrow-left me-1"></i> {% trans "Retour" %}
                 </button>
-                <button type="submit" name="download_instructions" class="btn btn-outline-secondary btn-sm">
+                <button type="submit" name="download_instructions" class="btn btn-outline-secondary btn-sm" formnovalidate>
                   <i class="bi bi-file-earmark-text me-1"></i> {% trans "Instructions" %}
                 </button>
               </div>
@@ -177,4 +192,25 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.getElementById('{{ form.is_public.id_for_label }}');
+  const label = document.getElementById('visibility-label');
+  const hint = document.getElementById('visibility-hint');
+  if (toggle && label && hint) {
+    toggle.addEventListener('change', function () {
+      if (this.checked) {
+        label.textContent = '{{ "Public"|escapejs }}';
+        hint.textContent = '{{ "Sera visible par les autres utilisateurs"|escapejs }}';
+      } else {
+        label.textContent = '{{ "Privé"|escapejs }}';
+        hint.textContent = '{{ "Ne sera visible que par vous"|escapejs }}';
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

@@ -96,6 +96,12 @@
       const removeBtn = document.getElementById('removeBtn')
       const submitBtn = document.getElementById('submitBtn')
 
+      // When returning from step 2 with existing image, remove browser
+      // "required" validation so the form can submit without a new file.
+      if (previewImg.src && previewArea.style.display !== 'none') {
+        fileInput.removeAttribute('required')
+      }
+
       browseLink.addEventListener('click', e => { e.stopPropagation(); fileInput.click() })
       dropZone.addEventListener('click', () => fileInput.click())
 

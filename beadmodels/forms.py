@@ -33,11 +33,8 @@ class ModelConfigurationForm(forms.Form):
         initial=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "form-check-input",
-                "hx-post": "",
-                "hx-trigger": "change",
-                "hx-target": "#preview-container",
-                "hx-include": "[name='shape_id']:checked, [name='color_reduction']:checked",
+                "class": "form-check-input visually-hidden",
+                "id": "use_available_colors",
             }
         ),
     )
