@@ -12,8 +12,11 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 
 from beadmodels.services.image_processing import generate_preview
-from beadmodels.views.wizard_views import (_build_preview_kwargs,
-                                           _fibonacci_color_values, _safe_int)
+from beadmodels.views.wizard_views import (
+    _build_preview_kwargs,
+    _fibonacci_color_values,
+    _safe_int,
+)
 from beads.models import Bead
 
 SESSION_KEY = "model_creation_wizard"

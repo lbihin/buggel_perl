@@ -23,11 +23,15 @@ from beads.models import Bead
 
 from ..forms import ImageUploadForm, ModelConfigurationForm
 from ..models import BeadBoard
-from ..services.image_processing import (ModelResult,
-                                         analyze_image_suggestions,
-                                         file_to_base64, generate_model,
-                                         generate_preview, save_temp_image,
-                                         suggest_color_count)
+from ..services.image_processing import (
+    ModelResult,
+    analyze_image_suggestions,
+    file_to_base64,
+    generate_model,
+    generate_preview,
+    save_temp_image,
+    suggest_color_count,
+)
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
 logger = logging.getLogger(__name__)

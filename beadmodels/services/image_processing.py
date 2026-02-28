@@ -742,81 +742,97 @@ def _load_image(image_path: str | None, image_base64: str | None) -> Image.Image
 
 
 # ---------------------------------------------------------------------------
-# Edge-preserving downsample
+# Saturation boost (keeps colors vivid after aggressive downsampling)
 # ---------------------------------------------------------------------------
 
 
-def _edge_preserving_downsample(
-    img: Image.Image, target_w: int, target_h: int
+def _boost_saturation(img: Image.Image, factor: float = 1.2) -> Image.Image:
+    """Boost colour saturation by *factor* to counteract muting during resize."""
+    from PIL import ImageEnhance
+
+    return ImageEnhance.Color(img).enhance(factor)
+
+
+# ---------------------------------------------------------------------------
+# Subject / background detection
+# ---------------------------------------------------------------------------
+
+
+def _detect_subject_mask(
+    img_array: np.ndarray, padding_mask: np.ndarray | None = None
 ) -> np.ndarray:
-    """Downsample *img* to (*target_w*, *target_h*) while preserving edges
-    and colour saturation.
+    """Detect subject vs white background using connected-component analysis.
 
-    Standard interpolation (LANCZOS, bilinear) averages edge pixels with
-    their surroundings, causing thin contour lines to vanish and colours to
-    become muted — especially problematic for cartoon / line-art images.
+    Strategy:
+    - Any near-white pixel (brightness > threshold) that is connected to the
+      image border is considered *background*.
+    - Interior white regions (eyes, teeth, etc.) that are NOT connected to the
+      border remain as *subject*, preserving internal detail.
 
-    This function:
-
-    1. Boosts colour saturation (+30 %) for vibrancy.
-    2. Detects edges at full resolution (Canny).
-    3. For each target grid cell, if a *dark* edge pixel exists that is
-       significantly darker than the cell average it is kept, preserving
-       the contour.  Otherwise the cell uses the median colour (more robust
-       than mean against colour bleeding).
+    Returns a boolean mask: True = subject pixel, False = background.
+    When the image has no white border (e.g. a photo), the mask is all-True.
     """
-    src = np.array(img)
-    h, w = src.shape[:2]
+    h, w = img_array.shape[:2]
+    gray = np.mean(img_array.astype(np.float64), axis=2)
 
-    # If the source is already close to the target, standard resize is fine
-    if h <= target_h * 2 and w <= target_w * 2:
-        resized = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-        return np.array(resized)
+    WHITE_THRESHOLD = 235
+    is_white = gray >= WHITE_THRESHOLD
 
-    # 1. Saturation boost for colour vibrancy
-    hsv = cv2.cvtColor(src, cv2.COLOR_RGB2HSV).astype(np.float32)
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.3, 0, 255)
-    enhanced = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+    # Label connected white regions
+    labeled, n_components = ndimage.label(is_white)
 
-    # 2. Edge detection at full resolution
-    gray = cv2.cvtColor(enhanced, cv2.COLOR_RGB2GRAY)
-    edges = cv2.Canny(gray, 60, 150)
+    # Find which components touch the image border
+    border_labels: set[int] = set()
+    border_labels.update(labeled[0, :].tolist())  # top row
+    border_labels.update(labeled[-1, :].tolist())  # bottom row
+    border_labels.update(labeled[:, 0].tolist())  # left col
+    border_labels.update(labeled[:, -1].tolist())  # right col
+    border_labels.discard(0)  # 0 = not a component
 
-    # 3. Block-based downsampling with edge awareness
-    result = np.zeros((target_h, target_w, 3), dtype=np.uint8)
+    # Background = any white region touching the border
+    background = np.zeros((h, w), dtype=bool)
+    for lbl in border_labels:
+        background[labeled == lbl] = True
 
-    for ty in range(target_h):
-        y0 = ty * h // target_h
-        y1 = max(y0 + 1, (ty + 1) * h // target_h)
-        for tx in range(target_w):
-            x0 = tx * w // target_w
-            x1 = max(x0 + 1, (tx + 1) * w // target_w)
+    subject = ~background
 
-            block = enhanced[y0:y1, x0:x1]
-            flat = block.reshape(-1, 3)
-            edge_mask = edges[y0:y1, x0:x1] > 0
-            n_edge = edge_mask.sum()
-            n_total = flat.shape[0]
+    # Intersect with padding mask (if image was placed inside a larger grid)
+    if padding_mask is not None:
+        subject &= padding_mask
 
-            if n_edge > 0 and n_edge < n_total * 0.7:
-                # Cell has some edge pixels — check for dark contour lines
-                edge_pixels = block[edge_mask]
-                block_mean_lum = float(np.mean(flat.astype(np.float64).sum(axis=1)))
-                lum_per_edge = edge_pixels.astype(np.int32).sum(axis=1)
-                darkest_idx = int(np.argmin(lum_per_edge))
-                darkest_lum = float(lum_per_edge[darkest_idx])
+    return subject
 
-                # Use contour colour if ≥ 30 % darker than block average
-                if (
-                    block_mean_lum > 0
-                    and (block_mean_lum - darkest_lum) > block_mean_lum * 0.3
-                ):
-                    result[ty, tx] = edge_pixels[darkest_idx]
-                else:
-                    result[ty, tx] = np.median(flat, axis=0).astype(np.uint8)
-            else:
-                # No significant edges — use median colour
-                result[ty, tx] = np.median(flat, axis=0).astype(np.uint8)
+
+def _add_boundary_contour(
+    reduced_pixels: np.ndarray,
+    subject_mask: np.ndarray,
+) -> np.ndarray:
+    """Add a thin black contour at the subject-background boundary.
+
+    Only replaces *light* boundary pixels (brightness > threshold) with
+    black.  Dark or coloured boundary pixels already provide a natural
+    visual separation and are left untouched.
+
+    This prevents white subject areas from visually merging with the white
+    background while keeping the overall look clean (no oppressive black).
+    """
+    result = reduced_pixels.copy()
+    h, w = result.shape[:2]
+
+    # Dilate the background into the subject by 1 pixel to find border
+    bg_mask = ~subject_mask
+    dilated_bg = ndimage.binary_dilation(bg_mask)
+    boundary = dilated_bg & subject_mask  # subject pixels adjacent to bg
+
+    LIGHT_THRESHOLD = 180  # per-channel average
+    for y in range(h):
+        for x in range(w):
+            if not boundary[y, x]:
+                continue
+            pixel = result[y, x]
+            avg_brightness = (int(pixel[0]) + int(pixel[1]) + int(pixel[2])) / 3.0
+            if avg_brightness > LIGHT_THRESHOLD:
+                result[y, x] = [0, 0, 0]
 
     return result
 
@@ -826,8 +842,7 @@ def _resize_for_circle(img: Image.Image, spec: ShapeSpec):
     scale = spec.circle_diameter / min(ow, oh)
     nw, nh = int(ow * scale), int(oh * scale)
     grid_img = Image.new("RGB", (spec.grid_width, spec.grid_height), (255, 255, 255))
-    resized_array = _edge_preserving_downsample(img, nw, nh)
-    img_resized = Image.fromarray(resized_array)
+    img_resized = img.resize((nw, nh), Image.Resampling.LANCZOS)
     ox, oy = (spec.grid_width - nw) // 2, (spec.grid_height - nh) // 2
     grid_img.paste(img_resized, (ox, oy))
 
@@ -851,8 +866,7 @@ def _resize_for_rect(img: Image.Image, spec: ShapeSpec):
     ox, oy = (spec.grid_width - tw) // 2, (spec.grid_height - th) // 2
 
     grid_img = Image.new("RGB", (spec.grid_width, spec.grid_height), (255, 255, 255))
-    resized_array = _edge_preserving_downsample(img, tw, th)
-    grid_img.paste(Image.fromarray(resized_array), (ox, oy))
+    grid_img.paste(img.resize((tw, th), Image.Resampling.LANCZOS), (ox, oy))
 
     mask = np.zeros((spec.grid_height, spec.grid_width), dtype=bool)
     mask[oy : oy + th, ox : ox + tw] = True
@@ -871,7 +885,10 @@ def _apply_circle_mask(grid_img: Image.Image, spec: ShapeSpec) -> Image.Image:
 
 
 def _draw_bead_grid(
-    reduced_pixels: np.ndarray, spec: ShapeSpec, cell_size: int = 10
+    reduced_pixels: np.ndarray,
+    spec: ShapeSpec,
+    cell_size: int = 10,
+    content_mask: np.ndarray | None = None,
 ) -> Image.Image:
     gh, gw = spec.grid_height, spec.grid_width
     canvas = np.full((gh * cell_size, gw * cell_size, 3), 255, dtype=np.uint8)
@@ -892,6 +909,9 @@ def _draw_bead_grid(
             if spec.use_circle_mask:
                 if (x - cx) ** 2 + (y - cy) ** 2 > r**2:
                     continue
+            # Skip background pixels — leave as empty peg space
+            if content_mask is not None and not content_mask[y, x]:
+                continue
             color = reduced_pixels[y, x]
             y0, x0 = y * cell_size, x * cell_size
             # border
@@ -937,11 +957,14 @@ def generate_preview(
     spec = resolve_shape_spec(shape_id)
     user_colors = user_bead_colors if use_available_colors else None
 
+    # Mild saturation boost to keep colours vivid after downsampling
+    img = _boost_saturation(img, factor=1.2)
+
     # ── Grid path (all board types including circles) ───────────
     if spec.use_circle_mask:
-        grid_img, content_mask = _resize_for_circle(img, spec)
+        grid_img, padding_mask = _resize_for_circle(img, spec)
     else:
-        grid_img, content_mask = _resize_for_rect(img, spec)
+        grid_img, padding_mask = _resize_for_rect(img, spec)
 
     if spec.use_circle_mask:
         grid_img = _apply_circle_mask(grid_img, spec)
@@ -951,15 +974,29 @@ def generate_preview(
     )
     img_array = np.array(grid_img)
 
+    # Detect subject vs white background (flood-fill from edges)
+    subject_mask = _detect_subject_mask(img_array, padding_mask=padding_mask)
+
+    # Use subject mask when meaningful background was found (> 5 % of area);
+    # otherwise fall back to the plain padding mask.
+    if subject_mask.sum() > 0 and subject_mask.sum() < padding_mask.sum() * 0.95:
+        content_mask = subject_mask
+    else:
+        content_mask = padding_mask
+
     reduced_pixels = reduce_colors(
         img_array, color_reduction, user_colors, content_mask=content_mask
     )
+
+    # Add black contour at subject–background transitions where the pixel
+    # would otherwise be white/light (prevents shape from merging with bg).
+    reduced_pixels = _add_boundary_contour(reduced_pixels, content_mask)
 
     reduced_pixels = cleanup_small_components(
         reduced_pixels, min_component_size=3, content_mask=content_mask
     )
 
-    bead_img = _draw_bead_grid(reduced_pixels, spec)
+    bead_img = _draw_bead_grid(reduced_pixels, spec, content_mask=content_mask)
 
     buf = io.BytesIO()
     bead_img.save(buf, format="PNG")
