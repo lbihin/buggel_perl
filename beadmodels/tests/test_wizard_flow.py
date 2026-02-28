@@ -36,6 +36,7 @@ def test_wizard_previous_button_from_step2(client):
     assert resp.status_code in (200, 302)
 
     # After following redirect, should be on step 1
-    resp2 = client.get(url)
+    # Use ?w=1 to mimick internal wizard navigation (bare GET resets)
+    resp2 = client.get(url + "?w=1")
     assert resp2.status_code == 200
     assert client.session.get("model_creation_wizard_step") == 1

@@ -50,7 +50,7 @@
           {% endif %}
 
           {# Drop zone #}
-          <div class="drop-zone" id="dropZone">
+          <div class="drop-zone" id="dropZone" {% if existing_image_base64 %}style="display:none;"{% endif %}>
             <div class="drop-zone-icon">
               <i class="bi bi-cloud-arrow-up"></i>
             </div>
@@ -67,9 +67,9 @@
           </div>
 
           {# Upload preview #}
-          <div class="text-center" id="previewArea" style="display:none;">
+          <div class="text-center" id="previewArea" style="{% if not existing_image_base64 %}display:none;{% endif %}">
             <div class="upload-preview">
-              <img id="previewImg" src="" alt="{% trans 'Aperçu' %}" />
+              <img id="previewImg" src="{% if existing_image_base64 %}data:image/png;base64,{{ existing_image_base64 }}{% endif %}" alt="{% trans 'Aperçu' %}" />
               <button type="button" class="remove-btn" id="removeBtn" title="{% trans "Retirer l'image" %}"><i class="bi bi-x"></i></button>
             </div>
           </div>
@@ -77,7 +77,7 @@
           {# Navigation #}
           <div class="wizard-nav">
             <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg me-1"></i> {% trans 'Annuler' %}</a>
-            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>{% trans 'Suivant' %} <i class="bi bi-arrow-right ms-1"></i></button>
+            <button type="submit" class="btn btn-primary" id="submitBtn" {% if not existing_image_base64 %}disabled{% endif %}>{% trans 'Suivant' %} <i class="bi bi-arrow-right ms-1"></i></button>
           </div>
         </form>
       </div>

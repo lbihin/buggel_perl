@@ -377,7 +377,7 @@ class TestFinalizeStep:
         session["model_creation_wizard_step"] = 3
         session.save()
 
-        response = authenticated_client.get(url)
+        response = authenticated_client.get(url + "?w=1")
         assert response.status_code == 200
         content = response.content.decode()
         assert "Finalisation" in content
@@ -394,7 +394,7 @@ class TestFinalizeStep:
         session.save()
 
         response = authenticated_client.post(
-            url,
+            url + "?w=1",
             {
                 "name": "Modèle Finalisé",
                 "description": "Via wizard",

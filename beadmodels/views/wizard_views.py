@@ -23,15 +23,11 @@ from beads.models import Bead
 
 from ..forms import ImageUploadForm, ModelConfigurationForm
 from ..models import BeadBoard
-from ..services.image_processing import (
-    ModelResult,
-    analyze_image_suggestions,
-    file_to_base64,
-    generate_model,
-    generate_preview,
-    save_temp_image,
-    suggest_color_count,
-)
+from ..services.image_processing import (ModelResult,
+                                         analyze_image_suggestions,
+                                         file_to_base64, generate_model,
+                                         generate_preview, save_temp_image,
+                                         suggest_color_count)
 from .wizard_helpers import LoginRequiredWizard, WizardStep
 
 logger = logging.getLogger(__name__)
@@ -55,6 +51,43 @@ def _safe_int(value, default: int = 16) -> int:
         return int(value) if value else default
     except (ValueError, TypeError):
         return default
+
+
+def _fibonacci_color_values(center: int, count: int = 7) -> list[int]:
+    """Generate a Fibonacci-like sequence of color values centered on *center*.
+
+    Produces *count* values spread around *center* using Fibonacci gaps so that
+    values near the suggestion are close together and values further away are
+    more spread out.  All values are clamped to [2, 64].
+
+    Example with center=7, count=7 → [3, 5, 6, 7, 8, 9, 11]
+    """
+    # Fibonacci-like gaps: 1, 1, 2, 3, 5, 8, 13, …
+    fibs = [1, 1, 2, 3, 5, 8, 13]
+
+    half = count // 2
+    values = [center]
+
+    # Expand outward from center using Fibonacci gaps
+    for i in range(half):
+        gap = fibs[i] if i < len(fibs) else fibs[-1]
+        lower = center - sum(fibs[: i + 1])
+        upper = center + sum(fibs[: i + 1])
+        values.append(lower)
+        values.append(upper)
+
+    # Clamp, deduplicate, sort, keep only valid values
+    values = sorted({max(2, min(64, v)) for v in values})
+
+    # If we still have more than count, trim from the edges
+    while len(values) > count:
+        # Remove the value furthest from center
+        if abs(values[0] - center) >= abs(values[-1] - center):
+            values.pop(0)
+        else:
+            values.pop()
+
+    return values
 
 
 def _build_preview_kwargs(wizard_data: dict, user) -> dict:
@@ -111,12 +144,34 @@ class UploadImage(WizardStep):
 
     def handle_get(self, **kwargs):
         form = self.form_class()
+        # If returning from step 2, show the previously uploaded image
+        wizard_data = self.wizard.get_session_data()
+        image_data = wizard_data.get("image_data", {})
+        existing_image_base64 = ""
+        if image_data.get("image_path"):
+            try:
+                existing_image_base64 = file_to_base64(image_data["image_path"])
+            except Exception:
+                pass
+
         return self.render_template(
-            {"form": form, "wizard_step": self.position, "total_steps": 3}
+            {
+                "form": form,
+                "wizard_step": self.position,
+                "total_steps": 3,
+                "existing_image_base64": existing_image_base64,
+            }
         )
 
     def handle_post(self, **kwargs):
         form = self.form_class(self.wizard.request.POST, self.wizard.request.FILES)
+
+        # If no new file uploaded but session already has an image, skip re-upload
+        if not self.wizard.request.FILES.get("image"):
+            wizard_data = self.wizard.get_session_data()
+            if wizard_data.get("image_data", {}).get("image_path"):
+                return self.wizard.go_to_next_step()
+
         if form.is_valid():
             image = form.cleaned_data["image"]
             stored_path = save_temp_image(image)
@@ -182,12 +237,15 @@ class ConfigureModel(WizardStep):
         ).order_by("name")
 
         selected_shape_id = wizard_data.get("shape_id")
+        recommended_shape_id = None
         if not selected_shape_id:
             # Try to match the AI suggestion to an existing shape
             suggested_shape = suggestions.get("suggested_shape", "")
             matched = None
             if suggested_shape:
                 matched = usr_shapes.filter(shape_type=suggested_shape).first()
+            if matched:
+                recommended_shape_id = matched.pk
             if not matched:
                 matched = (
                     usr_shapes.filter(is_default=True).first() or usr_shapes.first()
@@ -195,8 +253,25 @@ class ConfigureModel(WizardStep):
             if matched:
                 selected_shape_id = matched.pk
                 self.wizard.update_session_data({"shape_id": selected_shape_id})
+        else:
+            # Even when shape_id is already set, find the recommended one for the star
+            suggested_shape = suggestions.get("suggested_shape", "")
+            if suggested_shape:
+                rec = usr_shapes.filter(shape_type=suggested_shape).first()
+                if rec:
+                    recommended_shape_id = rec.pk
 
-        color_values = [2, 4, 6, 8, 16, 24, 32]
+        color_values = _fibonacci_color_values(suggested_colors)
+
+        # Count how many distinct bead colours the user has
+        user_bead_count = Bead.objects.filter(creator=self.wizard.request.user).count()
+        use_available = wizard_data.get("use_available_colors", False)
+
+        # When "use my colours" is active, cap the colour choices
+        if use_available and user_bead_count:
+            color_values = [v for v in color_values if v <= user_bead_count]
+            if not color_values:
+                color_values = [user_bead_count]
 
         # Snap suggested_colors to the nearest available radio value
         suggested_snapped = min(color_values, key=lambda v: abs(v - suggested_colors))
@@ -228,10 +303,12 @@ class ConfigureModel(WizardStep):
             "preview_image_base64": preview_result.image_base64,
             "user_shapes": usr_shapes,
             "selected_shape_id": wizard_data.get("shape_id"),
+            "recommended_shape_id": recommended_shape_id,
             "color_values": color_values,
             "suggested_colors": suggested_snapped,
             "suggestions": suggestions,
             "suggestion_shape_label": suggestion_shape_label,
+            "user_bead_count": user_bead_count,
             "step_nr": self.position,
             "step_name": self.name,
             "total_steps": step_ctx.get("total_steps"),
@@ -561,13 +638,24 @@ class SaveModel(WizardStep):
         from PIL import Image
 
         image_b64 = final_model.get("image_base64", "")
+        # Reload from disk if base64 was stripped by _store_final_image
+        if not image_b64 and final_model.get("image_path"):
+            try:
+                image_b64 = file_to_base64(final_model["image_path"])
+            except Exception:
+                pass
         if not image_b64:
             return HttpResponse(_("Image introuvable."), status=404)
 
         img = Image.open(io.BytesIO(base64.b64decode(image_b64)))
         output = io.BytesIO()
 
-        if fmt.lower() in ("jpg", "jpeg"):
+        if fmt.lower() == "pdf":
+            # Convert to PDF using Pillow
+            rgb_img = img.convert("RGB") if img.mode == "RGBA" else img
+            rgb_img.save(output, format="PDF", resolution=150)
+            content_type, ext = "application/pdf", "pdf"
+        elif fmt.lower() in ("jpg", "jpeg"):
             if img.mode == "RGBA":
                 img = img.convert("RGB")
             img.save(output, format="JPEG", quality=90)
@@ -586,6 +674,11 @@ class SaveModel(WizardStep):
     def _generate_instructions(final_model: dict) -> HttpResponse:
         """Generate an HTML instructions download."""
         image_b64 = final_model.get("image_base64", "")
+        if not image_b64 and final_model.get("image_path"):
+            try:
+                image_b64 = file_to_base64(final_model["image_path"])
+            except Exception:
+                pass
         if not image_b64:
             return HttpResponse("Image introuvable.", status=404)
 
@@ -632,8 +725,22 @@ class ModelCreatorWizard(LoginRequiredWizard):
         return redirect("beadmodels:my_models")
 
     def dispatch(self, request, *args, **kwargs):
-        """Override dispatch to handle model_id → skip to step 2."""
+        """Override dispatch to handle model_id → skip to step 2.
+
+        On a fresh GET (no ``w`` or ``model_id`` query param), reset the wizard
+        so the user always starts at step 1 when navigating from the navbar.
+        Internal redirects via ``go_to_step`` include ``?w=1``.
+        """
         self.request = request
+
+        # Fresh GET without internal wizard marker → reset to step 1
+        if (
+            request.method == "GET"
+            and not request.GET.get("model_id")
+            and not request.GET.get("q")
+            and not request.GET.get("w")
+        ):
+            self.reset_wizard()
 
         model_id = request.GET.get("model_id")
         if model_id and request.method == "GET":

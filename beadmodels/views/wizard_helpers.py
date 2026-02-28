@@ -91,8 +91,11 @@ class BaseWizard(View):
 
         # Construire l'URL avec les paramètres
         url = reverse(self.get_url_name())
+        # Mark as internal wizard navigation so dispatch knows not to reset
+        params = {"w": "1"}
         if redirect_kwargs:
-            url += "?" + "&".join([f"{k}={v}" for k, v in redirect_kwargs.items()])
+            params.update(redirect_kwargs)
+        url += "?" + "&".join([f"{k}={v}" for k, v in params.items()])
 
         return redirect(url)
 

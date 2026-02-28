@@ -62,24 +62,6 @@
               </div>
             </div>
 
-            {# Bead economy #}
-            {% if fill_ratio and total_beads_raw %}
-              <div class="bead-economy mt-2 mb-3">
-                <i class="bi bi-pie-chart me-1"></i>
-                <span>
-                  {% trans "Économie" %}:
-                  <strong>{{ total_beads }}/{{ total_beads_raw }}</strong>
-                  {% trans "perles utilisées" %}
-                </span>
-                <div class="economy-bar">
-                  <div class="economy-fill" style="width:{% widthratio total_beads total_beads_raw 100 %}%"></div>
-                </div>
-                <small class="text-muted">
-                  {% widthratio total_beads total_beads_raw 100 %}% {% trans "de la plaque est utilisé" %}
-                </small>
-              </div>
-            {% endif %}
-
             {# Palette swatches #}
             {% if palette %}
               <div class="config-section-label">{% trans "Palette" %}</div>
@@ -137,12 +119,6 @@
                 {{ form.name.errors }}
               </div>
 
-              <div class="mb-3">
-                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
-                {{ form.description }}
-                {{ form.description.errors }}
-              </div>
-
               <div class="form-check mb-3">
                 {{ form.is_public }}
                 <label for="{{ form.is_public.id_for_label }}" class="form-check-label">
@@ -151,22 +127,39 @@
                 <small class="d-block form-text text-muted">{% trans "Rendre visible aux autres utilisateurs" %}</small>
               </div>
 
-              <div class="mb-3">
-                <label for="{{ form.tags.id_for_label }}" class="form-label">{{ form.tags.label }}</label>
-                {{ form.tags }}
-                {% if form.tags.help_text %}
-                  <small class="form-text text-muted">{{ form.tags.help_text }}</small>
-                {% endif %}
-                {{ form.tags.errors }}
-              </div>
+              <details class="mb-3">
+                <summary style="font-size:.82rem;color:#868e96;cursor:pointer;">
+                  <i class="bi bi-plus-circle me-1"></i>{% trans "Options avancées" %}
+                </summary>
+                <div class="mt-2">
+                  <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {{ form.description.errors }}
+                  </div>
+                  <div class="mb-3">
+                    <label for="{{ form.tags.id_for_label }}" class="form-label">{{ form.tags.label }}</label>
+                    {{ form.tags }}
+                    {% if form.tags.help_text %}
+                      <small class="form-text text-muted">{{ form.tags.help_text }}</small>
+                    {% endif %}
+                    {{ form.tags.errors }}
+                  </div>
+                </div>
+              </details>
 
               <div class="d-grid gap-2 mt-4">
                 <button type="submit" name="save" class="btn btn-primary">
                   <i class="bi bi-save me-1"></i> {% trans "Enregistrer" %}
                 </button>
-                <button type="submit" name="download" value="png" class="btn btn-outline-secondary">
-                  <i class="bi bi-download me-1"></i> {% trans "Télécharger PNG" %}
-                </button>
+                <div class="d-flex gap-2">
+                  <button type="submit" name="download" value="png" class="btn btn-outline-secondary flex-fill">
+                    <i class="bi bi-download me-1"></i> PNG
+                  </button>
+                  <button type="submit" name="download" value="pdf" class="btn btn-outline-secondary flex-fill">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                  </button>
+                </div>
               </div>
 
               <div class="wizard-nav" style="border-top:none;margin-top:1rem;padding-top:0;">
