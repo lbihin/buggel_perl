@@ -256,6 +256,12 @@ def reduce_colors(
         kmeans.fit(content_pixels)
         centroids = kmeans.cluster_centers_.astype(int)
 
+        # Snap near-black centroids to pure black so thin details
+        # (eyes, outlines) render crisply instead of muddy grey.
+        for i in range(len(centroids)):
+            if centroids[i].mean() < 50:
+                centroids[i] = [0, 0, 0]
+
         if user_colors is not None and len(user_colors):
             centroids_lab = _rgb_to_lab(centroids.astype(np.uint8))
             user_lab = _rgb_to_lab(user_colors.astype(np.uint8))
@@ -274,6 +280,11 @@ def reduce_colors(
     kmeans = KMeans(n_clusters=n_colors, random_state=0, n_init="auto")
     kmeans.fit(pixels)
     centroids = kmeans.cluster_centers_.astype(int)
+
+    # Snap near-black centroids to pure black
+    for i in range(len(centroids)):
+        if centroids[i].mean() < 50:
+            centroids[i] = [0, 0, 0]
 
     if user_colors is not None and len(user_colors):
         # Use CIELAB perceptual distance for color matching
@@ -338,6 +349,11 @@ def cleanup_small_components(
                 color_mask &= content_mask
 
             if not color_mask.any():
+                continue
+
+            # Preserve dark/black components regardless of size — they
+            # represent important fine details (eyes, outlines, nostrils).
+            if float(color.mean()) < 50:
                 continue
 
             labeled, n_components = ndimage.label(color_mask, structure=struct)
@@ -754,6 +770,26 @@ def _boost_saturation(img: Image.Image, factor: float = 1.2) -> Image.Image:
 
 
 # ---------------------------------------------------------------------------
+# Dark-pixel consolidation
+# ---------------------------------------------------------------------------
+
+
+def _consolidate_blacks(img_array: np.ndarray, threshold: int = 40) -> np.ndarray:
+    """Snap very dark pixels to pure black before colour quantisation.
+
+    Anti-aliased outlines produce dark-grey pixels that KMeans may merge
+    with neighbouring coloured clusters (e.g. dark-pink).  By collapsing
+    everything below *threshold* brightness to ``[0, 0, 0]`` we give
+    KMeans a clear, consolidated dark cluster.  This preserves thin
+    structural details such as eyes, nostrils and outlines.
+    """
+    result = img_array.copy()
+    brightness = np.mean(result.astype(np.float64), axis=2)
+    result[brightness < threshold] = [0, 0, 0]
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Subject / background detection
 # ---------------------------------------------------------------------------
 
@@ -984,6 +1020,10 @@ def generate_preview(
     else:
         content_mask = padding_mask
 
+    # Consolidate dark pixels to pure black before clustering so that
+    # anti-aliased outlines form a single clear KMeans cluster.
+    img_array = _consolidate_blacks(img_array)
+
     reduced_pixels = reduce_colors(
         img_array, color_reduction, user_colors, content_mask=content_mask
     )
@@ -1101,9 +1141,19 @@ def _compute_color_variance(img_array: np.ndarray) -> float:
     return min(1.0, var / 2000.0)
 
 
-def _extract_dominant_colors(img_array: np.ndarray, k: int = 5) -> list[str]:
-    """Return hex strings of the k dominant colours via KMeans."""
-    pixels = img_array.reshape(-1, 3).astype(np.float64)
+def _extract_dominant_colors(
+    img_array: np.ndarray, k: int = 5, mask: np.ndarray | None = None
+) -> list[str]:
+    """Return hex strings of the *k* dominant colours via KMeans.
+
+    When *mask* is provided, only pixels where ``mask`` is True are
+    considered (typically the subject area, excluding the white
+    background).  This avoids wasting a colour slot on background white.
+    """
+    if mask is not None:
+        pixels = img_array[mask].astype(np.float64)
+    else:
+        pixels = img_array.reshape(-1, 3).astype(np.float64)
     sample_size = min(1000, len(pixels))
     rng = np.random.RandomState(42)
     sample = pixels[rng.choice(len(pixels), sample_size, replace=False)]
@@ -1195,7 +1245,7 @@ def _compute_subject_circularity(gray: np.ndarray) -> float:
     return min(1.0, max(0.0, circularity))
 
 
-def _suggest_bead_colors(img_array: np.ndarray) -> int:
+def _suggest_bead_colors(img_array: np.ndarray, mask: np.ndarray | None = None) -> int:
     """Suggest optimal colour count for bead art.
 
     Bead art looks best with fewer, well-separated colours.  This
@@ -1204,9 +1254,16 @@ def _suggest_bead_colors(img_array: np.ndarray) -> int:
     - split two perceptually-close colours (ΔE < threshold), or
     - create a cluster too small to matter (< 3 % of pixels).
 
+    When *mask* is provided, only subject pixels are analysed
+    (background white is excluded).
+
     Returns an int in the range [2, 12].
     """
-    bgr = img_array[:, :, ::-1].astype(np.uint8)
+    if mask is not None:
+        rgb = img_array[mask].astype(np.uint8)  # (N, 3)
+        bgr = rgb[:, ::-1].reshape(1, -1, 3)
+    else:
+        bgr = img_array[:, :, ::-1].astype(np.uint8)
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
     pixels_lab = lab.reshape(-1, 3)
 
@@ -1375,8 +1432,16 @@ def analyze_image_suggestions(
     else:
         suggested_shape = "rectangle"
 
+    # ---- 2b) Subject mask for colour analysis ----
+    # Exclude white background so it doesn't consume a colour slot.
+    subject_mask_analysis = _detect_subject_mask(arr)
+    total_px = arr.shape[0] * arr.shape[1]
+    color_mask = (
+        subject_mask_analysis if subject_mask_analysis.sum() < total_px * 0.95 else None
+    )
+
     # ---- 3) Colour suggestion (biased toward simplicity) ----
-    suggested_colors = _suggest_bead_colors(arr)
+    suggested_colors = _suggest_bead_colors(arr, mask=color_mask)
 
     # ---- 4) Size suggestion (multi-scale recognisability) ----
     suggested_size = _suggest_optimal_size(arr, bounds)
@@ -1394,7 +1459,7 @@ def analyze_image_suggestions(
         fill_ratio = content_ratio
 
     # ---- 7) Dominant colours for visualisation ----
-    dominant = _extract_dominant_colors(arr, k=5)
+    dominant = _extract_dominant_colors(arr, k=5, mask=color_mask)
 
     return ImageSuggestion(
         suggested_shape=suggested_shape,
