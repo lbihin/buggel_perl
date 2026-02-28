@@ -13,7 +13,7 @@
             "django": true,
             "justMyCode": true,
             "envFile": "${workspaceFolder}/.env",
-            "python": "${workspaceFolder}/.venv/bin/python",
+            "python": "${command:python.interpreterPath}",
             "console": "integratedTerminal"
         },
     ]
