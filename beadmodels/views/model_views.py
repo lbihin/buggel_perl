@@ -77,7 +77,9 @@ class BeadModelUpdateView(LoginRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         model = self.get_object()
         if model.creator != request.user:
-            messages.error(request, _("Vous n'avez pas le droit de modifier ce modèle."))
+            messages.error(
+                request, _("Vous n'avez pas le droit de modifier ce modèle.")
+            )
             return redirect("beadmodels:details", pk=model.pk)
         return super().dispatch(request, *args, **kwargs)
 
@@ -98,7 +100,9 @@ class BeadModelDeleteView(LoginRequiredMixin, DeleteView):
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
         if obj.creator != request.user:
-            messages.error(request, _("Vous n'avez pas le droit de supprimer ce modèle."))
+            messages.error(
+                request, _("Vous n'avez pas le droit de supprimer ce modèle.")
+            )
             return redirect("beadmodels:details", pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)
 

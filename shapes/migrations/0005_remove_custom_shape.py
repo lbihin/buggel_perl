@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("shapes", "0004_beadshape_shapes_bead_creator_8a603e_idx_and_more"),
     ]

@@ -1,15 +1,15 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
+
 
 class UserSettingsQuerySet(models.QuerySet):
     def for_user(self, user):
         """
         Returns the settings for a specific user.
-        
+
         Args:
             user: A User instance or user ID
-        
+
         Returns:
             The UserSettings instance for the specified user
         """
@@ -20,16 +20,14 @@ class UserSettingsQuerySet(models.QuerySet):
 class UserSettingsManager(models.Manager):
     def get_queryset(self):
         return UserSettingsQuerySet(self.model, using=self._db)
-        
+
     def for_user(self, user):
         return self.get_queryset().for_user(user)
 
 
 class UserSettings(models.Model):
     user = models.OneToOneField("auth.User", on_delete=models.CASCADE)
-    set_public = models.BooleanField(
-        default=False, verbose_name=_("Public par défaut")
-    )
+    set_public = models.BooleanField(default=False, verbose_name=_("Public par défaut"))
 
     objects = UserSettingsManager()
 

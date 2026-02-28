@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beadmodels", "0005_beadmodel_metadata"),
     ]

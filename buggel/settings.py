@@ -145,8 +145,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
     # BASE_DIR / "buggel/static",  # Include the buggel/static directory
-    BASE_DIR
-    / "static",  # Include the beadmodels/static directory
+    BASE_DIR / "static",  # Include the beadmodels/static directory
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"

@@ -24,6 +24,7 @@ matplotlib = "^3.10.1"
 pytest-django = "^4.11.1"
 pytest-xdist = "^3.6.1"
 black = "^25.1.0"
+ruff = ">=0.6,<1.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -31,3 +32,23 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "buggel.settings"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [
+	".git",
+	".venv",
+	"__pycache__",
+	"media",
+	"notebooks",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E402", "E501", "F841", "W293"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

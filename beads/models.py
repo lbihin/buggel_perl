@@ -2,20 +2,22 @@ from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
 
 
 class Bead(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="beads")
     name = models.CharField(max_length=100, verbose_name=_("Nom"))
     red = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(255)], verbose_name=_("Rouge")
+        validators=[MinValueValidator(0), MaxValueValidator(255)],
+        verbose_name=_("Rouge"),
     )
     green = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(255)], verbose_name=_("Vert")
+        validators=[MinValueValidator(0), MaxValueValidator(255)],
+        verbose_name=_("Vert"),
     )
     blue = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(255)], verbose_name=_("Bleu")
+        validators=[MinValueValidator(0), MaxValueValidator(255)],
+        verbose_name=_("Bleu"),
     )
     quantity = models.PositiveIntegerField(
         null=True, blank=True, verbose_name=_("Quantité")

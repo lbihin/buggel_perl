@@ -4,22 +4,36 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('beadmodels', '0003_remove_customshape_base_shape_and_more'),
+        ("beadmodels", "0003_remove_customshape_base_shape_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AppPreference',
+            name="AppPreference",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('bead_low_quantity_threshold', models.PositiveIntegerField(default=20, help_text='Quantité minimale de perles en dessous de laquelle une alerte sera affichée', verbose_name="Seuil d'alerte pour les perles en faible quantité")),
-                ('is_active', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "bead_low_quantity_threshold",
+                    models.PositiveIntegerField(
+                        default=20,
+                        help_text="Quantité minimale de perles en dessous de laquelle une alerte sera affichée",
+                        verbose_name="Seuil d'alerte pour les perles en faible quantité",
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
             ],
             options={
-                'verbose_name': "Préférence de l'application",
-                'verbose_name_plural': "Préférences de l'application",
+                "verbose_name": "Préférence de l'application",
+                "verbose_name_plural": "Préférences de l'application",
             },
         ),
     ]

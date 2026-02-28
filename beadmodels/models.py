@@ -1,13 +1,14 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
 
 
 class BeadModel(models.Model):
     name = models.CharField(max_length=200, verbose_name=_("Nom"))
     description = models.TextField(blank=True, verbose_name=_("Description"))
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_("Créateur"))
+    creator = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name=_("Créateur")
+    )
     created_at = models.DateTimeField(
         auto_now_add=True, verbose_name=_("Date de création")
     )
@@ -44,9 +45,6 @@ class BeadModel(models.Model):
         ordering = ["-created_at"]
 
 
-
-
-
 class BeadBoard(models.Model):
     name = models.CharField(max_length=100, verbose_name=_("Nom"))
     width_pegs = models.IntegerField(verbose_name=_("Nombre de picots en largeur"))
@@ -67,7 +65,9 @@ class AppPreference(models.Model):
     bead_low_quantity_threshold = models.PositiveIntegerField(
         default=20,
         verbose_name=_("Seuil d'alerte pour les perles en faible quantité"),
-        help_text=_("Quantité minimale de perles en dessous de laquelle une alerte sera affichée"),
+        help_text=_(
+            "Quantité minimale de perles en dessous de laquelle une alerte sera affichée"
+        ),
     )
 
     # Champ pour limiter à une seule instance

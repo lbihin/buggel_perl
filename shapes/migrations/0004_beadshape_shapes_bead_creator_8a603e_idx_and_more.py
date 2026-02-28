@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("shapes", "0003_beadshape_is_default_beadshape_is_shared"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

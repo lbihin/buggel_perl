@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("shapes", "0002_remove_beadshape_is_default_and_more"),
     ]

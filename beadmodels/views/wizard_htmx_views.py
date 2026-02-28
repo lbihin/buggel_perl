@@ -8,8 +8,8 @@ et renvoient le fragment HTML du preview-container.
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
-from django.utils.translation import gettext as _
 from django.template.loader import render_to_string
+from django.utils.translation import gettext as _
 
 from beadmodels.services.image_processing import generate_preview
 from beadmodels.views.wizard_views import _build_preview_kwargs
