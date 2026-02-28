@@ -1028,9 +1028,7 @@ def _detect_subject_bounds(gray: np.ndarray) -> Tuple[int, int, int, int]:
     dilated = cv2.dilate(edges, kernel, iterations=3)
 
     # Find contours and get bounding box of all significant contours
-    contours, _ = cv2.findContours(
-        dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return (0, 0, w, h)
 
@@ -1072,9 +1070,7 @@ def _compute_subject_circularity(gray: np.ndarray) -> float:
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     dilated = cv2.dilate(edges, kernel, iterations=3)
 
-    contours, _ = cv2.findContours(
-        dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return 0.0
 
@@ -1121,9 +1117,7 @@ def _suggest_bead_colors(img_array: np.ndarray) -> int:
             best_k = actual_k
             break
 
-        km = KMeans(
-            n_clusters=actual_k, random_state=0, n_init="auto", max_iter=100
-        )
+        km = KMeans(n_clusters=actual_k, random_state=0, n_init="auto", max_iter=100)
         km.fit(sample)
         centers = km.cluster_centers_
 
@@ -1190,9 +1184,7 @@ def _suggest_optimal_size(
 
         big_bgr = big[:, :, ::-1].astype(np.uint8)
         big_lab = cv2.cvtColor(big_bgr, cv2.COLOR_BGR2Lab).astype(np.float64)
-        delta_e = float(
-            np.mean(np.sqrt(np.sum((ref_lab - big_lab) ** 2, axis=2)))
-        )
+        delta_e = float(np.mean(np.sqrt(np.sum((ref_lab - big_lab) ** 2, axis=2))))
         mae_scores.append(delta_e)
 
     scores = np.array(mae_scores)
@@ -1215,8 +1207,7 @@ def _suggest_optimal_size(
         return test_sizes[0]
 
     distances = [
-        abs(float(np.cross(line_vec, p0 - np.array([s_norm[j], q_norm[j]]))))
-        / line_len
+        abs(float(np.cross(line_vec, p0 - np.array([s_norm[j], q_norm[j]])))) / line_len
         for j in range(len(test_sizes))
     ]
 
